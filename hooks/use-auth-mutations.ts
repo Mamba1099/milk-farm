@@ -3,7 +3,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
 import { RegisterInput } from "@/lib/validators/auth";
-import { uploadUserAvatar } from "@/lib/supabase";
 
 // Types for the registration response
 export interface RegisterResponse {
@@ -37,10 +36,25 @@ export const useRegisterMutation = () => {
     mutationFn: async (data: RegisterInput) => {
       let imageUrl: string | null = null;
 
-      // Upload image to Supabase if provided
+      // Upload image to local storage if provided
       if (data.image) {
-        imageUrl = await uploadUserAvatar(data.image);
-        if (!imageUrl) {
+        console.log("Uploading image...");
+        const formData = new FormData();
+        formData.append("file", data.image);
+        formData.append("folder", "user-avatars");
+
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json();
+          imageUrl = uploadData.url;
+          console.log("Image uploaded successfully:", imageUrl);
+        } else {
+          const errorData = await uploadResponse.json();
+          console.error("Upload failed:", errorData);
           throw new Error("Failed to upload image");
         }
       }
@@ -55,12 +69,18 @@ export const useRegisterMutation = () => {
         image: imageUrl,
       };
 
+      console.log("Registering user with payload:", {
+        ...payload,
+        password: "[HIDDEN]",
+      });
+
       // Make the API request
       const response = await apiClient.post<RegisterResponse>(
         API_ENDPOINTS.auth.register,
         payload
       );
 
+      console.log("Registration response:", response.data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -80,6 +100,17 @@ export const useRegisterMutation = () => {
     onError: (error) => {
       // Handle registration errors
       console.error("Registration failed:", error);
+
+      // Log more details about the error
+      if (error.response?.data) {
+        console.error("Error response data:", error.response.data);
+      }
+      if (error.response?.status) {
+        console.error("Error status:", error.response.status);
+      }
+      if (error.message) {
+        console.error("Error message:", error.message);
+      }
     },
   });
 };

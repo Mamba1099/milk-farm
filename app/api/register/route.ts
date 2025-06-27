@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { registerSchema } from "@/lib/validators/auth";
+import { registerApiSchema } from "@/lib/validators/auth";
 import { ZodError } from "zod";
 
 function createResponse(
@@ -55,7 +55,7 @@ function createResponse(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const validatedData = registerSchema.parse(body);
+    const validatedData = registerApiSchema.parse(body);
     const { username, email, password, role, image } = validatedData;
     const existingUser = await prisma.user.findFirst({
       where: {
