@@ -141,62 +141,62 @@ export default function SignUpPage() {
         initial="initial"
         animate="animate"
         variants={fadeInUp}
-        className="w-full max-w-md"
+        className="w-full max-w-2xl"
       >
-        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="text-center pb-6">
-            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-[#2d5523] flex items-center justify-center">
-              <Icons.userPlus className="h-6 w-6 text-white" />
+        <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="text-center pb-8">
+            <div className="mx-auto mb-6 h-16 w-16 rounded-full bg-[#2d5523] flex items-center justify-center">
+              <Icons.userPlus className="h-8 w-8 text-white" />
             </div>
-            <CardTitle className="text-2xl font-bold text-[#2d5523]">
+            <CardTitle className="text-4xl font-bold text-[#2d5523] mb-2">
               Create Account
             </CardTitle>
-            <CardDescription className="text-[#4a6b3d]">
+            <CardDescription className="text-lg text-[#4a6b3d]">
               Join our dairy farm management platform
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <CardContent className="px-8 pb-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Username Field */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label
                   htmlFor="username"
-                  className="text-sm font-medium text-[#2d5523]"
+                  className="text-lg font-semibold text-[#2d5523]"
                 >
                   Username
                 </label>
                 <div className="relative">
-                  <Icons.user className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#4a6b3d]" />
+                  <Icons.user className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#4a6b3d]" />
                   <Input
                     id="username"
                     type="text"
                     placeholder="Choose a username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="pl-10 border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                 </div>
               </div>
 
               {/* Profile Image Field */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label
                   htmlFor="profileImage"
-                  className="text-sm font-medium text-[#2d5523]"
+                  className="text-lg font-semibold text-[#2d5523]"
                 >
                   Profile Picture
                 </label>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-6">
                   {imagePreview ? (
                     <div className="relative">
                       <Image
                         src={imagePreview}
                         alt="Profile preview"
-                        width={64}
-                        height={64}
-                        className="h-16 w-16 rounded-full object-cover border-2 border-[#4a6b3d]/20"
+                        width={80}
+                        height={80}
+                        className="h-20 w-20 rounded-full object-cover border-2 border-[#4a6b3d]/20"
                       />
                       <button
                         type="button"
@@ -234,42 +234,42 @@ export default function SignUpPage() {
               </div>
 
               {/* Email Field */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label
                   htmlFor="email"
-                  className="text-sm font-medium text-[#2d5523]"
+                  className="text-lg font-semibold text-[#2d5523]"
                 >
                   Email Address
                 </label>
                 <div className="relative">
-                  <Icons.mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#4a6b3d]" />
+                  <Icons.mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#4a6b3d]" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                 </div>
               </div>
 
               {/* Role Selection */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label
                   htmlFor="role"
-                  className="text-sm font-medium text-[#2d5523]"
+                  className="text-lg font-semibold text-[#2d5523]"
                 >
                   Role
                 </label>
                 <div className="relative">
-                  <Icons.shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#4a6b3d]" />
+                  <Icons.shield className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#4a6b3d] z-10" />
                   <select
                     id="role"
                     value={role}
                     onChange={(e) => setRole(e.target.value as Role)}
-                    className="w-full pl-10 pr-4 py-2 border border-[#4a6b3d]/20 rounded-md focus:border-[#2d5523] focus:ring-[#2d5523]/20 focus:outline-none bg-white text-[#2d5523]"
+                    className="w-full pl-12 pr-4 py-4 text-lg border border-[#4a6b3d]/20 rounded-md focus:border-[#2d5523] focus:ring-[#2d5523]/20 focus:outline-none bg-white text-[#2d5523]"
                     required
                   >
                     {roleOptions.map((option) => (
@@ -279,79 +279,79 @@ export default function SignUpPage() {
                     ))}
                   </select>
                 </div>
-                <p className="text-xs text-[#4a6b3d] mt-1">
+                <p className="text-sm text-[#4a6b3d] mt-2">
                   {roleOptions.find((opt) => opt.value === role)?.description}
                 </p>
               </div>
 
               {/* Password Field */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label
                   htmlFor="password"
-                  className="text-sm font-medium text-[#2d5523]"
+                  className="text-lg font-semibold text-[#2d5523]"
                 >
                   Password
                 </label>
                 <div className="relative">
-                  <Icons.lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#4a6b3d]" />
+                  <Icons.lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#4a6b3d]" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 pr-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#4a6b3d] hover:text-[#2d5523] transition-colors"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[#4a6b3d] hover:text-[#2d5523] transition-colors"
                   >
                     {showPassword ? (
-                      <Icons.eyeOff className="h-4 w-4" />
+                      <Icons.eyeOff className="h-5 w-5" />
                     ) : (
-                      <Icons.eye className="h-4 w-4" />
+                      <Icons.eye className="h-5 w-5" />
                     )}
                   </button>
                 </div>
               </div>
 
               {/* Confirm Password Field */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label
                   htmlFor="confirmPassword"
-                  className="text-sm font-medium text-[#2d5523]"
+                  className="text-lg font-semibold text-[#2d5523]"
                 >
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Icons.lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#4a6b3d]" />
+                  <Icons.lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#4a6b3d]" />
                   <Input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 pr-10 border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 pr-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#4a6b3d] hover:text-[#2d5523] transition-colors"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[#4a6b3d] hover:text-[#2d5523] transition-colors"
                   >
                     {showConfirmPassword ? (
-                      <Icons.eyeOff className="h-4 w-4" />
+                      <Icons.eyeOff className="h-5 w-5" />
                     ) : (
-                      <Icons.eye className="h-4 w-4" />
+                      <Icons.eye className="h-5 w-5" />
                     )}
                   </button>
                 </div>
                 {password &&
                   confirmPassword &&
                   password !== confirmPassword && (
-                    <p className="text-xs text-red-500 mt-1">
+                    <p className="text-sm text-red-500 mt-2">
                       Passwords do not match
                     </p>
                   )}
@@ -363,16 +363,16 @@ export default function SignUpPage() {
                 disabled={
                   registerMutation.isPending || password !== confirmPassword
                 }
-                className="w-full bg-[#2d5523] hover:bg-[#1e3a1a] text-white font-medium py-2.5 transition-colors disabled:opacity-50"
+                className="w-full bg-[#2d5523] hover:bg-[#1e3a1a] text-white font-semibold py-4 text-lg transition-colors disabled:opacity-50 mt-8"
               >
                 {registerMutation.isPending ? (
                   <>
-                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                    <Icons.spinner className="mr-3 h-5 w-5 animate-spin" />
                     Creating account...
                   </>
                 ) : (
                   <>
-                    <Icons.userPlus className="mr-2 h-4 w-4" />
+                    <Icons.userPlus className="mr-3 h-5 w-5" />
                     Create Account
                   </>
                 )}
@@ -391,11 +391,12 @@ export default function SignUpPage() {
             </form>
 
             {/* Sign In Link */}
-            <div className="mt-6 text-center text-sm text-[#4a6b3d]">
+            {/* Login Link */}
+            <div className="mt-8 text-center text-lg text-[#4a6b3d]">
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="text-[#2d5523] hover:text-[#1e3a1a] font-medium hover:underline"
+                className="text-[#2d5523] hover:text-[#1e3a1a] font-semibold hover:underline text-lg"
               >
                 Log In
               </Link>

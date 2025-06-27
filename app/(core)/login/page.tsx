@@ -51,114 +51,110 @@ export default function LoginPage() {
         initial="initial"
         animate="animate"
         variants={fadeInUp}
-        className="w-full max-w-md"
+        className="w-full max-w-xl"
       >
-        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="text-center pb-6">
-            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-[#2d5523] flex items-center justify-center">
-              <Icons.user className="h-6 w-6 text-white" />
+        <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="text-center pb-8">
+            <div className="mx-auto mb-6 h-16 w-16 rounded-full bg-[#2d5523] flex items-center justify-center">
+              <Icons.user className="h-8 w-8 text-white" />
             </div>
-            <CardTitle className="text-2xl font-bold text-[#2d5523]">
+            <CardTitle className="text-4xl font-bold text-[#2d5523] mb-2">
               Welcome Back
             </CardTitle>
-            <CardDescription className="text-[#4a6b3d]">
+            <CardDescription className="text-lg text-[#4a6b3d]">
               Sign in to your dairy farm management account
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <CardContent className="px-8 pb-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email Field */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label
                   htmlFor="email"
-                  className="text-sm font-medium text-[#2d5523]"
+                  className="text-lg font-semibold text-[#2d5523]"
                 >
                   Email Address
                 </label>
                 <div className="relative">
-                  <Icons.mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#4a6b3d]" />
+                  <Icons.mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#4a6b3d]" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                 </div>
               </div>
-
               {/* Password Field */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label
                   htmlFor="password"
-                  className="text-sm font-medium text-[#2d5523]"
+                  className="text-lg font-semibold text-[#2d5523]"
                 >
                   Password
                 </label>
                 <div className="relative">
-                  <Icons.lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#4a6b3d]" />
+                  <Icons.lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#4a6b3d]" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 pr-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#4a6b3d] hover:text-[#2d5523] transition-colors"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[#4a6b3d] hover:text-[#2d5523] transition-colors"
                   >
                     {showPassword ? (
-                      <Icons.eyeOff className="h-4 w-4" />
+                      <Icons.eyeOff className="h-5 w-5" />
                     ) : (
-                      <Icons.eye className="h-4 w-4" />
+                      <Icons.eye className="h-5 w-5" />
                     )}
                   </button>
                 </div>
               </div>
-
               {/* Remember Me & Forgot Password */}
-
               {/* Login Button */}
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#2d5523] hover:bg-[#1e3a1a] text-white font-medium py-2.5 transition-colors"
+                className="w-full bg-[#2d5523] hover:bg-[#1e3a1a] text-white font-semibold py-4 text-lg transition-colors mt-8"
               >
                 {isLoading ? (
                   <>
-                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                    <Icons.spinner className="mr-3 h-5 w-5 animate-spin" />
                     Signing in...
                   </>
                 ) : (
                   <>
-                    <Icons.logIn className="mr-2 h-4 w-4" />
+                    <Icons.logIn className="mr-3 h-5 w-5" />
                     Sign In
                   </>
                 )}
               </Button>
-
               {/* Divider */}
-              <div className="relative my-6">
+              <div className="relative my-8">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t border-[#4a6b3d]/20" />
                 </div>
-                <div className="relative flex justify-center text-xs uppercase"></div>
+                <div className="relative flex justify-center text-sm uppercase"></div>
               </div>
             </form>
 
             {/* Sign Up Link */}
-            <div className="mt-6 text-center text-sm text-[#4a6b3d]">
+            <div className="mt-8 text-center text-lg text-[#4a6b3d]">
               Don&apos;t have an account?{" "}
               <Link
                 href="/signup"
-                className="text-[#2d5523] hover:text-[#1e3a1a] font-medium hover:underline"
+                className="text-[#2d5523] hover:text-[#1e3a1a] font-semibold hover:underline text-lg"
               >
                 Sign up here
               </Link>
