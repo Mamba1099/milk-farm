@@ -82,7 +82,7 @@ export default function ProductionPage() {
           {user?.role === "FARM_MANAGER" && (
             <div className="flex gap-2 w-full sm:w-auto">
               <Link href="/production/add" className="flex-1 sm:flex-none">
-                <Button className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 w-full justify-center text-sm sm:text-base">
+                <Button className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 w-full justify-center text-sm sm:text-base m-2">
                   <Plus size={18} className="sm:w-5 sm:h-5" />
                   Add Production
                 </Button>
@@ -195,7 +195,7 @@ export default function ProductionPage() {
                 setSearchTerm("");
                 setSelectedDateRange("");
               }}
-              className="flex items-center gap-2 text-sm sm:text-base"
+              className="flex items-center gap-2 text-sm sm:text-base m-2"
             >
               <Filter size={16} className="sm:w-5 sm:h-5" />
               Clear Filters
@@ -216,7 +216,7 @@ export default function ProductionPage() {
               </p>
               {user?.role === "FARM_MANAGER" && (
                 <Link href="/production/add">
-                  <Button className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base">
+                  <Button className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base m-2">
                     Add First Production Record
                   </Button>
                 </Link>
