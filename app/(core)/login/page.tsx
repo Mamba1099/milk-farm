@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Icons } from "@/components/icons";
+import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -19,15 +22,52 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const router = useRouter();
+  const { login, isAuthenticated, user } = useAuth();
+  const { toast } = useToast();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, user, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!email || !password) {
+      toast.error("Missing Fields", "Please fill in all fields");
+      return;
+    }
+
     setIsLoading(true);
+    try {
+      await login({ email, password });
+      toast.success("Login Successful", "Welcome back!");
+    } catch (error) {
+      if (error && typeof error === "object" && "error" in error) {
+        const loginError = error as {
+          error: string;
+          details?: Array<{ field: string; message: string }>;
+        };
 
-    console.log("Login attempt:", { email, password });
-
-    setTimeout(() => {
+        if (loginError.details) {
+          loginError.details.forEach((detail) => {
+            toast.error(`Validation Error: ${detail.field}`, detail.message);
+          });
+        } else {
+          toast.error("Login Failed", loginError.error);
+        }
+      } else {
+        toast.error(
+          "Unexpected Error",
+          "An unexpected error occurred. Please try again."
+        );
+      }
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   const fadeInUp = {
