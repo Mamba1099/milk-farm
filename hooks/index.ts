@@ -1,20 +1,30 @@
 // Auth mutations
 export {
   useRegisterMutation,
-  useLoginMutation,
   type RegisterResponse,
   type RegisterError,
+} from "./use-auth-mutations";
+
+// Auth hooks
+export {
+  useLoginMutation,
+  useLogoutMutation,
+  useRefreshTokenMutation,
+  useCurrentUser,
   type LoginInput,
   type LoginResponse,
-} from "./use-auth-mutations";
+  type User,
+  type AuthError,
+} from "./use-auth-hooks";
 
 // Auth queries
 export {
-  useCurrentUser,
   useFarmManagerExists,
   useRegistrationStatus,
-  type User,
 } from "./use-auth-queries";
 
 // UI hooks
 export { useToast, type Toast } from "./use-toast";
+
+// Animal hooks
+export * from "./use-animal-hooks";
