@@ -1,0 +1,159 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
+import { decodeJWT, isTokenExpired } from "@/lib/jwt-utils";
+
+// Types
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  message: string;
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    image: string | null;
+    createdAt: string;
+  };
+  token: string;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  image: string | null;
+  createdAt: string;
+}
+
+export interface AuthError {
+  error: string;
+  details?: Array<{
+    field: string;
+    message: string;
+  }>;
+}
+
+// Login mutation
+export const useLoginMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<LoginResponse, AuthError, LoginInput>({
+    mutationFn: async (data: LoginInput) => {
+      const response = await apiClient.post<LoginResponse>(
+        API_ENDPOINTS.auth.login,
+        data
+      );
+      return response.data;
+    },
+    onSuccess: (data) => {
+      // Store user data in query cache
+      queryClient.setQueryData(["user"], data.user);
+      console.log("Login successful:", data.message);
+    },
+    onError: (error) => {
+      console.error("Login failed:", error);
+    },
+  });
+};
+
+// Logout mutation
+export const useLogoutMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ message: string }, AuthError, void>({
+    mutationFn: async () => {
+      const response = await apiClient.post(API_ENDPOINTS.auth.logout);
+      return response.data;
+    },
+    onSuccess: () => {
+      // Clear user data from cache
+      queryClient.removeQueries({ queryKey: ["user"] });
+      queryClient.clear();
+      console.log("Logout successful");
+    },
+    onError: (error) => {
+      console.error("Logout failed:", error);
+      // Even if logout API fails, clear local data
+      queryClient.removeQueries({ queryKey: ["user"] });
+      queryClient.clear();
+    },
+  });
+};
+
+// Refresh token mutation
+export const useRefreshTokenMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<LoginResponse, AuthError, void>({
+    mutationFn: async () => {
+      const response = await apiClient.post<LoginResponse>(
+        API_ENDPOINTS.auth.refresh
+      );
+      return response.data;
+    },
+    onSuccess: (data) => {
+      // Update user data in cache
+      queryClient.setQueryData(["user"], data.user);
+    },
+    onError: (error) => {
+      console.error("Token refresh failed:", error);
+      // Clear user data if refresh fails
+      queryClient.removeQueries({ queryKey: ["user"] });
+    },
+  });
+};
+
+// Get current user from token
+export const useCurrentUser = () => {
+  return useQuery<User | null, AuthError>({
+    queryKey: ["user"],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        return null;
+      }
+
+      // Check if token is expired
+      if (isTokenExpired(token)) {
+        // Remove expired token
+        localStorage.removeItem("token");
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        return null;
+      }
+
+      // Decode token to get user info
+      const decoded = decodeJWT(token);
+      if (!decoded) {
+        // Invalid token
+        localStorage.removeItem("token");
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        return null;
+      }
+
+      // Create user object from JWT payload
+      const user: User = {
+        id: decoded.sub,
+        username: decoded.username,
+        email: decoded.email,
+        role: decoded.role,
+        image: decoded.image,
+        createdAt: new Date().toISOString(), // We don't have this in JWT, but it's not critical
+      };
+
+      return user;
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};

@@ -143,11 +143,6 @@ export const useLoginMutation = () => {
         data
       );
 
-      // Store the auth token
-      if (response.data.token) {
-        localStorage.setItem("auth-token", response.data.token);
-      }
-
       return response.data;
     },
     onSuccess: (data) => {
