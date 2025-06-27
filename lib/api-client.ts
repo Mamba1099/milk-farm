@@ -13,7 +13,7 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // Add auth token if available
-    const token = localStorage.getItem("auth-token");
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,22 +31,17 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     // Handle common errors
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem("auth-token");
-      window.location.href = "/login";
-    }
-
+    console.error("API Error:", error);
     return Promise.reject(error);
   }
 );
 
-// API endpoints
 export const API_ENDPOINTS = {
   auth: {
     register: "/register",
-    login: "/login",
-    logout: "/logout",
+    login: "/auth",
+    logout: "/auth/logout",
+    refresh: "/auth/refresh",
     profile: "/profile",
   },
   // Add more endpoints as needed
