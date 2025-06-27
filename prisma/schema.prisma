@@ -12,6 +12,45 @@ enum Role {
   EMPLOYEE
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum AnimalType {
+  COW
+  BULL
+  CALF
+}
+
+enum HealthStatus {
+  HEALTHY
+  SICK
+  RECOVERING
+  QUARANTINED
+}
+
+enum DisposalReason {
+  SOLD
+  DIED
+  SLAUGHTERED
+  DONATED
+  OTHER
+}
+
+enum ServingOutcome {
+  SUCCESSFUL
+  FAILED
+  PENDING
+}
+
+enum MilkAllocation {
+  CALF
+  POSHO
+  SALES
+  CARRY_OVER
+}
+
 model User {
   id        String   @id @default(cuid())
   username  String   @unique
@@ -22,5 +61,122 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  treatments        Treatment[]
+  disposals         Disposal[]
+  servings          Serving[]
+  productionRecords Production[]
+
   @@map("users")
+}
+
+model Animal {
+  id           String       @id @default(cuid())
+  tagNumber    String       @unique
+  name         String?
+  type         AnimalType
+  gender       Gender
+  birthDate    DateTime
+  motherId     String?
+  fatherId     String?
+  healthStatus HealthStatus @default(HEALTHY)
+  weight       Float?
+  image        String?
+  notes        String?
+  isMatured    Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Self-referencing relationships for family tree
+  mother        Animal?  @relation("MotherChildren", fields: [motherId], references: [id])
+  father        Animal?  @relation("FatherChildren", fields: [fatherId], references: [id])
+  motherOf      Animal[] @relation("MotherChildren")
+  fatherOf      Animal[] @relation("FatherChildren")
+
+  // Relations
+  treatments        Treatment[]
+  disposals         Disposal[]
+  servings          Serving[]
+  productionRecords Production[]
+
+  @@map("animals")
+}
+
+model Treatment {
+  id          String   @id @default(cuid())
+  animalId    String
+  disease     String
+  medicine    String
+  dosage      String
+  treatment   String
+  cost        Float
+  treatedById String
+  treatedAt   DateTime @default(now())
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  animal    Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  treatedBy User   @relation(fields: [treatedById], references: [id])
+
+  @@map("treatments")
+}
+
+model Disposal {
+  id           String         @id @default(cuid())
+  animalId     String         @unique
+  reason       DisposalReason
+  amount       Float?         // Sale amount if sold
+  disposedAt   DateTime       @default(now())
+  disposedById String
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Relations
+  animal     Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  disposedBy User   @relation(fields: [disposedById], references: [id])
+
+  @@map("disposals")
+}
+
+model Serving {
+  id              String         @id @default(cuid())
+  femaleId        String
+  maleId          String?        // Optional if using artificial insemination
+  servedAt        DateTime       @default(now())
+  outcome         ServingOutcome @default(PENDING)
+  pregnancyDate   DateTime?      // Expected delivery date
+  actualBirthDate DateTime?      // Actual birth date when calf is born
+  servedById      String
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  female   Animal @relation(fields: [femaleId], references: [id], onDelete: Cascade)
+  servedBy User   @relation(fields: [servedById], references: [id])
+
+  @@map("servings")
+}
+
+model Production {
+  id           String          @id @default(cuid())
+  animalId     String
+  date         DateTime        @default(now())
+  morning      Float           @default(0) // Morning milk in liters
+  evening      Float           @default(0) // Evening milk in liters
+  total        Float           // Total milk for the day
+  allocation   MilkAllocation
+  recordedById String
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  // Relations
+  animal     Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  recordedBy User   @relation(fields: [recordedById], references: [id])
+
+  @@map("production")
 }
