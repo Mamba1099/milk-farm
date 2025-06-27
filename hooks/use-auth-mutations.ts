@@ -1,7 +1,9 @@
+"use client";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
 import { RegisterInput } from "@/lib/validators/auth";
-import { uploadImage } from "@/lib/supabase";
+import { uploadUserAvatar } from "@/lib/supabase";
 
 // Types for the registration response
 export interface RegisterResponse {
@@ -37,7 +39,7 @@ export const useRegisterMutation = () => {
 
       // Upload image to Supabase if provided
       if (data.image) {
-        imageUrl = await uploadImage(data.image, "user-avatars");
+        imageUrl = await uploadUserAvatar(data.image);
         if (!imageUrl) {
           throw new Error("Failed to upload image");
         }

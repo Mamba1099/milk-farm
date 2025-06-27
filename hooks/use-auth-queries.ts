@@ -1,3 +1,5 @@
+"use client";
+
 import { useQuery } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
 
