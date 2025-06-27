@@ -4,6 +4,17 @@ import {
   LineChart,
   CircleDashed,
   Droplet,
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2,
+  LogIn,
+  UserPlus,
+  Shield,
+  Camera,
+  Upload,
 } from "lucide-react";
 
 export const Icons = {
@@ -12,4 +23,15 @@ export const Icons = {
   arrowRight: ArrowRight,
   check: Check,
   analytics: LineChart,
+  user: User,
+  mail: Mail,
+  lock: Lock,
+  eye: Eye,
+  eyeOff: EyeOff,
+  spinner: Loader2,
+  logIn: LogIn,
+  userPlus: UserPlus,
+  shield: Shield,
+  camera: Camera,
+  upload: Upload,
 };
