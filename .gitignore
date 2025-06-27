@@ -43,3 +43,7 @@ next-env.d.ts
 /lib/generated/prisma
 migration.sql
 migration_lock.toml
+
+# File uploads (keep directory structure but ignore uploaded files)
+/public/uploads/*/*
+!/public/uploads/*/.gitkeep

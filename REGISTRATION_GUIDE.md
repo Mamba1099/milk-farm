@@ -26,9 +26,10 @@ The registration system implements a secure user management flow with the follow
 
 ### Image Upload
 
-- Integration with Supabase Storage for profile images
-- File validation (size limit: 5MB, supported formats: JPEG, PNG, GIF, WebP)
+- Local file storage for profile images (stored in `public/uploads/`)
+- File validation (size limit: 5MB, supported formats: JPEG, JPG, PNG, GIF, WebP, BMP, TIFF, SVG)
 - Automatic file naming and organization
+- Images organized in folders: `user-avatars/` and `animal-images/`
 
 ## API Endpoints
 
@@ -76,9 +77,9 @@ Handles CORS preflight requests.
 # Database
 DATABASE_URL="your-postgres-database-url"
 
-# Supabase (for image storage)
-NEXT_PUBLIC_SUPABASE_URL="your-supabase-project-url"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+# Local file upload settings
+MAX_FILE_SIZE="5242880"  # 5MB in bytes
+ALLOWED_FILE_TYPES="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/tiff,image/svg+xml"
 
 # Production settings
 NODE_ENV="development"
@@ -98,16 +99,15 @@ BCRYPT_SALT_ROUNDS=12
    npx prisma generate
    ```
 
-2. **Supabase Setup:**
+2. **File Storage Setup:**
 
-   - Create a Supabase project
-   - Create a storage bucket named "images"
-   - Set bucket policies for public read access
-   - Update environment variables
+   The application uses local file storage for images. Upload directories are automatically created when needed:
+   - `public/uploads/user-avatars/` - User profile images
+   - `public/uploads/animal-images/` - Animal photos
 
 3. **Environment Variables:**
    - Copy `.env.example` to `.env.local`
-   - Fill in your database and Supabase credentials
+   - Fill in your database credentials and file upload settings
 
 ## Production Considerations
 
