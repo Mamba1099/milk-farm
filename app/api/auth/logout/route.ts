@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withApiTimeout } from "@/lib/api-timeout";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function POST(request: NextRequest) {
+async function handleLogout(request: NextRequest) {
   try {
     // Create response
     const response = NextResponse.json({
@@ -26,3 +27,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Export wrapped handler with timeout
+export const POST = withApiTimeout(handleLogout, 10000); // 10 second timeout

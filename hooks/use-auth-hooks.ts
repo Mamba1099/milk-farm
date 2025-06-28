@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
-import { decodeJWT, isTokenExpired } from "@/lib/jwt-utils";
+import { isTokenExpired } from "@/lib/jwt-utils";
 
 // Types
 export interface LoginInput {
@@ -121,7 +121,7 @@ export const useCurrentUser = () => {
         return null;
       }
 
-      // Check if token is expired
+      // Check if token is expired locally first
       if (isTokenExpired(token)) {
         // Remove expired token
         localStorage.removeItem("token");
@@ -130,27 +130,17 @@ export const useCurrentUser = () => {
         return null;
       }
 
-      // Decode token to get user info
-      const decoded = decodeJWT(token);
-      if (!decoded) {
-        // Invalid token
+      try {
+        // Validate token with server by calling /auth/me
+        const response = await apiClient.get<{ user: User }>("/auth/me");
+        return response.data.user;
+      } catch {
+        // If server rejects token, clear it locally
         localStorage.removeItem("token");
         document.cookie =
           "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         return null;
       }
-
-      // Create user object from JWT payload
-      const user: User = {
-        id: decoded.sub,
-        username: decoded.username,
-        email: decoded.email,
-        role: decoded.role,
-        image: decoded.image,
-        createdAt: new Date().toISOString(), // We don't have this in JWT, but it's not critical
-      };
-
-      return user;
     },
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes

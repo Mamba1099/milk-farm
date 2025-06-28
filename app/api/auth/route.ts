@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators/auth";
+import { withApiTimeout } from "@/lib/api-timeout";
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -13,7 +14,7 @@ if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
   throw new Error("JWT secrets are not configured");
 }
 
-export async function POST(request: NextRequest) {
+async function handleLogin(request: NextRequest) {
   try {
     const body = await request.json();
 
@@ -117,6 +118,10 @@ export async function POST(request: NextRequest) {
 }
 
 // Health check for login endpoint
-export async function GET() {
+async function handleHealthCheck() {
   return NextResponse.json({ message: "Login endpoint is working" });
 }
+
+// Export wrapped handlers with timeout
+export const POST = withApiTimeout(handleLogin, 20000); // 20 second timeout
+export const GET = withApiTimeout(handleHealthCheck, 5000); // 5 second timeout

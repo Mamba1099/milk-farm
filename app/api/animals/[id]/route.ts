@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { UpdateAnimalSchema } from "@/lib/validators/animal";
 import { uploadFile } from "@/lib/file-storage";
 import jwt from "jsonwebtoken";
+import { withApiTimeout } from "@/lib/api-timeout";
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
@@ -13,10 +14,14 @@ async function getUserFromToken(request: NextRequest) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string;
+      sub: string;
+      username: string;
+      email: string;
+      role: string;
+      image: string | null;
     };
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: decoded.sub },
       select: { id: true, role: true, username: true },
     });
     return user;
@@ -26,7 +31,7 @@ async function getUserFromToken(request: NextRequest) {
 }
 
 // GET /api/animals/[id] - Get specific animal
-export async function GET(
+async function handleGetAnimal(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -92,7 +97,7 @@ export async function GET(
 }
 
 // PUT /api/animals/[id] - Update specific animal
-export async function PUT(
+async function handleUpdateAnimal(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -223,7 +228,7 @@ export async function PUT(
 }
 
 // DELETE /api/animals/[id] - Delete specific animal
-export async function DELETE(
+async function handleDeleteAnimal(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -280,3 +285,8 @@ export async function DELETE(
     );
   }
 }
+
+// Export wrapped handlers with timeout
+export const GET = withApiTimeout(handleGetAnimal, 20000); // 20 second timeout
+export const PUT = withApiTimeout(handleUpdateAnimal, 30000); // 30 second timeout  
+export const DELETE = withApiTimeout(handleDeleteAnimal, 15000); // 15 second timeout

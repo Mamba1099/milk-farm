@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
+import { withApiTimeout } from "@/lib/api-timeout";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -17,7 +18,7 @@ interface RefreshTokenPayload {
   image: string | null;
 }
 
-export async function POST(request: NextRequest) {
+async function handleRefreshToken(request: NextRequest) {
   try {
     // Get refresh token from cookies
     const refreshToken = request.cookies.get("refresh-token")?.value;
@@ -106,3 +107,6 @@ export async function POST(request: NextRequest) {
     return response;
   }
 }
+
+// Export wrapped handler with timeout
+export const POST = withApiTimeout(handleRefreshToken, 15000); // 15 second timeout

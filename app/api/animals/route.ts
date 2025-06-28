@@ -4,6 +4,7 @@ import { CreateAnimalSchema, AnimalQuerySchema } from "@/lib/validators/animal";
 import { uploadAnimalImage, validateImageFile } from "@/lib/file-storage";
 import jwt from "jsonwebtoken";
 import { Prisma } from "@prisma/client";
+import { withApiTimeout } from "@/lib/api-timeout";
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
@@ -14,10 +15,14 @@ async function getUserFromToken(request: NextRequest) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string;
+      sub: string;
+      username: string;
+      email: string;
+      role: string;
+      image: string | null;
     };
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: decoded.sub },
       select: { id: true, role: true, username: true },
     });
     return user;
@@ -27,7 +32,7 @@ async function getUserFromToken(request: NextRequest) {
 }
 
 // GET /api/animals - Get all animals with filtering and pagination
-export async function GET(request: NextRequest) {
+async function handleGetAnimals(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
     if (!user) {
@@ -119,7 +124,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/animals - Create new animal
-export async function POST(request: NextRequest) {
+async function handleCreateAnimal(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
     if (!user) {
@@ -240,3 +245,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Export wrapped handlers with timeout
+export const GET = withApiTimeout(handleGetAnimals, 25000); // 25 second timeout
+export const POST = withApiTimeout(handleCreateAnimal, 30000); // 30 second timeout

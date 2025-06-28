@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { CreateProductionSchema } from "@/lib/validators/animal";
 import jwt from "jsonwebtoken";
 import { Prisma } from "@prisma/client";
+import { withApiTimeout } from "@/lib/api-timeout";
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
@@ -13,10 +14,14 @@ async function getUserFromToken(request: NextRequest) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string;
+      sub: string;
+      username: string;
+      email: string;
+      role: string;
+      image: string | null;
     };
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: decoded.sub },
       select: { id: true, role: true, username: true },
     });
     return user;
@@ -26,7 +31,7 @@ async function getUserFromToken(request: NextRequest) {
 }
 
 // GET /api/production - Get all production records with filtering
-export async function GET(request: NextRequest) {
+async function handleGetProduction(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
     if (!user) {
@@ -103,7 +108,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/production - Create new production record
-export async function POST(request: NextRequest) {
+async function handleCreateProduction(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
     if (!user) {
@@ -192,3 +197,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Export wrapped handlers with timeout
+export const GET = withApiTimeout(handleGetProduction, 20000); // 20 second timeout
+export const POST = withApiTimeout(handleCreateProduction, 25000); // 25 second timeout

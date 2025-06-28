@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadImage, validateImageFile } from "@/lib/file-storage";
+import { withApiTimeout } from "@/lib/api-timeout";
 
-export async function POST(request: NextRequest) {
+async function handleUpload(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;
@@ -36,3 +37,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Export wrapped handler with timeout
+export const POST = withApiTimeout(handleUpload, 60000); // 60 second timeout for file uploads

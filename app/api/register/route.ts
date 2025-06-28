@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { registerApiSchema } from "@/lib/validators/auth";
 import { ZodError } from "zod";
+import { withApiTimeout } from "@/lib/api-timeout";
 
 function createResponse(
   data: Record<string, unknown>,
@@ -52,7 +53,7 @@ function createResponse(
   return response;
 }
 
-export async function POST(request: NextRequest) {
+async function handleRegister(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = registerApiSchema.parse(body);
@@ -168,14 +169,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function OPTIONS() {
+async function handleOptions() {
   return createResponse({}, 200, {
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   });
 }
 
-export async function GET() {
+async function handleHealthCheck() {
   return createResponse(
     {
       message: "Registration endpoint is working",
@@ -184,3 +185,8 @@ export async function GET() {
     200
   );
 }
+
+// Export wrapped handlers with timeout
+export const POST = withApiTimeout(handleRegister, 25000); // 25 second timeout
+export const OPTIONS = withApiTimeout(handleOptions, 5000); // 5 second timeout
+export const GET = withApiTimeout(handleHealthCheck, 5000); // 5 second timeout
