@@ -28,6 +28,7 @@ import {
   HeartPulse,
   Database,
   AlertCircle,
+  X,
 } from "lucide-react";
 
 export const Icons = {
@@ -42,6 +43,7 @@ export const Icons = {
   eye: Eye,
   eyeOff: EyeOff,
   spinner: Loader2,
+  loader: Loader2,
   logIn: LogIn,
   logOut: LogOut,
   userPlus: UserPlus,
@@ -60,4 +62,5 @@ export const Icons = {
   heartPulse: HeartPulse,
   database: Database,
   alertCircle: AlertCircle,
+  x: X,
 };
