@@ -73,6 +73,12 @@ const navigationItems = [
     roles: ["FARM_MANAGER"],
   },
   {
+    name: "Analytics",
+    href: "/analytics",
+    icon: Icons.analytics,
+    roles: ["FARM_MANAGER", "EMPLOYEE"],
+  },
+  {
     name: "Reports",
     href: "/reports",
     icon: Icons.barChart,
