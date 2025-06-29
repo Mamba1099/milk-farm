@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useCreateAnimal } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
-import { CreateAnimalSchema } from "@/lib/validators/animal";
 import type { CreateAnimalInput } from "@/lib/validators/animal";
 
 // Animation variants
@@ -84,20 +83,11 @@ export default function AddAnimalPage() {
     setIsSubmitting(true);
 
     try {
-      // Validate form data
-      const validatedData = CreateAnimalSchema.parse(formData);
-
-      // Create FormData for file upload
-      const submitData = new FormData();
-      Object.entries(validatedData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          submitData.append(key, value.toString());
-        }
-      });
-
-      if (imageFile) {
-        submitData.append("image", imageFile);
-      }
+      // Prepare submit data with image file
+      const submitData = {
+        ...formData,
+        image: imageFile,
+      };
 
       await createAnimalMutation.mutateAsync(submitData);
 
@@ -123,14 +113,14 @@ export default function AddAnimalPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 sm:p-6">
-      <motion.div 
+      <motion.div
         className="max-w-4xl mx-auto"
         initial="initial"
         animate="animate"
         variants={staggerContainer}
       >
         {/* Header */}
-        <motion.div 
+        <motion.div
           className="flex items-center gap-4 mb-6 sm:mb-8"
           variants={fadeInUp}
         >
@@ -143,7 +133,9 @@ export default function AddAnimalPage() {
             Back
           </Button>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Add New Animal</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              Add New Animal
+            </h1>
             <p className="text-gray-600 text-sm sm:text-base">
               Register a new animal in your farm management system
             </p>
@@ -359,5 +351,4 @@ export default function AddAnimalPage() {
       </motion.div>
     </div>
   );
-
 }

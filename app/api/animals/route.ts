@@ -139,12 +139,28 @@ async function handleCreateAnimal(request: NextRequest) {
       );
     }
 
-    const formData = await request.formData();
-    const data = Object.fromEntries(formData.entries());
+    // Check content type to handle both JSON and form data
+    const contentType = request.headers.get("content-type") || "";
+    let data: Record<string, unknown> = {};
+    let imageFile: File | null = null;
 
-    // Handle image upload
+    if (contentType.includes("multipart/form-data")) {
+      // Handle form data (with potential file upload)
+      const formData = await request.formData();
+      data = Object.fromEntries(formData.entries());
+      imageFile = formData.get("image") as File;
+    } else {
+      // Handle JSON data
+      const body = await request.json();
+      data = body;
+    }
+
+    // Debug: Log received data
+    console.log("Received data:", data);
+    console.log("Content type:", contentType);
+
+    // Handle image upload if present
     let imageUrl = null;
-    const imageFile = formData.get("image") as File;
     if (imageFile && imageFile.size > 0) {
       // Validate image file
       const validation = validateImageFile(imageFile);
