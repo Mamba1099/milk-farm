@@ -25,6 +25,9 @@ import {
   Search,
   Trash2,
   ChevronDown,
+  HeartPulse,
+  Database,
+  AlertCircle,
 } from "lucide-react";
 
 export const Icons = {
@@ -54,4 +57,7 @@ export const Icons = {
   search: Search,
   trash: Trash2,
   chevronDown: ChevronDown,
+  heartPulse: HeartPulse,
+  database: Database,
+  alertCircle: AlertCircle,
 };

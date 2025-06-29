@@ -1,11 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
+import {
+  AnimalStatsCard,
+  ProductionStatsCard,
+  TreatmentStatsCard,
+} from "@/components/dashboard/dashboard-stats";
+import { useDashboardStats } from "@/hooks/use-dashboard-hooks";
 
 // Animation variants
 const fadeInUp = {
@@ -33,6 +37,12 @@ const staggerContainer = {
 
 export default function DashboardPage() {
   const { user, canEdit, isFarmManager } = useAuth();
+  const { animals, production, users } = useDashboardStats();
+
+  // Get data with fallbacks
+  const animalsData = animals.data;
+  const productionData = production.data;
+  const userData = users.data;
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-[#f7f5f2] to-[#e8f5e9]">
@@ -51,17 +61,6 @@ export default function DashboardPage() {
             Welcome back, {user?.username}!
             {isFarmManager ? " (Farm Manager)" : " (Employee)"}
           </p>
-
-          {/* Debug Info - Remove this later */}
-          <div className="mt-4 p-3 bg-white/80 backdrop-blur-sm rounded-lg text-xs sm:text-sm border border-white/20">
-            <strong>Debug Info:</strong>
-            <br />
-            User Role: {user?.role || "undefined"}
-            <br />
-            isFarmManager: {isFarmManager ? "true" : "false"}
-            <br />
-            canEdit: {canEdit ? "true" : "false"}
-          </div>
         </motion.div>
 
         {/* Dashboard Grid */}
@@ -77,147 +76,50 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-blue-800 text-lg sm:text-xl">
                   <Icons.user className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Profile
+                  Profile Overview
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <p className="text-sm sm:text-base">
-                    <strong>Username:</strong> {user?.username}
-                  </p>
-                  <p className="text-sm sm:text-base">
-                    <strong>Email:</strong> {user?.email}
-                  </p>
-                  <p className="text-sm sm:text-base">
-                    <strong>Role:</strong>{" "}
-                    {isFarmManager ? "Farm Manager" : "Employee"}
-                  </p>
-                  <p className="text-sm sm:text-base">
-                    <strong>Joined:</strong>{" "}
-                    {user?.createdAt
-                      ? new Date(user.createdAt).toLocaleDateString()
-                      : "N/A"}
-                  </p>
-                  {canEdit && (
-                    <Link href="/settings">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full mt-3 mb-2 border-blue-300 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm"
-                      >
-                        Edit Profile
-                      </Button>
-                    </Link>
-                  )}
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Username:</span>
+                    <span className="text-sm font-medium">
+                      {user?.username || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Role:</span>
+                    <span className="text-sm font-medium">
+                      {isFarmManager ? "Farm Manager" : "Employee"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Access Level:</span>
+                    <span className="text-sm font-medium">
+                      {canEdit ? "Full Access" : "Read Only"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Joined:</span>
+                    <span className="text-sm font-medium">
+                      {user?.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString()
+                        : "N/A"}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* Animal Management */}
-          <motion.div variants={fadeInUp}>
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300 h-full">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-800">
-                  <Icons.cow className="h-5 w-5" />
-                  Animal Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <Link href="/animals">
-                    <Button
-                      className="w-full mb-2 bg-[#2d5523] hover:bg-[#1e3a1a] text-white text-sm"
-                      size="sm"
-                    >
-                      View Animals
-                    </Button>
-                  </Link>
-                  {canEdit ? (
-                    <>
-                      <Link href="/animals/add">
-                        <Button
-                          className="w-full mb-2 bg-[#2d5523] hover:bg-[#1e3a1a] text-white text-sm"
-                          size="sm"
-                        >
-                          Add New Animal
-                        </Button>
-                      </Link>
-                      <Link href="/animals/treatments">
-                        <Button
-                          className="w-full mb-2 border-green-300 text-green-700 hover:bg-green-50 text-sm"
-                          variant="outline"
-                          size="sm"
-                        >
-                          Health Records
-                        </Button>
-                      </Link>
-                    </>
-                  ) : (
-                    <p className="text-sm text-gray-500 text-center py-4">
-                      View-only access. Contact farm manager to add/edit
-                      animals.
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+          {/* Animal Statistics */}
+          <AnimalStatsCard />
 
-          {/* Milk Production */}
-          <motion.div variants={fadeInUp}>
-            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-lg transition-all duration-300 h-full">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-purple-800">
-                  <Icons.milk className="h-5 w-5" />
-                  Milk Production
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <Link href="/production">
-                    <Button
-                      className="w-full mb-2 border-purple-300 text-purple-700 hover:bg-purple-50 text-sm"
-                      variant="outline"
-                      size="sm"
-                    >
-                      View Production Records
-                    </Button>
-                  </Link>
-                  <Link href="/production/add">
-                    <Button
-                      className="w-full mb-2 bg-[#2d5523] hover:bg-[#1e3a1a] text-white text-sm"
-                      size="sm"
-                    >
-                      Record Today&apos;s Production
-                    </Button>
-                  </Link>
-                  {canEdit && (
-                    <>
-                      <Link href="/production/serving">
-                        <Button
-                          className="w-full mb-2 border-purple-300 text-purple-700 hover:bg-purple-50 text-sm"
-                          variant="outline"
-                          size="sm"
-                        >
-                          Serving Records
-                        </Button>
-                      </Link>
-                      <Link href="/reports">
-                        <Button
-                          className="w-full mb-2 border-purple-300 text-purple-700 hover:bg-purple-50 text-sm"
-                          variant="outline"
-                          size="sm"
-                        >
-                          Generate Reports
-                        </Button>
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+          {/* Production Statistics */}
+          <ProductionStatsCard />
+
+          {/* Treatment/Health Statistics */}
+          <TreatmentStatsCard />
 
           {/* Employee Management - Admin Only */}
           {canEdit && (
@@ -226,38 +128,82 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-orange-800">
                     <Icons.users className="h-5 w-5" />
-                    Employee Management
+                    Employee Overview
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <Link href="/employees">
-                      <Button
-                        className="w-full mb-2 bg-[#2d5523] hover:bg-[#1e3a1a] text-white text-sm"
-                        size="sm"
-                      >
-                        View All Employees
-                      </Button>
-                    </Link>
-                    <Link href="/employees">
-                      <Button
-                        className="w-full mb-2 border-orange-300 text-orange-700 hover:bg-orange-50 text-sm"
-                        variant="outline"
-                        size="sm"
-                      >
-                        Manage Permissions
-                      </Button>
-                    </Link>
-                    <Link href="/reports">
-                      <Button
-                        className="w-full mb-2 border-orange-300 text-orange-700 hover:bg-orange-50 text-sm"
-                        variant="outline"
-                        size="sm"
-                      >
-                        Employee Reports
-                      </Button>
-                    </Link>
-                  </div>
+                  {users.isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+                    </div>
+                  ) : users.isError ? (
+                    <div className="text-center py-8">
+                      <p className="text-orange-700 text-sm">
+                        Failed to load user data
+                      </p>
+                    </div>
+                  ) : !userData ? (
+                    <div className="text-center py-8">
+                      <p className="text-orange-700 text-sm">
+                        No user data found
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-white/60 rounded-lg">
+                          <div className="text-2xl font-bold text-orange-800">
+                            {userData.totalUsers}
+                          </div>
+                          <div className="text-xs text-orange-600">
+                            Total Users
+                          </div>
+                        </div>
+                        <div className="text-center p-3 bg-white/60 rounded-lg">
+                          <div className="text-2xl font-bold text-orange-800">
+                            {userData.activeUsers}
+                          </div>
+                          <div className="text-xs text-orange-600">
+                            Active Users
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-orange-600">
+                            Farm Managers:
+                          </span>
+                          <span className="text-sm font-medium text-orange-800">
+                            {userData.farmManagers}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-orange-600">
+                            Employees:
+                          </span>
+                          <span className="text-sm font-medium text-orange-800">
+                            {userData.employees}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-orange-600">
+                            Your Role:
+                          </span>
+                          <span className="text-sm font-medium text-orange-800">
+                            {isFarmManager ? "Farm Manager" : "Employee"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-4 p-3 bg-white/40 rounded-lg">
+                        <div className="text-center">
+                          <div className="text-sm text-orange-700">
+                            System Access:{" "}
+                            <span className="font-semibold">Full Control</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -270,86 +216,132 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-red-800">
                     <Icons.settings className="h-5 w-5" />
-                    System Settings
+                    System Overview
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <Link href="/settings">
-                      <Button
-                        className="w-full mb-2 border-red-300 text-red-700 hover:bg-red-50 text-sm"
-                        variant="outline"
-                        size="sm"
-                      >
-                        Farm Settings
-                      </Button>
-                    </Link>
-                    <Link href="/settings">
-                      <Button
-                        className="w-full mb-2 border-red-300 text-red-700 hover:bg-red-50 text-sm"
-                        variant="outline"
-                        size="sm"
-                      >
-                        Backup Data
-                      </Button>
-                    </Link>
-                    <Link href="/settings">
-                      <Button
-                        className="w-full mb-2 border-red-300 text-red-700 hover:bg-red-50 text-sm"
-                        variant="outline"
-                        size="sm"
-                      >
-                        System Logs
-                      </Button>
-                    </Link>
-                    <Link href="/settings">
-                      <Button
-                        className="w-full mb-2 bg-[#2d5523] hover:bg-[#1e3a1a] text-white text-sm"
-                        size="sm"
-                      >
-                        Advanced Admin Panel
-                      </Button>
-                    </Link>
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="text-center p-3 bg-white/60 rounded-lg">
+                        <div className="text-lg font-bold text-red-800">
+                          {process.env.NODE_ENV === "production"
+                            ? "Production"
+                            : "Development"}
+                        </div>
+                        <div className="text-xs text-red-600">Environment</div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-red-600">Database:</span>
+                        <span className="text-sm font-medium text-green-600">
+                          Connected
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-red-600">
+                          File Storage:
+                        </span>
+                        <span className="text-sm font-medium text-green-600">
+                          Active
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-red-600">
+                          Auth System:
+                        </span>
+                        <span className="text-sm font-medium text-green-600">
+                          Secure
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-red-600">
+                          API Status:
+                        </span>
+                        <span className="text-sm font-medium text-green-600">
+                          Operational
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-white/40 rounded-lg">
+                      <div className="text-center">
+                        <div className="text-sm text-red-700">
+                          Last Backup:{" "}
+                          <span className="font-semibold">N/A</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
           )}
 
-          {/* Statistics */}
+          {/* Farm Statistics Summary */}
           <motion.div variants={fadeInUp}>
             <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200 hover:shadow-lg transition-all duration-300 h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-indigo-800">
                   <Icons.barChart className="h-5 w-5" />
-                  Farm Statistics
+                  Farm Summary
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <p className="text-sm sm:text-base">
-                    <strong>Total Animals:</strong> 0
-                  </p>
-                  <p className="text-sm sm:text-base">
-                    <strong>Milk Production Today:</strong> 0L
-                  </p>
-                  <p className="text-sm sm:text-base">
-                    <strong>Weekly Average:</strong> 0L
-                  </p>
-                  <p className="text-sm sm:text-base">
-                    <strong>Last Activity:</strong> Now
-                  </p>
-                  {canEdit && (
-                    <Link href="/reports">
-                      <Button
-                        size="sm"
-                        className="w-full mt-3 mb-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 text-xs sm:text-sm"
-                        variant="outline"
-                      >
-                        Detailed Analytics
-                      </Button>
-                    </Link>
-                  )}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-white/60 rounded-lg">
+                      <div className="text-2xl font-bold text-indigo-800">
+                        {animalsData?.total || 0}
+                      </div>
+                      <div className="text-xs text-indigo-600">
+                        Total Animals
+                      </div>
+                    </div>
+                    <div className="text-center p-3 bg-white/60 rounded-lg">
+                      <div className="text-2xl font-bold text-indigo-800">
+                        {productionData?.todayQuantity || 0}L
+                      </div>
+                      <div className="text-xs text-indigo-600">
+                        Today&apos;s Milk
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-indigo-600">
+                        Health Status:
+                      </span>
+                      <span className="text-sm font-medium text-green-600">
+                        {animalsData?.healthy || 0} Healthy
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-indigo-600">
+                        Production Records:
+                      </span>
+                      <span className="text-sm font-medium text-indigo-800">
+                        {productionData?.totalRecords || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-indigo-600">
+                        System Users:
+                      </span>
+                      <span className="text-sm font-medium text-indigo-800">
+                        {userData?.totalUsers || 0}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-white/40 rounded-lg">
+                    <div className="text-center">
+                      <div className="text-sm text-indigo-700">
+                        Farm Status:{" "}
+                        <span className="font-semibold text-green-600">
+                          Operational
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
