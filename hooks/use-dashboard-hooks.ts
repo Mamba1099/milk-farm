@@ -45,6 +45,25 @@ export interface UserStats {
   employees: number;
 }
 
+export interface SystemHealth {
+  environment: string;
+  database: {
+    status: string;
+    error?: string | null;
+  };
+  fileStorage: {
+    status: string;
+  };
+  authSystem: {
+    status: string;
+  };
+  api: {
+    status: string;
+  };
+  lastBackup: string | null;
+  timestamp: string;
+}
+
 export interface DashboardStats {
   animals: {
     total: number;
@@ -71,6 +90,7 @@ export interface DashboardStats {
     lastTreatmentDate: string | null;
   };
   users: UserStats;
+  systemHealth: SystemHealth;
 }
 
 // Hook to fetch animal statistics
@@ -259,22 +279,59 @@ export const useUserStats = () => {
     queryKey: ["dashboard", "users"],
     queryFn: async () => {
       try {
-        // Since there's no users API endpoint yet, we'll provide placeholder data
-        // This can be replaced with actual API call when users endpoint is available
+        const response = await apiClient.get("/users?stats=true");
+        return response.data.stats;
+      } catch (error) {
+        console.error("Error fetching user stats:", error);
+        // Fallback to basic data if API fails
         return {
           totalUsers: 1, // At least the current user exists
           activeUsers: 1,
           farmManagers: 1,
           employees: 0,
         };
-      } catch (error) {
-        console.error("Error fetching user stats:", error);
-        throw new Error("Failed to fetch user statistics");
       }
     },
     retry: 2,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+// Hook to fetch system health
+export const useSystemHealth = () => {
+  return useQuery<SystemHealth, Error>({
+    queryKey: ["dashboard", "systemHealth"],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get("/system/health");
+        return response.data.health;
+      } catch (error) {
+        console.error("Error fetching system health:", error);
+        // Fallback to basic data if API fails
+        return {
+          environment: process.env.NODE_ENV || "development",
+          database: {
+            status: "Unknown",
+            error: "Failed to check database status",
+          },
+          fileStorage: {
+            status: "Unknown",
+          },
+          authSystem: {
+            status: "Unknown",
+          },
+          api: {
+            status: "Unknown",
+          },
+          lastBackup: null,
+          timestamp: new Date().toISOString(),
+        };
+      }
+    },
+    retry: 2,
+    staleTime: 2 * 60 * 1000, // 2 minutes (shorter for health checks)
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -284,26 +341,31 @@ export const useDashboardStats = () => {
   const productionStats = useProductionStats();
   const treatmentStats = useTreatmentStats();
   const userStats = useUserStats();
+  const systemHealth = useSystemHealth();
 
   return {
     animals: animalStats,
     production: productionStats,
     treatments: treatmentStats,
     users: userStats,
+    systemHealth: systemHealth,
     isLoading:
       animalStats.isLoading ||
       productionStats.isLoading ||
       treatmentStats.isLoading ||
-      userStats.isLoading,
+      userStats.isLoading ||
+      systemHealth.isLoading,
     isError:
       animalStats.isError ||
       productionStats.isError ||
       treatmentStats.isError ||
-      userStats.isError,
+      userStats.isError ||
+      systemHealth.isError,
     error:
       animalStats.error ||
       productionStats.error ||
       treatmentStats.error ||
-      userStats.error,
+      userStats.error ||
+      systemHealth.error,
   };
 };
