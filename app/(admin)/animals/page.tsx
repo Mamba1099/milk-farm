@@ -108,21 +108,6 @@ export default function AnimalsPage() {
     }
   };
 
-  const getHealthStatusColor = (status: string) => {
-    switch (status) {
-      case "HEALTHY":
-        return "text-green-600 bg-green-100";
-      case "SICK":
-        return "text-red-600 bg-red-100";
-      case "RECOVERING":
-        return "text-yellow-600 bg-yellow-100";
-      case "QUARANTINED":
-        return "text-orange-600 bg-orange-100";
-      default:
-        return "text-gray-600 bg-gray-100";
-    }
-  };
-
   const getHealthColor = (status: string) => {
     switch (status) {
       case "HEALTHY":
