@@ -29,4 +29,4 @@ async function handleLogout(request: NextRequest) {
 }
 
 // Export wrapped handler with timeout
-export const POST = withApiTimeout(handleLogout, 10000); // 10 second timeout
+export const POST = withApiTimeout(handleLogout, 20000); // 10 second timeout

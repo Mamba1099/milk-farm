@@ -256,6 +256,6 @@ async function handleDeleteUser(
 }
 
 // Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleGetUser, 15000);
-export const PUT = withApiTimeout(handleUpdateUser, 15000);
-export const DELETE = withApiTimeout(handleDeleteUser, 15000);
+export const GET = withApiTimeout(handleGetUser, 20000);
+export const PUT = withApiTimeout(handleUpdateUser, 20000);
+export const DELETE = withApiTimeout(handleDeleteUser, 20000);

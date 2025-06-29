@@ -134,5 +134,5 @@ async function handleCreateTreatment(request: NextRequest) {
 }
 
 // Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleGetTreatments, 20000); // 20 second timeout
+export const GET = withApiTimeout(handleGetTreatments, 30000); // 20 second timeout
 export const POST = withApiTimeout(handleCreateTreatment, 25000); // 25 second timeout

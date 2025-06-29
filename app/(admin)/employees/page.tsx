@@ -296,18 +296,20 @@ export default function EmployeesPage() {
                   {filteredUsers.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow space-y-3 sm:space-y-0"
                     >
-                      <div className="flex items-center space-x-4">
-                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                           <Icons.user className="h-5 w-5 text-gray-600" />
                         </div>
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm font-medium text-gray-900 truncate">
                             {user.username}
                           </h4>
-                          <p className="text-sm text-gray-600">{user.email}</p>
-                          <div className="flex items-center space-x-2 mt-1">
+                          <p className="text-sm text-gray-600 truncate">
+                            {user.email}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
                             <span
                               className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                 user.role === "FARM_MANAGER"
@@ -328,12 +330,12 @@ export default function EmployeesPage() {
                       </div>
 
                       {canEdit && (
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setEditingUser(user)}
-                            className="text-xs"
+                            className="text-xs w-full sm:w-auto"
                           >
                             <Icons.settings className="h-3 w-3 mr-1" />
                             Edit
@@ -342,7 +344,7 @@ export default function EmployeesPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDeleteUser(user.id)}
-                            className="text-xs text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+                            className="text-xs text-red-600 hover:text-red-700 border-red-300 hover:border-red-400 w-full sm:w-auto"
                           >
                             <Icons.trash className="h-3 w-3 mr-1" />
                             Delete

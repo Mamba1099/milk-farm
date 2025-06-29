@@ -85,7 +85,7 @@ async function getProductionReport(startDate: Date, endDate: Date) {
           type: true,
         },
       },
-      user: {
+      recordedBy: {
         select: {
           username: true,
         },
@@ -95,7 +95,7 @@ async function getProductionReport(startDate: Date, endDate: Date) {
   });
 
   // Calculate summary statistics
-  const totalQuantity = productions.reduce((sum, p) => sum + p.quantity, 0);
+  const totalQuantity = productions.reduce((sum, p) => sum + p.total, 0);
   const averageDaily =
     totalQuantity /
     Math.max(
@@ -118,7 +118,7 @@ async function getProductionReport(startDate: Date, endDate: Date) {
           productions: [],
         };
       }
-      acc[key].totalQuantity += prod.quantity;
+      acc[key].totalQuantity += prod.total;
       acc[key].recordCount += 1;
       acc[key].productions.push(prod);
       return acc;
@@ -153,7 +153,7 @@ async function getProductionReport(startDate: Date, endDate: Date) {
 async function getAnimalsReport(startDate: Date, endDate: Date) {
   const animals = await prisma.animal.findMany({
     include: {
-      productions: {
+      productionRecords: {
         where: {
           date: {
             gte: startDate.toISOString(),
@@ -163,7 +163,7 @@ async function getAnimalsReport(startDate: Date, endDate: Date) {
       },
       treatments: {
         where: {
-          dateAdministered: {
+          treatedAt: {
             gte: startDate.toISOString(),
             lte: endDate.toISOString(),
           },
@@ -180,7 +180,7 @@ async function getAnimalsReport(startDate: Date, endDate: Date) {
   ).length;
   const sickAnimals = animals.filter((a) => a.healthStatus === "SICK").length;
   const injuredAnimals = animals.filter(
-    (a) => a.healthStatus === "INJURED"
+    (a) => a.healthStatus === "RECOVERING" || a.healthStatus === "QUARANTINED"
   ).length;
 
   const byType = animals.reduce((acc, animal) => {
@@ -202,10 +202,10 @@ async function getAnimalsReport(startDate: Date, endDate: Date) {
       },
       details: animals.map((animal) => ({
         ...animal,
-        productionCount: animal.productions.length,
+        productionCount: animal.productionRecords.length,
         treatmentCount: animal.treatments.length,
-        totalProduction: animal.productions.reduce(
-          (sum, p) => sum + p.quantity,
+        totalProduction: animal.productionRecords.reduce(
+          (sum, p) => sum + p.total,
           0
         ),
       })),
@@ -216,7 +216,7 @@ async function getAnimalsReport(startDate: Date, endDate: Date) {
 async function getTreatmentsReport(startDate: Date, endDate: Date) {
   const treatments = await prisma.treatment.findMany({
     where: {
-      dateAdministered: {
+      treatedAt: {
         gte: startDate.toISOString(),
         lte: endDate.toISOString(),
       },
@@ -231,7 +231,7 @@ async function getTreatmentsReport(startDate: Date, endDate: Date) {
         },
       },
     },
-    orderBy: { dateAdministered: "desc" },
+    orderBy: { treatedAt: "desc" },
   });
 
   // Calculate statistics
@@ -239,7 +239,7 @@ async function getTreatmentsReport(startDate: Date, endDate: Date) {
   const totalCost = treatments.reduce((sum, t) => sum + (t.cost || 0), 0);
 
   const byType = treatments.reduce((acc, treatment) => {
-    acc[treatment.treatmentType] = (acc[treatment.treatmentType] || 0) + 1;
+    acc[treatment.treatment] = (acc[treatment.treatment] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -303,7 +303,7 @@ async function getOverviewReport(startDate: Date, endDate: Date) {
     }),
     prisma.treatment.findMany({
       where: {
-        dateAdministered: {
+        treatedAt: {
           gte: startDate.toISOString(),
           lte: endDate.toISOString(),
         },
@@ -311,7 +311,7 @@ async function getOverviewReport(startDate: Date, endDate: Date) {
     }),
   ]);
 
-  const totalProduction = productions.reduce((sum, p) => sum + p.quantity, 0);
+  const totalProduction = productions.reduce((sum, p) => sum + p.total, 0);
   const totalTreatmentCost = treatments.reduce(
     (sum, t) => sum + (t.cost || 0),
     0
@@ -344,4 +344,4 @@ async function handleHealthCheck() {
 
 // Export wrapped handlers with timeout
 export const GET = withApiTimeout(handleGetReports, 30000); // 30 second timeout for reports
-export const POST = withApiTimeout(handleHealthCheck, 5000); // 5 second timeout for health check
+export const POST = withApiTimeout(handleHealthCheck, 15000); // 5 second timeout for health check

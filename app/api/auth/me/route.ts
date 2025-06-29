@@ -64,4 +64,4 @@ async function handleAuthMe(request: NextRequest) {
 }
 
 // Export the wrapped handler with timeout
-export const GET = withApiTimeout(handleAuthMe, 15000); // 15 second timeout
+export const GET = withApiTimeout(handleAuthMe, 20000); // 15 second timeout

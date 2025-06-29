@@ -209,6 +209,6 @@ async function handleHealthCheck() {
 }
 
 // Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleGetUsers, 15000); // 15 second timeout
-export const POST = withApiTimeout(handleCreateUser, 15000); // 15 second timeout
-export const PUT = withApiTimeout(handleHealthCheck, 5000); // 5 second timeout for health check
+export const GET = withApiTimeout(handleGetUsers, 20000); // 15 second timeout
+export const POST = withApiTimeout(handleCreateUser, 20000); // 15 second timeout
+export const PUT = withApiTimeout(handleHealthCheck, 10000); // 5 second timeout for health check

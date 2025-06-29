@@ -287,6 +287,6 @@ async function handleDeleteAnimal(
 }
 
 // Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleGetAnimal, 20000); // 20 second timeout
+export const GET = withApiTimeout(handleGetAnimal, 30000); // 20 second timeout
 export const PUT = withApiTimeout(handleUpdateAnimal, 30000); // 30 second timeout  
-export const DELETE = withApiTimeout(handleDeleteAnimal, 15000); // 15 second timeout
+export const DELETE = withApiTimeout(handleDeleteAnimal, 20000); // 15 second timeout

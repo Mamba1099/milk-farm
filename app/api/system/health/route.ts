@@ -91,5 +91,5 @@ async function handleHealthCheck() {
 }
 
 // Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleSystemHealth, 15000); // 15 second timeout
-export const POST = withApiTimeout(handleHealthCheck, 5000);
+export const GET = withApiTimeout(handleSystemHealth, 20000); // 15 second timeout
+export const POST = withApiTimeout(handleHealthCheck, 10000);

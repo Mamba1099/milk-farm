@@ -199,5 +199,5 @@ async function handleCreateProduction(request: NextRequest) {
 }
 
 // Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleGetProduction, 20000); // 20 second timeout
+export const GET = withApiTimeout(handleGetProduction, 30000); // 20 second timeout
 export const POST = withApiTimeout(handleCreateProduction, 25000); // 25 second timeout

@@ -3,7 +3,7 @@ import axios from "axios";
 // Create axios instance with base configuration
 export const apiClient = axios.create({
   baseURL: "/api", // Use relative path for API calls
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },

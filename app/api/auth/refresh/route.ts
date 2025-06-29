@@ -109,4 +109,4 @@ async function handleRefreshToken(request: NextRequest) {
 }
 
 // Export wrapped handler with timeout
-export const POST = withApiTimeout(handleRefreshToken, 15000); // 15 second timeout
+export const POST = withApiTimeout(handleRefreshToken, 20000); // 15 second timeout
