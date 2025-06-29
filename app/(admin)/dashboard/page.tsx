@@ -37,12 +37,13 @@ const staggerContainer = {
 
 export default function DashboardPage() {
   const { user, canEdit, isFarmManager } = useAuth();
-  const { animals, production, users } = useDashboardStats();
+  const { animals, production, users, systemHealth } = useDashboardStats();
 
   // Get data with fallbacks
   const animalsData = animals.data;
   const productionData = production.data;
   const userData = users.data;
+  const systemData = systemHealth.data;
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-[#f7f5f2] to-[#e8f5e9]">
@@ -220,58 +221,108 @@ export default function DashboardPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 gap-3">
-                      <div className="text-center p-3 bg-white/60 rounded-lg">
-                        <div className="text-lg font-bold text-red-800">
-                          {process.env.NODE_ENV === "production"
-                            ? "Production"
-                            : "Development"}
-                        </div>
-                        <div className="text-xs text-red-600">Environment</div>
-                      </div>
+                  {systemHealth.isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-red-600">Database:</span>
-                        <span className="text-sm font-medium text-green-600">
-                          Connected
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-red-600">
-                          File Storage:
-                        </span>
-                        <span className="text-sm font-medium text-green-600">
-                          Active
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-red-600">
-                          Auth System:
-                        </span>
-                        <span className="text-sm font-medium text-green-600">
-                          Secure
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-red-600">
-                          API Status:
-                        </span>
-                        <span className="text-sm font-medium text-green-600">
-                          Operational
-                        </span>
-                      </div>
+                  ) : systemHealth.isError ? (
+                    <div className="text-center py-8">
+                      <p className="text-red-700 text-sm">
+                        Failed to load system health
+                      </p>
                     </div>
-                    <div className="mt-4 p-3 bg-white/40 rounded-lg">
-                      <div className="text-center">
-                        <div className="text-sm text-red-700">
-                          Last Backup:{" "}
-                          <span className="font-semibold">N/A</span>
+                  ) : !systemData ? (
+                    <div className="text-center py-8">
+                      <p className="text-red-700 text-sm">
+                        No system data found
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 gap-3">
+                        <div className="text-center p-3 bg-white/60 rounded-lg">
+                          <div className="text-lg font-bold text-red-800">
+                            {systemData.environment === "production"
+                              ? "Production"
+                              : "Development"}
+                          </div>
+                          <div className="text-xs text-red-600">
+                            Environment
+                          </div>
                         </div>
                       </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-red-600">
+                            Database:
+                          </span>
+                          <span
+                            className={`text-sm font-medium ${
+                              systemData.database.status === "Connected"
+                                ? "text-green-600"
+                                : systemData.database.status === "Error"
+                                ? "text-red-600"
+                                : "text-yellow-600"
+                            }`}
+                          >
+                            {systemData.database.status}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-red-600">
+                            File Storage:
+                          </span>
+                          <span
+                            className={`text-sm font-medium ${
+                              systemData.fileStorage.status === "Active"
+                                ? "text-green-600"
+                                : "text-yellow-600"
+                            }`}
+                          >
+                            {systemData.fileStorage.status}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-red-600">
+                            Auth System:
+                          </span>
+                          <span
+                            className={`text-sm font-medium ${
+                              systemData.authSystem.status === "Secure"
+                                ? "text-green-600"
+                                : "text-yellow-600"
+                            }`}
+                          >
+                            {systemData.authSystem.status}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-red-600">
+                            API Status:
+                          </span>
+                          <span
+                            className={`text-sm font-medium ${
+                              systemData.api.status === "Operational"
+                                ? "text-green-600"
+                                : "text-yellow-600"
+                            }`}
+                          >
+                            {systemData.api.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-4 p-3 bg-white/40 rounded-lg">
+                        <div className="text-center">
+                          <div className="text-sm text-red-700">
+                            Last Backup:{" "}
+                            <span className="font-semibold">
+                              {systemData.lastBackup || "N/A"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
