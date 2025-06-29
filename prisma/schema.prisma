@@ -87,13 +87,11 @@ model Animal {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  // Self-referencing relationships for family tree
   mother        Animal?  @relation("MotherChildren", fields: [motherId], references: [id])
   father        Animal?  @relation("FatherChildren", fields: [fatherId], references: [id])
   motherOf      Animal[] @relation("MotherChildren")
   fatherOf      Animal[] @relation("FatherChildren")
 
-  // Relations
   treatments        Treatment[]
   disposals         Disposal[]
   servings          Serving[]
@@ -127,7 +125,7 @@ model Disposal {
   id           String         @id @default(cuid())
   animalId     String         @unique
   reason       DisposalReason
-  amount       Float?         // Sale amount if sold
+  amount       Float?
   disposedAt   DateTime       @default(now())
   disposedById String
   notes        String?
@@ -144,11 +142,11 @@ model Disposal {
 model Serving {
   id              String         @id @default(cuid())
   femaleId        String
-  maleId          String?        // Optional if using artificial insemination
+  maleId          String?
   servedAt        DateTime       @default(now())
   outcome         ServingOutcome @default(PENDING)
-  pregnancyDate   DateTime?      // Expected delivery date
-  actualBirthDate DateTime?      // Actual birth date when calf is born
+  pregnancyDate   DateTime?   
+  actualBirthDate DateTime?   
   servedById      String
   notes           String?
   createdAt       DateTime       @default(now())
@@ -165,9 +163,9 @@ model Production {
   id           String          @id @default(cuid())
   animalId     String
   date         DateTime        @default(now())
-  morning      Float           @default(0) // Morning milk in liters
-  evening      Float           @default(0) // Evening milk in liters
-  total        Float           // Total milk for the day
+  morning      Float           @default(0)
+  evening      Float           @default(0)
+  total        Float          
   allocation   MilkAllocation
   recordedById String
   notes        String?
