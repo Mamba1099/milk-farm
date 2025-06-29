@@ -42,7 +42,7 @@ export const API_ENDPOINTS = {
     login: "/auth",
     logout: "/auth/logout",
     refresh: "/auth/refresh",
-    profile: "/profile",
+    profile: "/auth",
   },
   // Add more endpoints as needed
 } as const;
