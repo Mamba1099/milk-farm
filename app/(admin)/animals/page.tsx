@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -108,6 +109,21 @@ export default function AnimalsPage() {
   };
 
   const getHealthStatusColor = (status: string) => {
+    switch (status) {
+      case "HEALTHY":
+        return "text-green-600 bg-green-100";
+      case "SICK":
+        return "text-red-600 bg-red-100";
+      case "RECOVERING":
+        return "text-yellow-600 bg-yellow-100";
+      case "QUARANTINED":
+        return "text-orange-600 bg-orange-100";
+      default:
+        return "text-gray-600 bg-gray-100";
+    }
+  };
+
+  const getHealthColor = (status: string) => {
     switch (status) {
       case "HEALTHY":
         return "text-green-600 bg-green-100";
@@ -285,117 +301,158 @@ export default function AnimalsPage() {
 
                 return (
                   <motion.div key={animalData.id} variants={cardVariants}>
-                    <Card className="p-4 sm:p-6 hover:shadow-lg transition-shadow bg-white h-full">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
-                            {animalData.name ||
-                              `Animal ${animalData.tagNumber}`}
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            Tag: {animalData.tagNumber}
-                          </p>
-                        </div>
-                        <div className="flex gap-1 sm:gap-2 ml-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="p-1.5 sm:p-2"
-                          >
-                            <Eye size={14} className="sm:w-4 sm:h-4" />
-                          </Button>
-                          {user?.role === "FARM_MANAGER" && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="p-1.5 sm:p-2"
-                              >
-                                <Edit2 size={14} className="sm:w-4 sm:h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  handleDeleteAnimal(animalData.id)
-                                }
-                                className="text-red-600 hover:text-red-700 p-1.5 sm:p-2"
-                              >
-                                <Trash2 size={14} className="sm:w-4 sm:h-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 sm:space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600 text-sm">Type:</span>
+                    <Card className="overflow-hidden hover:shadow-lg transition-shadow bg-white h-full">
+                      {/* Animal Image */}
+                      <div className="relative h-48 bg-gray-100">
+                        {animalData.image ? (
+                          <Image
+                            src={animalData.image}
+                            alt={
+                              animalData.name ||
+                              `Animal ${animalData.tagNumber}`
+                            }
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-100 to-gray-200">
+                            <div className="text-center">
+                              <div className="w-16 h-16 mx-auto mb-2 bg-gray-300 rounded-full flex items-center justify-center">
+                                <svg
+                                  className="w-8 h-8 text-gray-500"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </div>
+                              <p className="text-xs text-gray-500">No Image</p>
+                            </div>
+                          </div>
+                        )}
+                        {/* Health Status Badge */}
+                        <div className="absolute top-2 right-2">
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(
-                              animalData.type
-                            )}`}
-                          >
-                            {animalData.type}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600 text-sm">Gender:</span>
-                          <span className="font-medium text-sm">
-                            {animalData.gender}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600 text-sm">Health:</span>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${getHealthStatusColor(
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getHealthColor(
                               animalData.healthStatus
                             )}`}
                           >
                             {animalData.healthStatus}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600 text-sm">Age:</span>
-                          <span className="font-medium text-sm">
-                            {Math.floor(
-                              (new Date().getTime() -
-                                new Date(animalData.birthDate).getTime()) /
-                                (1000 * 60 * 60 * 24 * 365)
-                            )}{" "}
-                            years
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600 text-sm">
-                            Matured:
-                          </span>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              animalData.isMatured
-                                ? "text-green-600 bg-green-100"
-                                : "text-yellow-600 bg-yellow-100"
-                            }`}
-                          >
-                            {animalData.isMatured ? "Yes" : "No"}
-                          </span>
-                        </div>
                       </div>
 
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <div className="flex justify-between text-xs sm:text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Heart size={12} className="sm:w-3.5 sm:h-3.5" />
-                            <span>
-                              {animalData.treatments?.length || 0} treatments
+                      {/* Card Content */}
+                      <div className="p-4 sm:p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+                              {animalData.name ||
+                                `Animal ${animalData.tagNumber}`}
+                            </h3>
+                            <p className="text-gray-600 text-sm">
+                              Tag: {animalData.tagNumber}
+                            </p>
+                          </div>
+                          <div className="flex gap-1 sm:gap-2 ml-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="p-1.5 sm:p-2"
+                            >
+                              <Eye size={14} className="sm:w-4 sm:h-4" />
+                            </Button>
+                            {user?.role === "FARM_MANAGER" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="p-1.5 sm:p-2"
+                                >
+                                  <Edit2 size={14} className="sm:w-4 sm:h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    handleDeleteAnimal(animalData.id)
+                                  }
+                                  className="text-red-600 hover:text-red-700 p-1.5 sm:p-2"
+                                >
+                                  <Trash2 size={14} className="sm:w-4 sm:h-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>{" "}
+                        <div className="space-y-2 sm:space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600 text-sm">Type:</span>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(
+                                animalData.type
+                              )}`}
+                            >
+                              {animalData.type}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Activity size={12} className="sm:w-3.5 sm:h-3.5" />
-                            <span>
-                              {animalData.productionRecords?.length || 0}{" "}
-                              records
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600 text-sm">
+                              Gender:
                             </span>
+                            <span className="font-medium text-sm">
+                              {animalData.gender}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600 text-sm">Age:</span>
+                            <span className="font-medium text-sm">
+                              {Math.floor(
+                                (new Date().getTime() -
+                                  new Date(animalData.birthDate).getTime()) /
+                                  (1000 * 60 * 60 * 24 * 365)
+                              )}{" "}
+                              years
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600 text-sm">
+                              Matured:
+                            </span>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                animalData.isMatured
+                                  ? "text-green-600 bg-green-100"
+                                  : "text-yellow-600 bg-yellow-100"
+                              }`}
+                            >
+                              {animalData.isMatured ? "Yes" : "No"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <div className="flex justify-between text-xs sm:text-sm text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <Heart size={12} className="sm:w-3.5 sm:h-3.5" />
+                              <span>
+                                {animalData.treatments?.length || 0} treatments
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Activity
+                                size={12}
+                                className="sm:w-3.5 sm:h-3.5"
+                              />
+                              <span>
+                                {animalData.productionRecords?.length || 0}{" "}
+                                records
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>

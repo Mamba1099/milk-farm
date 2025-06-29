@@ -35,7 +35,13 @@ export const CreateAnimalSchema = z.object({
   fatherId: z.string().optional(),
   healthStatus: HealthStatusSchema.default("HEALTHY"),
   weight: z.number().positive().optional(),
-  image: z.union([z.instanceof(File), z.string().url(), z.null()]).optional(),
+  image: z
+    .union([
+      z.string().url(), // Full URL
+      z.string().startsWith("/"), // Relative path starting with /
+      z.null(),
+    ])
+    .optional(),
   notes: z.string().optional(),
 });
 
