@@ -434,13 +434,16 @@ export default function DashboardPage() {
                           Total Production
                         </p>
                         <p className="text-lg font-bold text-blue-800">
-                          {productionData.totalQuantity.toLocaleString()}L
+                          {(
+                            productionData?.totalQuantity || 0
+                          ).toLocaleString()}
+                          L
                         </p>
                       </div>
                       <div className="bg-green-50 p-3 rounded-lg">
                         <p className="text-xs text-green-600">Daily Average</p>
                         <p className="text-lg font-bold text-green-800">
-                          {productionData.averageDaily.toFixed(1)}L
+                          {(productionData?.averageDaily || 0).toFixed(1)}L
                         </p>
                       </div>
                     </div>
@@ -449,7 +452,8 @@ export default function DashboardPage() {
                         Per Animal Average
                       </p>
                       <p className="text-lg font-bold text-purple-800">
-                        {productionData.averagePerAnimal.toFixed(1)}L/day
+                        {(productionData?.averagePerAnimal || 0).toFixed(1)}
+                        L/day
                       </p>
                     </div>
                     <div className="mt-4">
@@ -459,7 +463,7 @@ export default function DashboardPage() {
                         </span>
                         <span className="text-xs text-gray-500">
                           {(
-                            (productionData.averagePerAnimal / 25) *
+                            ((productionData?.averagePerAnimal || 0) / 25) *
                             100
                           ).toFixed(1)}
                           %
@@ -471,7 +475,8 @@ export default function DashboardPage() {
                           style={{
                             width: `${Math.min(
                               100,
-                              (productionData.averagePerAnimal / 25) * 100
+                              ((productionData?.averagePerAnimal || 0) / 25) *
+                                100
                             )}%`,
                           }}
                         />
@@ -515,7 +520,7 @@ export default function DashboardPage() {
                       <div className="bg-green-50 p-3 rounded-lg">
                         <p className="text-xs text-green-600">Healthy</p>
                         <p className="text-lg font-bold text-green-800">
-                          {animalsData.healthy}
+                          {animalsData?.healthy || 0}
                         </p>
                       </div>
                       <div className="bg-yellow-50 p-3 rounded-lg">
@@ -523,7 +528,8 @@ export default function DashboardPage() {
                           Need Attention
                         </p>
                         <p className="text-lg font-bold text-yellow-800">
-                          {animalsData.sick + animalsData.injured}
+                          {(animalsData?.sick || 0) +
+                            (animalsData?.injured || 0)}
                         </p>
                       </div>
                     </div>
@@ -537,7 +543,8 @@ export default function DashboardPage() {
                           </span>
                           <span>
                             {(
-                              (animalsData.healthy / animalsData.total) *
+                              ((animalsData?.healthy || 0) /
+                                (animalsData?.total || 1)) *
                               100
                             ).toFixed(1)}
                             %
@@ -548,14 +555,16 @@ export default function DashboardPage() {
                             className="bg-green-500 h-2 rounded-full transition-all duration-1000"
                             style={{
                               width: `${
-                                (animalsData.healthy / animalsData.total) * 100
+                                ((animalsData?.healthy || 0) /
+                                  (animalsData?.total || 1)) *
+                                100
                               }%`,
                             }}
                           />
                         </div>
                       </div>
 
-                      {animalsData.sick > 0 && (
+                      {(animalsData?.sick || 0) > 0 && (
                         <div className="space-y-1">
                           <div className="flex justify-between text-xs">
                             <span className="font-medium text-yellow-700">
@@ -563,7 +572,8 @@ export default function DashboardPage() {
                             </span>
                             <span>
                               {(
-                                (animalsData.sick / animalsData.total) *
+                                ((animalsData?.sick || 0) /
+                                  (animalsData?.total || 1)) *
                                 100
                               ).toFixed(1)}
                               %
@@ -574,7 +584,9 @@ export default function DashboardPage() {
                               className="bg-yellow-500 h-2 rounded-full transition-all duration-1000"
                               style={{
                                 width: `${
-                                  (animalsData.sick / animalsData.total) * 100
+                                  ((animalsData?.sick || 0) /
+                                    (animalsData?.total || 1)) *
+                                  100
                                 }%`,
                               }}
                             />
@@ -582,7 +594,7 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {animalsData.injured > 0 && (
+                      {(animalsData?.injured || 0) > 0 && (
                         <div className="space-y-1">
                           <div className="flex justify-between text-xs">
                             <span className="font-medium text-red-700">
@@ -590,7 +602,8 @@ export default function DashboardPage() {
                             </span>
                             <span>
                               {(
-                                (animalsData.injured / animalsData.total) *
+                                ((animalsData?.injured || 0) /
+                                  (animalsData?.total || 1)) *
                                 100
                               ).toFixed(1)}
                               %
@@ -601,7 +614,8 @@ export default function DashboardPage() {
                               className="bg-red-500 h-2 rounded-full transition-all duration-1000"
                               style={{
                                 width: `${
-                                  (animalsData.injured / animalsData.total) *
+                                  ((animalsData?.injured || 0) /
+                                    (animalsData?.total || 1)) *
                                   100
                                 }%`,
                               }}
