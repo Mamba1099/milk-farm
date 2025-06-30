@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
 import { useState } from "react";
 import {
-  useAnimalStats,
+  useAnimalsStats,
   useProductionStats,
-  useTreatmentStats,
+  useTreatmentsStats,
 } from "@/hooks/use-dashboard-hooks";
 import {
   useProductionReport,
@@ -62,11 +62,11 @@ export default function AnalyticsPage() {
   const [endDate, setEndDate] = useState("");
 
   // Fetch real-time stats
-  const { data: animalsStats, isLoading: animalsLoading } = useAnimalStats();
+  const { data: animalsStats, isLoading: animalsLoading } = useAnimalsStats();
   const { data: productionStats, isLoading: productionLoading } =
     useProductionStats();
   const { data: treatmentsStats, isLoading: treatmentsLoading } =
-    useTreatmentStats();
+    useTreatmentsStats();
 
   // Fetch detailed reports for charts
   const { data: productionReport } = useProductionReport(startDate, endDate);
