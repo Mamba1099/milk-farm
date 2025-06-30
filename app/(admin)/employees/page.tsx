@@ -64,6 +64,8 @@ export default function EmployeesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Fetch users from backend
   const { data: usersResponse, isLoading, error } = useUsers(currentPage, 10);
@@ -114,12 +116,14 @@ export default function EmployeesPage() {
       email?: string;
       role?: "FARM_MANAGER" | "EMPLOYEE";
       password?: string;
+      image?: File;
     }
   ) => {
     try {
       setFormErrors({});
       await updateUserMutation.mutateAsync({ id, data: userData });
       setEditingUser(null);
+      resetImageUpload();
       toast({
         title: "Success",
         description: "Employee updated successfully",
@@ -159,6 +163,44 @@ export default function EmployeesPage() {
         variant: "destructive",
       });
     }
+  };
+
+  // Image handling functions
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "Image must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Error",
+          description: "Please select a valid image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const resetImageUpload = () => {
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   if (isLoading) {
@@ -389,7 +431,10 @@ export default function EmployeesPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setEditingUser(user)}
+                            onClick={() => {
+                              setEditingUser(user);
+                              resetImageUpload();
+                            }}
                             className="text-xs w-full sm:w-auto"
                           >
                             <Icons.settings className="h-3 w-3 mr-1" />
@@ -675,6 +720,7 @@ export default function EmployeesPage() {
                     email?: string;
                     role?: "FARM_MANAGER" | "EMPLOYEE";
                     password?: string;
+                    image?: File;
                   } = {};
 
                   if (username !== editingUser.username)
@@ -682,11 +728,47 @@ export default function EmployeesPage() {
                   if (email !== editingUser.email) updateData.email = email;
                   if (role !== editingUser.role) updateData.role = role;
                   if (password) updateData.password = password;
+                  if (imageFile) updateData.image = imageFile;
 
                   handleUpdateUser(editingUser.id, updateData);
                 }}
               >
                 <div className="space-y-4">
+                  {/* Image Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Profile Image
+                    </label>
+                    <div className="flex items-center space-x-4">
+                      <div className="relative h-20 w-20 rounded-full overflow-hidden bg-gray-100">
+                        {imagePreview ? (
+                          <Image
+                            src={imagePreview}
+                            alt="Preview"
+                            fill
+                            className="object-cover"
+                          />
+                        ) : editingUser.image ? (
+                          <Image
+                            src={editingUser.image}
+                            alt="Current"
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center">
+                            <Icons.user className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <Input
                       name="username"
@@ -762,6 +844,7 @@ export default function EmployeesPage() {
                       onClick={() => {
                         setEditingUser(null);
                         setFormErrors({});
+                        resetImageUpload();
                       }}
                     >
                       Cancel

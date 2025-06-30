@@ -27,6 +27,7 @@ export interface UpdateUserInput {
   email?: string;
   role?: "FARM_MANAGER" | "EMPLOYEE";
   password?: string;
+  image?: File;
 }
 
 export interface UsersResponse {
@@ -104,8 +105,35 @@ export const useUpdateUser = () => {
   >({
     mutationFn: async ({ id, data }) => {
       try {
-        const response = await apiClient.put(`/users/${id}`, data);
-        return response.data;
+        // Check if we have a file to upload
+        if (data.image) {
+          // Create FormData for file upload
+          const formData = new FormData();
+          if (data.username && data.username.trim() !== "") {
+            formData.append("username", data.username);
+          }
+          if (data.email && data.email.trim() !== "") {
+            formData.append("email", data.email);
+          }
+          if (data.role) {
+            formData.append("role", data.role);
+          }
+          if (data.password && data.password.trim() !== "") {
+            formData.append("password", data.password);
+          }
+          formData.append("image", data.image);
+
+          const response = await apiClient.put(`/users/${id}`, formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          });
+          return response.data;
+        } else {
+          // Regular JSON update without file
+          const response = await apiClient.put(`/users/${id}`, data);
+          return response.data;
+        }
       } catch (error) {
         const apiError = handleApiError(error);
         throw new Error(apiError.message);

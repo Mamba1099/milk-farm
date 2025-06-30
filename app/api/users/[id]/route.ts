@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { withApiTimeout } from "@/lib/api-timeout";
 import { verifyToken } from "@/lib/jwt-utils";
 import bcrypt from "bcryptjs";
+import { uploadUserAvatar } from "@/lib/file-storage";
 
 async function handleGetUser(
   request: NextRequest,
@@ -110,8 +111,30 @@ async function handleUpdateUser(
     }
 
     const { id } = await params;
-    const body = await request.json();
-    const { username, email, role, password } = body;
+
+    // Check if request contains multipart form data (image upload)
+    const contentType = request.headers.get("content-type");
+    let username, email, role, password, imageFile;
+
+    if (contentType?.includes("multipart/form-data")) {
+      // Handle form data with image upload
+      const formData = await request.formData();
+      username = formData.get("username")?.toString() || undefined;
+      email = formData.get("email")?.toString() || undefined;
+      role = formData.get("role")?.toString() || undefined;
+      password = formData.get("password")?.toString() || undefined;
+      imageFile = formData.get("image") as File;
+
+      // Convert empty strings to undefined
+      if (username === "") username = undefined;
+      if (email === "") email = undefined;
+      if (role === "") role = undefined;
+      if (password === "") password = undefined;
+    } else {
+      // Handle regular JSON data
+      const body = await request.json();
+      ({ username, email, role, password } = body);
+    }
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -123,7 +146,7 @@ async function handleUpdateUser(
     }
 
     // Validate fields if provided
-    if (username !== undefined) {
+    if (username !== undefined && username !== null && username !== "") {
       if (username.length < 3) {
         return NextResponse.json(
           { error: "Username must be at least 3 characters long" },
@@ -142,7 +165,7 @@ async function handleUpdateUser(
       }
     }
 
-    if (email !== undefined) {
+    if (email !== undefined && email !== null && email !== "") {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return NextResponse.json(
@@ -152,7 +175,7 @@ async function handleUpdateUser(
       }
     }
 
-    if (password !== undefined && password !== "") {
+    if (password !== undefined && password !== null && password !== "") {
       if (password.length < 8) {
         return NextResponse.json(
           { error: "Password must be at least 8 characters long" },
@@ -171,7 +194,12 @@ async function handleUpdateUser(
       }
     }
 
-    if (role !== undefined && !["FARM_MANAGER", "EMPLOYEE"].includes(role)) {
+    if (
+      role !== undefined &&
+      role !== null &&
+      role !== "" &&
+      !["FARM_MANAGER", "EMPLOYEE"].includes(role)
+    ) {
       return NextResponse.json(
         { error: "Invalid role. Must be FARM_MANAGER or EMPLOYEE" },
         { status: 400 }
@@ -184,15 +212,29 @@ async function handleUpdateUser(
       email?: string;
       role?: string;
       password?: string;
+      image?: string;
     } = {};
 
-    if (username) updateData.username = username;
-    if (email) updateData.email = email;
+    if (username && username.trim() !== "") updateData.username = username;
+    if (email && email.trim() !== "") updateData.email = email;
     if (role && ["FARM_MANAGER", "EMPLOYEE"].includes(role)) {
       updateData.role = role;
     }
-    if (password) {
+    if (password && password.trim() !== "") {
       updateData.password = await bcrypt.hash(password, 12);
+    }
+
+    // Handle image upload if provided
+    if (imageFile && imageFile.size > 0) {
+      const imageUrl = await uploadUserAvatar(imageFile);
+      if (imageUrl) {
+        updateData.image = imageUrl;
+      } else {
+        return NextResponse.json(
+          { error: "Failed to upload image" },
+          { status: 500 }
+        );
+      }
     }
 
     // Check for username/email conflicts
