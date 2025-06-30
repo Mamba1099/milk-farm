@@ -14,10 +14,12 @@ interface Animal {
   type: "COW" | "BULL" | "CALF";
   gender: "MALE" | "FEMALE";
   birthDate: string;
+  expectedMaturityDate?: string | null;
   weight?: number | null;
   healthStatus: "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED";
   image?: string | null;
   isMatured: boolean;
+  isReadyForProduction: boolean;
   notes?: string | null;
   mother?: { id: string; tagNumber: string; name?: string | null } | null;
   father?: { id: string; tagNumber: string; name?: string | null } | null;
@@ -164,9 +166,13 @@ export function AnimalDetailsDialog({
                       {animal.healthStatus}
                     </span>
                   </div>
+                  <div></div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Maturity
+                      Maturity Status
                     </label>
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -176,6 +182,20 @@ export function AnimalDetailsDialog({
                       }`}
                     >
                       {animal.isMatured ? "Matured" : "Young"}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Production Ready
+                    </label>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        animal.isReadyForProduction
+                          ? "text-green-600 bg-green-100"
+                          : "text-red-600 bg-red-100"
+                      }`}
+                    >
+                      {animal.isReadyForProduction ? "Ready" : "Not Ready"}
                     </span>
                   </div>
                 </div>
@@ -281,23 +301,62 @@ export function AnimalDetailsDialog({
 
             {/* Birth Information */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">Birth Information</h3>
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <label className="block text-sm font-medium text-blue-700">
-                      Birth Date
-                    </label>
-                    <p className="font-semibold">
-                      {new Date(animal.birthDate).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
+              <h3 className="text-lg font-semibold mb-3">
+                Birth & Maturity Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <label className="block text-sm font-medium text-blue-700">
+                        Birth Date
+                      </label>
+                      <p className="font-semibold">
+                        {new Date(animal.birthDate).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
+                {animal.expectedMaturityDate && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-5 w-5 text-green-600" />
+                      <div>
+                        <label className="block text-sm font-medium text-green-700">
+                          Expected Maturity Date
+                        </label>
+                        <p className="font-semibold">
+                          {new Date(
+                            animal.expectedMaturityDate
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                        <p className="text-xs text-green-600">
+                          {new Date(animal.expectedMaturityDate) <= new Date()
+                            ? "Maturity date has passed"
+                            : `${Math.ceil(
+                                (new Date(
+                                  animal.expectedMaturityDate
+                                ).getTime() -
+                                  new Date().getTime()) /
+                                  (1000 * 60 * 60 * 24)
+                              )} days remaining`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
