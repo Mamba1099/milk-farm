@@ -52,7 +52,6 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
-  const { toast } = useToast();
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Use auth error handler hook
