@@ -147,23 +147,22 @@ async function handleCreateAnimal(request: NextRequest) {
     if (contentType.includes("multipart/form-data")) {
       // Handle form data (with potential file upload)
       const formData = await request.formData();
+      data = Object.fromEntries(formData.entries());
       imageFile = formData.get("image") as File;
-
-      // Extract form data excluding the image file
-      const entries = Array.from(formData.entries()).filter(
-        ([key]) => key !== "image"
-      );
-      data = Object.fromEntries(entries);
     } else {
       // Handle JSON data
       const body = await request.json();
       data = body;
     }
 
+    // Debug: Log received data
     console.log("Received data:", data);
     console.log("Content type:", contentType);
+
+    // Handle image upload if present
     let imageUrl = null;
     if (imageFile && imageFile.size > 0) {
+      // Validate image file
       const validation = validateImageFile(imageFile);
       if (!validation.valid) {
         return NextResponse.json({ error: validation.error }, { status: 400 });
@@ -178,22 +177,18 @@ async function handleCreateAnimal(request: NextRequest) {
       }
     }
 
+    // Process form data
     const animalData = {
       ...data,
+      image: imageUrl,
       weight: data.weight ? parseFloat(data.weight as string) : undefined,
       motherId: data.motherId || undefined,
       fatherId: data.fatherId || undefined,
     };
 
-    // Only add image field if we have a valid image URL
-    if (imageUrl) {
-      animalData.image = imageUrl;
-    }
-
-    console.log("Processing animal data:", animalData);
-
     const validatedData = CreateAnimalSchema.parse(animalData);
 
+    // Check if tag number already exists
     const existingAnimal = await prisma.animal.findUnique({
       where: { tagNumber: validatedData.tagNumber },
     });
