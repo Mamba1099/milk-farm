@@ -15,6 +15,8 @@ import {
   User,
   LoginInput,
 } from "@/hooks/use-auth-hooks";
+import { useToast } from "@/hooks/use-toast";
+import { useAuthErrorHandler } from "@/hooks/use-auth-expiration";
 
 // Types
 export interface AuthContextType {
@@ -50,7 +52,11 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
+  const { toast } = useToast();
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Use auth error handler hook
+  useAuthErrorHandler();
 
   // Use the auth hooks
   const {
