@@ -38,18 +38,6 @@ export const useToast = () => {
     [addToast]
   );
 
-  toast.success = (title: string, description?: string) =>
-    addToast({ type: "success", title, description });
-
-  toast.error = (title: string, description?: string) =>
-    addToast({ type: "error", title, description });
-
-  toast.warning = (title: string, description?: string) =>
-    addToast({ type: "warning", title, description });
-
-  toast.info = (title: string, description?: string) =>
-    addToast({ type: "info", title, description });
-
   return {
     toasts,
     toast,
