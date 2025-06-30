@@ -382,7 +382,8 @@ export default function AnimalsPage() {
                                   | "CALF",
                                 gender: animalData.gender as "MALE" | "FEMALE",
                                 birthDate: animalData.birthDate,
-                                expectedMaturityDate: animalData.expectedMaturityDate,
+                                expectedMaturityDate:
+                                  animalData.expectedMaturityDate,
                                 weight: animalData.weight,
                                 healthStatus: animalData.healthStatus as
                                   | "HEALTHY"
@@ -391,7 +392,8 @@ export default function AnimalsPage() {
                                   | "QUARANTINED",
                                 image: animalData.image,
                                 isMatured: animalData.isMatured,
-                                isReadyForProduction: animalData.isReadyForProduction,
+                                isReadyForProduction:
+                                  animalData.isReadyForProduction,
                                 notes: animalData.notes,
                                 mother: animalData.mother,
                                 father: animalData.father,
@@ -421,7 +423,8 @@ export default function AnimalsPage() {
                                       | "MALE"
                                       | "FEMALE",
                                     birthDate: animalData.birthDate,
-                                    expectedMaturityDate: animalData.expectedMaturityDate,
+                                    expectedMaturityDate:
+                                      animalData.expectedMaturityDate,
                                     weight: animalData.weight,
                                     healthStatus: animalData.healthStatus as
                                       | "HEALTHY"
