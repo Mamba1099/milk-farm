@@ -253,9 +253,12 @@ export default function AddAnimalPage() {
                       name="motherId"
                       value={formData.motherId}
                       onChange={handleInputChange}
-                      placeholder="Enter mother's ID"
+                      placeholder="e.g., cm0x8k2l5o0003xvh0s8k3k2l"
                       className="text-sm sm:text-base"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the exact animal ID from the animals list
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -265,9 +268,12 @@ export default function AddAnimalPage() {
                       name="fatherId"
                       value={formData.fatherId}
                       onChange={handleInputChange}
-                      placeholder="Enter father's ID"
+                      placeholder="e.g., cm0x8k2l5o0003xvh0s8k3k2l"
                       className="text-sm sm:text-base"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the exact animal ID from the animals list
+                    </p>
                   </div>
                 </div>
               </div>

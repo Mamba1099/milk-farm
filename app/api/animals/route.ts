@@ -149,6 +149,11 @@ async function handleCreateAnimal(request: NextRequest) {
       const formData = await request.formData();
       data = Object.fromEntries(formData.entries());
       imageFile = formData.get("image") as File;
+
+      // Remove the file object from data since it will be processed separately
+      if (data.image) {
+        delete data.image;
+      }
     } else {
       // Handle JSON data
       const body = await request.json();
@@ -182,9 +187,24 @@ async function handleCreateAnimal(request: NextRequest) {
       ...data,
       image: imageUrl,
       weight: data.weight ? parseFloat(data.weight as string) : undefined,
-      motherId: data.motherId || undefined,
-      fatherId: data.fatherId || undefined,
+      motherId: data.motherId && data.motherId.trim() !== "" ? data.motherId : undefined,
+      fatherId: data.fatherId && data.fatherId.trim() !== "" ? data.fatherId : undefined,
     };
+
+    // Validate parent IDs if provided (they should be valid cuid strings)
+    if (animalData.motherId && !animalData.motherId.match(/^[a-z0-9]{25}$/)) {
+      return NextResponse.json(
+        { error: "Invalid Mother ID format. Please use a valid animal ID." },
+        { status: 400 }
+      );
+    }
+    
+    if (animalData.fatherId && !animalData.fatherId.match(/^[a-z0-9]{25}$/)) {
+      return NextResponse.json(
+        { error: "Invalid Father ID format. Please use a valid animal ID." },
+        { status: 400 }
+      );
+    }
 
     const validatedData = CreateAnimalSchema.parse(animalData);
 

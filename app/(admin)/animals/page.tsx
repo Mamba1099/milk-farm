@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -19,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
 import { useAnimals, useDeleteAnimal } from "@/hooks";
 import { useToast } from "@/hooks";
+import { getHealthStatusColor, getAnimalTypeColor } from "@/lib/utils";
 
 // Animation variants
 const fadeInUp = {
@@ -104,34 +106,6 @@ export default function AnimalsPage() {
           variant: "destructive",
         });
       }
-    }
-  };
-
-  const getHealthStatusColor = (status: string) => {
-    switch (status) {
-      case "HEALTHY":
-        return "text-green-600 bg-green-100";
-      case "SICK":
-        return "text-red-600 bg-red-100";
-      case "RECOVERING":
-        return "text-yellow-600 bg-yellow-100";
-      case "QUARANTINED":
-        return "text-orange-600 bg-orange-100";
-      default:
-        return "text-gray-600 bg-gray-100";
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "COW":
-        return "text-purple-600 bg-purple-100";
-      case "BULL":
-        return "text-blue-600 bg-blue-100";
-      case "CALF":
-        return "text-pink-600 bg-pink-100";
-      default:
-        return "text-gray-600 bg-gray-100";
     }
   };
 
@@ -279,6 +253,7 @@ export default function AnimalsPage() {
                   healthStatus: string;
                   birthDate: string;
                   isMatured: boolean;
+                  image?: string;
                   treatments?: unknown[];
                   productionRecords?: unknown[];
                 };
@@ -286,6 +261,51 @@ export default function AnimalsPage() {
                 return (
                   <motion.div key={animalData.id} variants={cardVariants}>
                     <Card className="p-4 sm:p-6 hover:shadow-lg transition-shadow bg-white h-full">
+                      {/* Animal Image */}
+                      <div className="relative h-48 w-full mb-4 rounded-lg overflow-hidden bg-gray-100">
+                        {animalData.image ? (
+                          <Image
+                            src={animalData.image}
+                            alt={`${
+                              animalData.name || animalData.tagNumber
+                            } image`}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                                <svg
+                                  className="w-8 h-8 text-gray-400"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+                                </svg>
+                              </div>
+                              <p className="text-xs text-gray-500">No image</p>
+                            </div>
+                          </div>
+                        )}
+                        {/* Health Status Badge */}
+                        <div className="absolute top-2 right-2">
+                          <div
+                            className={`w-4 h-4 rounded-full ${
+                              animalData.healthStatus === "HEALTHY"
+                                ? "bg-green-500"
+                                : animalData.healthStatus === "SICK"
+                                ? "bg-red-500"
+                                : animalData.healthStatus === "RECOVERING"
+                                ? "bg-yellow-500"
+                                : "bg-orange-500"
+                            }`}
+                            title={animalData.healthStatus}
+                          />
+                        </div>
+                      </div>
+
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
@@ -332,7 +352,7 @@ export default function AnimalsPage() {
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600 text-sm">Type:</span>
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getAnimalTypeColor(
                               animalData.type
                             )}`}
                           >
