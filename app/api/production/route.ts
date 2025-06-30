@@ -30,7 +30,7 @@ async function getUserFromToken(request: NextRequest) {
 }
 
 // GET /api/production - Get production records with pagination and filters
-export async function GET(request: NextRequest) {
+async function GET_handler(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
     if (!user) {
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/production - Create new production record
-export async function POST(request: NextRequest) {
+async function POST_handler(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
     if (!user) {
@@ -267,7 +267,7 @@ export async function POST(request: NextRequest) {
 }
 
 // PUT /api/production/[id] - Update production record
-export async function PUT(request: NextRequest) {
+async function PUT_handler(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
     if (!user) {
@@ -371,7 +371,7 @@ export async function PUT(request: NextRequest) {
 }
 
 // DELETE /api/production/[id] - Delete production record
-export async function DELETE(request: NextRequest) {
+async function DELETE_handler(request: NextRequest) {
   try {
     const user = await getUserFromToken(request);
     if (!user) {
@@ -422,8 +422,8 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// Add timeout middleware
-export const GET = withApiTimeout(30000);
-export const POST = withApiTimeout(30000);
-export const PUT = withApiTimeout(30000);
-export const DELETE = withApiTimeout(30000);
+// Export handlers with timeout middleware
+export const GET = withApiTimeout(GET_handler, 30000);
+export const POST = withApiTimeout(POST_handler, 30000);
+export const PUT = withApiTimeout(PUT_handler, 30000);
+export const DELETE = withApiTimeout(DELETE_handler, 30000);
