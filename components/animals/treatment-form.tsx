@@ -58,7 +58,7 @@ export function TreatmentForm({
       dosage: "",
       treatment: "",
       cost: 0,
-      treatedAt: new Date(),
+      treatedAt: new Date().toISOString().split("T")[0],
       notes: "",
     },
   });
@@ -173,7 +173,7 @@ export function TreatmentForm({
                 htmlFor="medicine"
                 className="text-sm font-medium text-gray-700"
               >
-                Medicine *
+                Medicine
               </label>
               <Input
                 id="medicine"
@@ -194,7 +194,7 @@ export function TreatmentForm({
                 htmlFor="dosage"
                 className="text-sm font-medium text-gray-700"
               >
-                Dosage *
+                Dosage
               </label>
               <Input
                 id="dosage"
@@ -205,6 +205,9 @@ export function TreatmentForm({
               {errors.dosage && (
                 <p className="text-sm text-red-600">{errors.dosage.message}</p>
               )}
+              <p className="text-xs text-gray-500">
+                Either medicine or dosage must be provided
+              </p>
             </div>
 
             {/* Date */}

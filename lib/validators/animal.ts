@@ -69,19 +69,23 @@ export const AnimalQuerySchema = z.object({
 });
 
 // Treatment validation schemas
-export const CreateTreatmentSchema = z.object({
-  animalId: z.string(),
-  disease: z.string().min(1, "Disease is required"),
-  medicine: z.string().min(1, "Medicine is required"),
-  dosage: z.string().min(1, "Dosage is required"),
-  treatment: z.string().min(1, "Treatment details are required"),
-  cost: z.number().min(0, "Cost must be positive"),
-  treatedAt: z
-    .string()
-    .transform((str) => new Date(str))
-    .optional(),
-  notes: z.string().optional(),
-});
+export const CreateTreatmentSchema = z
+  .object({
+    animalId: z.string(),
+    disease: z.string().min(1, "Disease is required"),
+    medicine: z.string().optional(),
+    dosage: z.string().optional(),
+    treatment: z.string().min(1, "Treatment details are required"),
+    cost: z.number().min(0, "Cost must be positive"),
+    treatedAt: z
+      .union([z.string().transform((str) => new Date(str)), z.date()])
+      .optional(),
+    notes: z.string().optional(),
+  })
+  .refine((data) => data.medicine || data.dosage, {
+    message: "Either medicine or dosage must be provided",
+    path: ["medicine"],
+  });
 
 export const UpdateTreatmentSchema = CreateTreatmentSchema.partial().extend({
   id: z.string(),
