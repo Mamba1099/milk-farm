@@ -134,15 +134,24 @@ export const useCurrentUser = () => {
         // Validate token with server by calling /auth/me
         const response = await apiClient.get<{ user: User }>("/auth/me");
         return response.data.user;
-      } catch {
-        // If server rejects token, clear it locally
-        localStorage.removeItem("token");
-        document.cookie =
-          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      } catch (error: any) {
+        // If server rejects token (401, 403, etc.), clear it locally
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          localStorage.removeItem("token");
+          document.cookie =
+            "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        }
         return null;
       }
     },
-    retry: false,
+    retry: (failureCount, error: any) => {
+      // Don't retry on authentication errors
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
+        return false;
+      }
+      // Retry other errors up to 2 times
+      return failureCount < 2;
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
