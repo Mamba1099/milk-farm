@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { UpdateAnimalSchema } from "@/lib/validators/animal";
-import { uploadFile } from "@/lib/file-storage";
+import { uploadAnimalImage } from "@/lib/file-storage";
 import jwt from "jsonwebtoken";
 import { withApiTimeout } from "@/lib/api-timeout";
 
@@ -33,7 +33,7 @@ async function getUserFromToken(request: NextRequest) {
 // GET /api/animals/[id] - Get specific animal
 async function handleGetAnimal(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
@@ -41,8 +41,10 @@ async function handleGetAnimal(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const animal = await prisma.animal.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         mother: { select: { id: true, tagNumber: true, name: true } },
         father: { select: { id: true, tagNumber: true, name: true } },
@@ -99,7 +101,7 @@ async function handleGetAnimal(
 // PUT /api/animals/[id] - Update specific animal
 async function handleUpdateAnimal(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
@@ -115,8 +117,10 @@ async function handleUpdateAnimal(
       );
     }
 
+    const { id } = await params;
+
     const existingAnimal = await prisma.animal.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingAnimal) {
@@ -130,12 +134,12 @@ async function handleUpdateAnimal(
     let imageUrl = existingAnimal.image;
     const imageFile = formData.get("image") as File;
     if (imageFile && imageFile.size > 0) {
-      imageUrl = await uploadFile(imageFile, "animal-images");
+      imageUrl = await uploadAnimalImage(imageFile);
     }
 
     // Process form data
     const animalData = {
-      id: params.id,
+      id,
       ...data,
       image: imageUrl,
       weight: data.weight ? parseFloat(data.weight as string) : undefined,
@@ -150,7 +154,7 @@ async function handleUpdateAnimal(
       const existingTag = await prisma.animal.findFirst({
         where: {
           tagNumber: validatedData.tagNumber,
-          id: { not: params.id },
+          id: { not: id },
         },
       });
 
@@ -206,7 +210,7 @@ async function handleUpdateAnimal(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id: _id, ...updateData } = validatedData;
     const animal = await prisma.animal.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...updateData,
         isMatured,
@@ -230,7 +234,7 @@ async function handleUpdateAnimal(
 // DELETE /api/animals/[id] - Delete specific animal
 async function handleDeleteAnimal(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
@@ -246,8 +250,10 @@ async function handleDeleteAnimal(
       );
     }
 
+    const { id } = await params;
+
     const animal = await prisma.animal.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         motherOf: true,
         fatherOf: true,
@@ -273,7 +279,7 @@ async function handleDeleteAnimal(
     }
 
     await prisma.animal.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Animal deleted successfully" });

@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 
 async function handleGetUser(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify authentication
@@ -26,6 +26,8 @@ async function handleGetUser(
       );
     }
 
+    const { id } = await params;
+
     // Check if user has admin privileges or is requesting their own data
     const currentUser = await prisma.user.findUnique({
       where: { id: decoded.sub },
@@ -34,7 +36,7 @@ async function handleGetUser(
 
     if (
       !currentUser ||
-      (currentUser.role !== "FARM_MANAGER" && decoded.sub !== params.id)
+      (currentUser.role !== "FARM_MANAGER" && decoded.sub !== id)
     ) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
@@ -43,7 +45,7 @@ async function handleGetUser(
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         username: true,
@@ -74,7 +76,7 @@ async function handleGetUser(
 
 async function handleUpdateUser(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify authentication
@@ -107,12 +109,13 @@ async function handleUpdateUser(
       );
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { username, email, role, password } = body;
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingUser) {
@@ -197,7 +200,7 @@ async function handleUpdateUser(
       const conflictUser = await prisma.user.findFirst({
         where: {
           AND: [
-            { id: { not: params.id } },
+            { id: { not: id } },
             {
               OR: [
                 ...(username ? [{ username }] : []),
@@ -217,7 +220,7 @@ async function handleUpdateUser(
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       select: {
         id: true,
@@ -245,7 +248,7 @@ async function handleUpdateUser(
 
 async function handleDeleteUser(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify authentication
@@ -278,8 +281,10 @@ async function handleDeleteUser(
       );
     }
 
+    const { id } = await params;
+
     // Prevent self-deletion
-    if (decoded.sub === params.id) {
+    if (decoded.sub === id) {
       return NextResponse.json(
         { error: "Cannot delete your own account" },
         { status: 400 }
@@ -288,7 +293,7 @@ async function handleDeleteUser(
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingUser) {
@@ -296,7 +301,7 @@ async function handleDeleteUser(
     }
 
     await prisma.user.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({
