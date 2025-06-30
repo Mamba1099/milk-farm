@@ -5,7 +5,6 @@ import { uploadAnimalImage } from "@/lib/file-storage";
 import jwt from "jsonwebtoken";
 import { withApiTimeout } from "@/lib/api-timeout";
 
-// Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) {
@@ -30,7 +29,6 @@ async function getUserFromToken(request: NextRequest) {
   }
 }
 
-// GET /api/animals/[id] - Get specific animal
 async function handleGetAnimal(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -98,7 +96,6 @@ async function handleGetAnimal(
   }
 }
 
-// PUT /api/animals/[id] - Update specific animal
 async function handleUpdateAnimal(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -109,7 +106,6 @@ async function handleUpdateAnimal(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only farm managers can update animals
     if (user.role !== "FARM_MANAGER") {
       return NextResponse.json(
         { error: "Insufficient permissions" },
@@ -130,7 +126,6 @@ async function handleUpdateAnimal(
     const formData = await request.formData();
     const data = Object.fromEntries(formData.entries());
 
-    // Handle image upload
     let imageUrl = existingAnimal.image;
     const imageFile = formData.get("image") as File;
     if (imageFile && imageFile.size > 0) {
@@ -149,7 +144,6 @@ async function handleUpdateAnimal(
 
     const validatedData = UpdateAnimalSchema.parse(animalData);
 
-    // Check if tag number already exists (excluding current animal)
     if (validatedData.tagNumber) {
       const existingTag = await prisma.animal.findFirst({
         where: {

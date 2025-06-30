@@ -66,26 +66,29 @@ model User {
   disposals         Disposal[]
   servings          Serving[]
   productionRecords Production[]
+  salesRecords      Sales[]
 
   @@map("users")
 }
 
 model Animal {
-  id           String       @id @default(cuid())
-  tagNumber    String       @unique
-  name         String?
-  type         AnimalType
-  gender       Gender
-  birthDate    DateTime
-  motherId     String?
-  fatherId     String?
-  healthStatus HealthStatus @default(HEALTHY)
-  weight       Float?
-  image        String?
-  notes        String?
-  isMatured    Boolean      @default(false)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id                   String       @id @default(cuid())
+  tagNumber            String       @unique
+  name                 String?
+  type                 AnimalType
+  gender               Gender
+  birthDate            DateTime
+  expectedMaturityDate DateTime?
+  motherId             String?
+  fatherId             String?
+  healthStatus         HealthStatus @default(HEALTHY)
+  weight               Float?
+  image                String?
+  notes                String?
+  isMatured            Boolean      @default(false)
+  isReadyForProduction Boolean      @default(false)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   mother        Animal?  @relation("MotherChildren", fields: [motherId], references: [id])
   father        Animal?  @relation("FatherChildren", fields: [fatherId], references: [id])
@@ -96,6 +99,7 @@ model Animal {
   disposals         Disposal[]
   servings          Serving[]
   productionRecords Production[]
+  salesRecords      Sales[]
 
   @@map("animals")
 }
@@ -160,21 +164,47 @@ model Serving {
 }
 
 model Production {
-  id           String          @id @default(cuid())
-  animalId     String
-  date         DateTime        @default(now())
-  morning      Float           @default(0)
-  evening      Float           @default(0)
-  total        Float          
-  allocation   MilkAllocation
-  recordedById String
-  notes        String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  id              String    @id @default(cuid())
+  animalId        String
+  date            DateTime  @default(now())
+  morningQuantity Float     @default(0)
+  eveningQuantity Float     @default(0)
+  totalQuantity   Float     
+  calfQuantity    Float     @default(0)
+  poshoQuantity   Float     @default(0)
+  availableForSales Float   @default(0)
+  carryOverQuantity Float   @default(0)
+  recordedById    String
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relations
   animal     Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
   recordedBy User   @relation(fields: [recordedById], references: [id])
 
+  // Unique constraint: one production record per animal per day
+  @@unique([animalId, date])
   @@map("production")
+}
+
+model Sales {
+  id            String   @id @default(cuid())
+  animalId      String?
+  date          DateTime @default(now())
+  timeRecorded  DateTime @default(now())
+  quantity      Float
+  pricePerLiter Float
+  totalAmount   Float
+  soldById      String
+  customerName  String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  animal Animal? @relation(fields: [animalId], references: [id], onDelete: SetNull)
+  soldBy User    @relation(fields: [soldById], references: [id])
+
+  @@map("sales")
 }

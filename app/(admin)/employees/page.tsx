@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Icons } from "@/components/icons";
 import { useState } from "react";
 import Image from "next/image";
+import { useToast } from "@/hooks/use-toast";
 import {
   useUsers,
   useCreateUser,
@@ -57,6 +58,7 @@ const cardVariants = {
 
 export default function EmployeesPage() {
   const { canEdit } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);

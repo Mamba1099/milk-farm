@@ -31,6 +31,10 @@ export const CreateAnimalSchema = z.object({
   type: AnimalTypeSchema,
   gender: GenderSchema,
   birthDate: z.string().transform((str) => new Date(str)),
+  expectedMaturityDate: z
+    .string()
+    .transform((str) => new Date(str))
+    .optional(),
   motherId: z.string().optional(),
   fatherId: z.string().optional(),
   motherName: z.string().optional(),
