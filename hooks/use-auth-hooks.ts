@@ -134,7 +134,7 @@ export const useCurrentUser = () => {
         // Validate token with server by calling /auth/me
         const response = await apiClient.get<{ user: User }>("/auth/me");
         return response.data.user;
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If server rejects token (401, 403, etc.), clear it locally
         if (error.response?.status === 401 || error.response?.status === 403) {
           localStorage.removeItem("token");
@@ -144,7 +144,7 @@ export const useCurrentUser = () => {
         return null;
       }
     },
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: unknown) => {
       // Don't retry on authentication errors
       if (error?.response?.status === 401 || error?.response?.status === 403) {
         return false;
