@@ -26,6 +26,9 @@ export function AnimalFormDialog({
     type: animal?.type || "CALF",
     gender: animal?.gender || "FEMALE",
     birthDate: animal?.birthDate ? new Date(animal.birthDate) : new Date(),
+    expectedMaturityDate: animal?.expectedMaturityDate
+      ? new Date(animal.expectedMaturityDate)
+      : undefined,
     healthStatus: animal?.healthStatus || "HEALTHY",
     weight: animal?.weight || undefined,
     motherId: animal?.motherId || undefined,
@@ -181,6 +184,36 @@ export function AnimalFormDialog({
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">
+                  Expected Maturity Date
+                </label>
+                <Input
+                  type="date"
+                  value={
+                    formData.expectedMaturityDate instanceof Date
+                      ? formData.expectedMaturityDate
+                          .toISOString()
+                          .split("T")[0]
+                      : ""
+                  }
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      expectedMaturityDate: e.target.value
+                        ? new Date(e.target.value)
+                        : undefined,
+                    })
+                  }
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  When this animal is expected to mature and be ready for
+                  production
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
                   Weight (kg)
                 </label>
                 <Input
@@ -197,6 +230,7 @@ export function AnimalFormDialog({
                   }
                 />
               </div>
+              <div></div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
