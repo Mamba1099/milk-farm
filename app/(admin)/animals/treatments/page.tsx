@@ -64,20 +64,33 @@ export default function TreatmentsPage() {
   const treatments = treatmentsData?.treatments || [];
 
   // Filter treatments based on search term and type
-  const filteredTreatments = treatments.filter((treatment: unknown) => {
-    const matchesSearch =
-      !searchTerm ||
-      treatment.animal?.tag?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      treatment.treatmentType
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      treatment.treatment.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredTreatments = treatments.filter(
+    (treatment: {
+      id: string;
+      animalId: string;
+      animal?: { tagNumber: string; name?: string };
+      disease: string;
+      treatment: string;
+      medicine: string;
+      cost: number;
+      treatedAt: string;
+      treatedBy: { username: string };
+    }) => {
+      const matchesSearch =
+        !searchTerm ||
+        treatment.animal?.tagNumber
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        treatment.disease?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        treatment.treatment?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesType =
-      !treatmentType || treatment.treatmentType === treatmentType;
+      const matchesType =
+        !treatmentType ||
+        treatment.disease?.toLowerCase().includes(treatmentType.toLowerCase());
 
-    return matchesSearch && matchesType;
-  });
+      return matchesSearch && matchesType;
+    }
+  );
 
   const handleTreatmentSuccess = () => {
     refetch();
@@ -135,7 +148,7 @@ export default function TreatmentsPage() {
                 size={18}
               />
               <Input
-                placeholder="Search by animal tag or treatment type..."
+                placeholder="Search by animal tag, disease, or treatment..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 text-sm"
@@ -146,15 +159,15 @@ export default function TreatmentsPage() {
               onChange={(e) => setTreatmentType(e.target.value)}
               className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Treatment Types</option>
-              <option value="Vaccination">Vaccination</option>
-              <option value="Deworming">Deworming</option>
-              <option value="Antibiotic">Antibiotic Treatment</option>
-              <option value="Hoof Care">Hoof Care</option>
-              <option value="Reproductive">Reproductive Treatment</option>
-              <option value="General">General Treatment</option>
-              <option value="Emergency">Emergency Treatment</option>
-              <option value="Preventive">Preventive Care</option>
+              <option value="">All Diseases</option>
+              <option value="mastitis">Mastitis</option>
+              <option value="fever">Fever</option>
+              <option value="diarrhea">Diarrhea</option>
+              <option value="respiratory">Respiratory Issues</option>
+              <option value="hoof">Hoof Problems</option>
+              <option value="vaccination">Vaccination</option>
+              <option value="deworming">Deworming</option>
+              <option value="injury">Injury</option>
             </select>
             <Button
               variant="outline"
@@ -208,27 +221,26 @@ export default function TreatmentsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Animal</TableHead>
-                      <TableHead>Type</TableHead>
+                      <TableHead>Disease</TableHead>
                       <TableHead>Treatment</TableHead>
                       <TableHead>Date</TableHead>
-                      <TableHead>Veterinarian</TableHead>
+                      <TableHead>Treated By</TableHead>
                       <TableHead>Cost</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredTreatments.map((treatment: unknown) => (
+                    {filteredTreatments.map((treatment) => (
                       <TableRow key={treatment.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Badge variant="outline">
-                              {treatment.animal?.tag || treatment.animalId}
+                              {treatment.animal?.tagNumber ||
+                                treatment.animalId}
                             </Badge>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">
-                            {treatment.treatmentType}
-                          </Badge>
+                          <Badge variant="secondary">{treatment.disease}</Badge>
                         </TableCell>
                         <TableCell className="max-w-xs">
                           <div className="truncate" title={treatment.treatment}>
@@ -238,10 +250,12 @@ export default function TreatmentsPage() {
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm text-gray-600">
                             <Calendar className="h-4 w-4" />
-                            {formatDate(treatment.date)}
+                            {formatDate(treatment.treatedAt)}
                           </div>
                         </TableCell>
-                        <TableCell>{treatment.veterinarian || "-"}</TableCell>
+                        <TableCell>
+                          {treatment.treatedBy?.username || "-"}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm font-medium">
                             <DollarSign className="h-4 w-4" />
