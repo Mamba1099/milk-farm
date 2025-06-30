@@ -154,6 +154,33 @@ export const UpdateProductionSchema = BaseProductionSchema.partial().extend({
   id: z.string(),
 });
 
+// Production validation schema
+export const productionSchema = z.object({
+  animalId: z.string().min(1, "Animal ID is required"),
+  date: z.string().transform((str) => new Date(str)),
+  morningQuantity: z.number().min(0, "Morning quantity must be non-negative").default(0),
+  eveningQuantity: z.number().min(0, "Evening quantity must be non-negative").default(0),
+  calfQuantity: z.number().min(0, "Calf quantity must be non-negative").default(0),
+  poshoQuantity: z.number().min(0, "Posho quantity must be non-negative").default(0),
+  notes: z.string().optional(),
+}).refine(
+  (data) => data.morningQuantity > 0 || data.eveningQuantity > 0,
+  {
+    message: "At least one production quantity (morning or evening) must be greater than 0",
+    path: ["quantities"],
+  }
+);
+
+// Sales validation schema
+export const salesSchema = z.object({
+  animalId: z.string().optional(),
+  date: z.string().transform((str) => new Date(str)),
+  quantity: z.number().positive("Quantity must be positive"),
+  pricePerLiter: z.number().positive("Price per liter must be positive"),
+  customerName: z.string().min(1, "Customer name is required"),
+  notes: z.string().optional(),
+});
+
 // Type exports for frontend use
 export type CreateAnimalInput = z.infer<typeof CreateAnimalSchema>;
 export type UpdateAnimalInput = z.infer<typeof UpdateAnimalSchema>;
