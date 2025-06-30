@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Icons } from "@/components/icons";
 import { useState } from "react";
+import Image from "next/image";
 import {
   useUsers,
   useCreateUser,
@@ -299,8 +300,20 @@ export default function EmployeesPage() {
                       className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow space-y-3 sm:space-y-0"
                     >
                       <div className="flex items-center space-x-4 flex-1">
-                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                          <Icons.user className="h-5 w-5 text-gray-600" />
+                        <div className="relative h-12 w-12 rounded-full overflow-hidden flex-shrink-0">
+                          {user.image ? (
+                            <Image
+                              src={user.image}
+                              alt={`${user.username}'s avatar`}
+                              fill
+                              className="object-cover"
+                              sizes="48px"
+                            />
+                          ) : (
+                            <div className="h-full w-full bg-gray-200 flex items-center justify-center">
+                              <Icons.user className="h-6 w-6 text-gray-600" />
+                            </div>
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <h4 className="text-sm font-medium text-gray-900 truncate">
