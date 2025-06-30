@@ -78,6 +78,7 @@ export default function AnimalsPage() {
     type: "COW" | "BULL" | "CALF";
     gender: "MALE" | "FEMALE";
     birthDate: string;
+    expectedMaturityDate?: string | null;
     weight?: number | null;
     healthStatus: "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED";
     image?: string | null;
@@ -93,10 +94,12 @@ export default function AnimalsPage() {
     type: "COW" | "BULL" | "CALF";
     gender: "MALE" | "FEMALE";
     birthDate: string;
+    expectedMaturityDate?: string | null;
     weight?: number | null;
     healthStatus: "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED";
     image?: string | null;
     isMatured: boolean;
+    isReadyForProduction: boolean;
     notes?: string | null;
     mother?: { id: string; tagNumber: string; name?: string | null } | null;
     father?: { id: string; tagNumber: string; name?: string | null } | null;
@@ -286,8 +289,10 @@ export default function AnimalsPage() {
                   gender: string;
                   healthStatus: string;
                   birthDate: string;
+                  expectedMaturityDate?: string;
                   weight?: number;
                   isMatured: boolean;
+                  isReadyForProduction: boolean;
                   image?: string;
                   notes?: string;
                   mother?: {
@@ -377,6 +382,7 @@ export default function AnimalsPage() {
                                   | "CALF",
                                 gender: animalData.gender as "MALE" | "FEMALE",
                                 birthDate: animalData.birthDate,
+                                expectedMaturityDate: animalData.expectedMaturityDate,
                                 weight: animalData.weight,
                                 healthStatus: animalData.healthStatus as
                                   | "HEALTHY"
@@ -385,6 +391,7 @@ export default function AnimalsPage() {
                                   | "QUARANTINED",
                                 image: animalData.image,
                                 isMatured: animalData.isMatured,
+                                isReadyForProduction: animalData.isReadyForProduction,
                                 notes: animalData.notes,
                                 mother: animalData.mother,
                                 father: animalData.father,
@@ -414,6 +421,7 @@ export default function AnimalsPage() {
                                       | "MALE"
                                       | "FEMALE",
                                     birthDate: animalData.birthDate,
+                                    expectedMaturityDate: animalData.expectedMaturityDate,
                                     weight: animalData.weight,
                                     healthStatus: animalData.healthStatus as
                                       | "HEALTHY"
