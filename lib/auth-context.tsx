@@ -15,10 +15,8 @@ import {
   User,
   LoginInput,
 } from "@/hooks/use-auth-hooks";
-import { useToast } from "@/hooks/use-toast";
 import { useAuthErrorHandler } from "@/hooks/use-auth-expiration";
 
-// Types
 export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -29,8 +27,8 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   hasRole: (roles: string | string[]) => boolean;
   hasAnyRole: (roles: string[]) => boolean;
-  canEdit: boolean; // Only farm managers can edit
-  canView: boolean; // Both roles can view
+  canEdit: boolean;
+  canView: boolean;
 }
 
 // Create context
@@ -91,7 +89,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [userError, isInitialized, userLoading]);
 
-  // Helper functions for role checking
   const hasRole = (roles: string | string[]): boolean => {
     if (!user) return false;
     const roleArray = Array.isArray(roles) ? roles : [roles];

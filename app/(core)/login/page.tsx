@@ -37,14 +37,22 @@ export default function LoginPage() {
     e.preventDefault();
 
     if (!email || !password) {
-      toast.error("Missing Fields", "Please fill in all fields");
+      toast({
+        type: "error",
+        title: "Missing Fields",
+        description: "Please fill in all fields",
+      });
       return;
     }
 
     setIsLoading(true);
     try {
       await login({ email, password });
-      toast.success("Login Successful", "Welcome back!");
+      toast({
+        type: "success",
+        title: "Login Successful",
+        description: "Welcome back!",
+      });
     } catch (error) {
       if (error && typeof error === "object" && "error" in error) {
         const loginError = error as {
@@ -54,16 +62,25 @@ export default function LoginPage() {
 
         if (loginError.details) {
           loginError.details.forEach((detail) => {
-            toast.error(`Validation Error: ${detail.field}`, detail.message);
+            toast({
+              type: "error",
+              title: `Validation Error: ${detail.field}`,
+              description: detail.message,
+            });
           });
         } else {
-          toast.error("Login Failed", loginError.error);
+          toast({
+            type: "error",
+            title: "Login Failed",
+            description: loginError.error,
+          });
         }
       } else {
-        toast.error(
-          "Unexpected Error",
-          "An unexpected error occurred. Please try again."
-        );
+        toast({
+          type: "error",
+          title: "Unexpected Error",
+          description: "An unexpected error occurred. Please try again.",
+        });
       }
     } finally {
       setIsLoading(false);
