@@ -50,7 +50,20 @@ export function AnimalsEditDialog({
     gender: animal.gender,
     birthDate: new Date(animal.birthDate).toISOString().split("T")[0],
     expectedMaturityDate: animal.expectedMaturityDate
-      ? new Date(animal.expectedMaturityDate).toISOString().split("T")[0]
+      ? (() => {
+          try {
+            return new Date(animal.expectedMaturityDate)
+              .toISOString()
+              .split("T")[0];
+          } catch (error) {
+            console.error(
+              "Error parsing expectedMaturityDate:",
+              animal.expectedMaturityDate,
+              error
+            );
+            return "";
+          }
+        })()
       : "",
     weight: animal.weight?.toString() || "",
     healthStatus: animal.healthStatus,
@@ -70,7 +83,20 @@ export function AnimalsEditDialog({
         gender: animal.gender,
         birthDate: new Date(animal.birthDate).toISOString().split("T")[0],
         expectedMaturityDate: animal.expectedMaturityDate
-          ? new Date(animal.expectedMaturityDate).toISOString().split("T")[0]
+          ? (() => {
+              try {
+                return new Date(animal.expectedMaturityDate)
+                  .toISOString()
+                  .split("T")[0];
+              } catch (error) {
+                console.error(
+                  "Error parsing expectedMaturityDate:",
+                  animal.expectedMaturityDate,
+                  error
+                );
+                return "";
+              }
+            })()
           : "",
         weight: animal.weight?.toString() || "",
         healthStatus: animal.healthStatus,
