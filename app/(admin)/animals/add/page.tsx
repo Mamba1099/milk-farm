@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useCreateAnimal } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
-import type { CreateAnimalInput } from "@/lib/validators/animal";
 
 // Animation variants
 const fadeInUp = {
@@ -41,15 +40,16 @@ export default function AddAnimalPage() {
   const { toast } = useToast();
   const createAnimalMutation = useCreateAnimal();
 
-  const [formData, setFormData] = useState<CreateAnimalInput>({
+  const [formData, setFormData] = useState({
     tagNumber: "",
     name: "",
-    type: "COW",
-    gender: "FEMALE",
+    type: "COW" as const,
+    gender: "FEMALE" as const,
     birthDate: "",
+    expectedMaturityDate: "",
     motherName: "",
     fatherName: "",
-    healthStatus: "HEALTHY",
+    healthStatus: "HEALTHY" as const,
     notes: "",
   });
 
@@ -75,7 +75,7 @@ export default function AddAnimalPage() {
         toast({
           title: "Error",
           description: "Image must be less than 5MB",
-          variant: "destructive",
+          type: "error",
         });
         return;
       }
@@ -83,9 +83,9 @@ export default function AddAnimalPage() {
       // Validate file type
       if (!file.type.startsWith("image/")) {
         toast({
+          type: "error",
           title: "Error",
           description: "Please select a valid image file",
-          variant: "destructive",
         });
         return;
       }
@@ -128,15 +128,20 @@ export default function AddAnimalPage() {
 
       setFormErrors({});
 
-      // Prepare submit data with image file
+      // Prepare submit data with proper date conversion
       const submitData = {
         ...formData,
+        birthDate: new Date(formData.birthDate),
+        expectedMaturityDate: formData.expectedMaturityDate
+          ? new Date(formData.expectedMaturityDate)
+          : undefined,
         image: imageFile,
       };
 
       await createAnimalMutation.mutateAsync(submitData);
 
       toast({
+        type: "success",
         title: "Success",
         description: "Animal added successfully",
       });
@@ -151,9 +156,9 @@ export default function AddAnimalPage() {
       setFormErrors({ general: errorMessage });
 
       toast({
+        type: "error",
         title: "Error",
         description: errorMessage,
-        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -288,6 +293,23 @@ export default function AddAnimalPage() {
                       </p>
                     )}
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Expected Maturity Date
+                    </label>
+                    <Input
+                      type="date"
+                      name="expectedMaturityDate"
+                      value={formData.expectedMaturityDate}
+                      onChange={handleInputChange}
+                      className="text-sm sm:text-base"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      When this animal is expected to mature and be ready for
+                      production
+                    </p>
+                  </div>
+                  <div></div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Health Status
