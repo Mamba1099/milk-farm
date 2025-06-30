@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { handleApiError } from "@/lib/error-handler";
 
 // Types for employee management
 export interface User {
@@ -75,8 +76,13 @@ export const useCreateUser = () => {
 
   return useMutation<{ user: User }, Error, CreateUserInput>({
     mutationFn: async (data: CreateUserInput) => {
-      const response = await apiClient.post("/users", data);
-      return response.data;
+      try {
+        const response = await apiClient.post("/users", data);
+        return response.data;
+      } catch (error) {
+        const apiError = handleApiError(error);
+        throw new Error(apiError.message);
+      }
     },
     onSuccess: () => {
       // Invalidate and refetch users list
@@ -97,8 +103,13 @@ export const useUpdateUser = () => {
     { id: string; data: UpdateUserInput }
   >({
     mutationFn: async ({ id, data }) => {
-      const response = await apiClient.put(`/users/${id}`, data);
-      return response.data;
+      try {
+        const response = await apiClient.put(`/users/${id}`, data);
+        return response.data;
+      } catch (error) {
+        const apiError = handleApiError(error);
+        throw new Error(apiError.message);
+      }
     },
     onSuccess: (_, { id }) => {
       // Invalidate and refetch users list
@@ -117,7 +128,12 @@ export const useDeleteUser = () => {
 
   return useMutation<void, Error, string>({
     mutationFn: async (id: string) => {
-      await apiClient.delete(`/users/${id}`);
+      try {
+        await apiClient.delete(`/users/${id}`);
+      } catch (error) {
+        const apiError = handleApiError(error);
+        throw new Error(apiError.message);
+      }
     },
     onSuccess: () => {
       // Invalidate and refetch users list

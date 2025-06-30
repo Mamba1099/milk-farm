@@ -119,6 +119,62 @@ async function handleUpdateUser(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Validate fields if provided
+    if (username !== undefined) {
+      if (username.length < 3) {
+        return NextResponse.json(
+          { error: "Username must be at least 3 characters long" },
+          { status: 400 }
+        );
+      }
+      const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+      if (!usernameRegex.test(username)) {
+        return NextResponse.json(
+          {
+            error:
+              "Username can only contain letters, numbers, underscores, and hyphens",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (email !== undefined) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json(
+          { error: "Please enter a valid email address" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (password !== undefined && password !== "") {
+      if (password.length < 8) {
+        return NextResponse.json(
+          { error: "Password must be at least 8 characters long" },
+          { status: 400 }
+        );
+      }
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+      if (!passwordRegex.test(password)) {
+        return NextResponse.json(
+          {
+            error:
+              "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (role !== undefined && !["FARM_MANAGER", "EMPLOYEE"].includes(role)) {
+      return NextResponse.json(
+        { error: "Invalid role. Must be FARM_MANAGER or EMPLOYEE" },
+        { status: 400 }
+      );
+    }
+
     // Prepare update data
     const updateData: {
       username?: string;

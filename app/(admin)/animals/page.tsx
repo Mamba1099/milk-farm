@@ -21,6 +21,8 @@ import { useAuth } from "@/lib/auth-context";
 import { useAnimals, useDeleteAnimal } from "@/hooks";
 import { useToast } from "@/hooks";
 import { getHealthStatusColor, getAnimalTypeColor } from "@/lib/utils";
+import { AnimalsEditDialog } from "@/components/animals/animal-edit-dialog";
+import { AnimalDetailsDialog } from "@/components/animals/animal-details-dialog";
 
 // Animation variants
 const fadeInUp = {
@@ -69,6 +71,38 @@ export default function AnimalsPage() {
   const [selectedGender, setSelectedGender] = useState<string>("");
   const [selectedHealth, setSelectedHealth] = useState<string>("");
   const [page, setPage] = useState(1);
+  const [editingAnimal, setEditingAnimal] = useState<{
+    id: string;
+    tagNumber: string;
+    name?: string | null;
+    type: "COW" | "BULL" | "CALF";
+    gender: "MALE" | "FEMALE";
+    birthDate: string;
+    weight?: number | null;
+    healthStatus: "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED";
+    image?: string | null;
+    motherId?: string | null;
+    fatherId?: string | null;
+    mother?: { id: string; tagNumber: string; name?: string | null } | null;
+    father?: { id: string; tagNumber: string; name?: string | null } | null;
+  } | null>(null);
+  const [viewingAnimal, setViewingAnimal] = useState<{
+    id: string;
+    tagNumber: string;
+    name?: string | null;
+    type: "COW" | "BULL" | "CALF";
+    gender: "MALE" | "FEMALE";
+    birthDate: string;
+    weight?: number | null;
+    healthStatus: "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED";
+    image?: string | null;
+    isMatured: boolean;
+    notes?: string | null;
+    mother?: { id: string; tagNumber: string; name?: string | null } | null;
+    father?: { id: string; tagNumber: string; name?: string | null } | null;
+    treatments?: unknown[];
+    productionRecords?: unknown[];
+  } | null>(null);
 
   const {
     data: animalsData,
@@ -252,8 +286,20 @@ export default function AnimalsPage() {
                   gender: string;
                   healthStatus: string;
                   birthDate: string;
+                  weight?: number;
                   isMatured: boolean;
                   image?: string;
+                  notes?: string;
+                  mother?: {
+                    id: string;
+                    tagNumber: string;
+                    name?: string;
+                  } | null;
+                  father?: {
+                    id: string;
+                    tagNumber: string;
+                    name?: string;
+                  } | null;
                   treatments?: unknown[];
                   productionRecords?: unknown[];
                 };
@@ -320,6 +366,32 @@ export default function AnimalsPage() {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() =>
+                              setViewingAnimal({
+                                id: animalData.id,
+                                tagNumber: animalData.tagNumber,
+                                name: animalData.name,
+                                type: animalData.type as
+                                  | "COW"
+                                  | "BULL"
+                                  | "CALF",
+                                gender: animalData.gender as "MALE" | "FEMALE",
+                                birthDate: animalData.birthDate,
+                                weight: animalData.weight,
+                                healthStatus: animalData.healthStatus as
+                                  | "HEALTHY"
+                                  | "SICK"
+                                  | "RECOVERING"
+                                  | "QUARANTINED",
+                                image: animalData.image,
+                                isMatured: animalData.isMatured,
+                                notes: animalData.notes,
+                                mother: animalData.mother,
+                                father: animalData.father,
+                                treatments: animalData.treatments,
+                                productionRecords: animalData.productionRecords,
+                              })
+                            }
                             className="p-1.5 sm:p-2"
                           >
                             <Eye size={14} className="sm:w-4 sm:h-4" />
@@ -329,6 +401,32 @@ export default function AnimalsPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                onClick={() =>
+                                  setEditingAnimal({
+                                    id: animalData.id,
+                                    tagNumber: animalData.tagNumber,
+                                    name: animalData.name,
+                                    type: animalData.type as
+                                      | "COW"
+                                      | "BULL"
+                                      | "CALF",
+                                    gender: animalData.gender as
+                                      | "MALE"
+                                      | "FEMALE",
+                                    birthDate: animalData.birthDate,
+                                    weight: animalData.weight,
+                                    healthStatus: animalData.healthStatus as
+                                      | "HEALTHY"
+                                      | "SICK"
+                                      | "RECOVERING"
+                                      | "QUARANTINED",
+                                    image: animalData.image,
+                                    motherId: animalData.mother?.id,
+                                    fatherId: animalData.father?.id,
+                                    mother: animalData.mother,
+                                    father: animalData.father,
+                                  })
+                                }
                                 className="p-1.5 sm:p-2"
                               >
                                 <Edit2 size={14} className="sm:w-4 sm:h-4" />
@@ -466,6 +564,24 @@ export default function AnimalsPage() {
               </Link>
             )}
           </motion.div>
+        )}
+
+        {/* Edit Dialog */}
+        {editingAnimal && (
+          <AnimalsEditDialog
+            animal={editingAnimal}
+            isOpen={!!editingAnimal}
+            onClose={() => setEditingAnimal(null)}
+          />
+        )}
+
+        {/* Details Dialog */}
+        {viewingAnimal && (
+          <AnimalDetailsDialog
+            animal={viewingAnimal}
+            isOpen={!!viewingAnimal}
+            onClose={() => setViewingAnimal(null)}
+          />
         )}
       </motion.div>
     </div>

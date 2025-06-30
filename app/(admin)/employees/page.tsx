@@ -61,6 +61,7 @@ export default function EmployeesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Fetch users from backend
   const { data: usersResponse, isLoading, error } = useUsers(currentPage, 10);
@@ -85,10 +86,21 @@ export default function EmployeesPage() {
     role: "FARM_MANAGER" | "EMPLOYEE";
   }) => {
     try {
+      setFormErrors({});
       await createUserMutation.mutateAsync(userData);
       setShowCreateModal(false);
-    } catch (error) {
-      console.error("Failed to create user:", error);
+      toast({
+        title: "Success",
+        description: "Employee created successfully",
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to create employee";
+      setFormErrors({ general: errorMessage });
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
@@ -102,20 +114,40 @@ export default function EmployeesPage() {
     }
   ) => {
     try {
+      setFormErrors({});
       await updateUserMutation.mutateAsync({ id, data: userData });
       setEditingUser(null);
-    } catch (error) {
-      console.error("Failed to update user:", error);
+      toast({
+        title: "Success",
+        description: "Employee updated successfully",
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to update employee";
+      setFormErrors({ general: errorMessage });
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
   const handleDeleteUser = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+    if (!confirm("Are you sure you want to delete this employee? This action cannot be undone.")) return;
 
     try {
       await deleteUserMutation.mutateAsync(id);
-    } catch (error) {
-      console.error("Failed to delete user:", error);
+      toast({
+        title: "Success",
+        description: "Employee deleted successfully",
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete employee";
+      toast({
+        title: "Error", 
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
@@ -429,7 +461,7 @@ export default function EmployeesPage() {
         )}
       </motion.div>
 
-      {/* Create User Modal - Simple version for now */}
+      {/* Create User Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-md">
@@ -437,32 +469,86 @@ export default function EmployeesPage() {
               <CardTitle>Add New Employee</CardTitle>
             </CardHeader>
             <CardContent>
+              {formErrors.general && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-800">{formErrors.general}</p>
+                </div>
+              )}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
-                  handleCreateUser({
-                    username: formData.get("username") as string,
-                    email: formData.get("email") as string,
-                    password: formData.get("password") as string,
-                    role: formData.get("role") as "FARM_MANAGER" | "EMPLOYEE",
-                  });
+                  const username = formData.get("username") as string;
+                  const email = formData.get("email") as string;
+                  const password = formData.get("password") as string;
+                  const role = formData.get("role") as "FARM_MANAGER" | "EMPLOYEE";
+
+                  // Client-side validation
+                  const errors: Record<string, string> = {};
+                  
+                  if (!username || username.length < 3) {
+                    errors.username = "Username must be at least 3 characters long";
+                  } else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+                    errors.username = "Username can only contain letters, numbers, underscores, and hyphens";
+                  }
+
+                  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    errors.email = "Please enter a valid email address";
+                  }
+
+                  if (!password || password.length < 8) {
+                    errors.password = "Password must be at least 8 characters long";
+                  } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+                    errors.password = "Password must contain at least one uppercase letter, one lowercase letter, and one number";
+                  }
+
+                  if (Object.keys(errors).length > 0) {
+                    setFormErrors(errors);
+                    return;
+                  }
+
+                  handleCreateUser({ username, email, password, role });
                 }}
               >
                 <div className="space-y-4">
-                  <Input name="username" placeholder="Username" required />
-                  <Input
-                    name="email"
-                    type="email"
-                    placeholder="Email"
-                    required
-                  />
-                  <Input
-                    name="password"
-                    type="password"
-                    placeholder="Password"
-                    required
-                  />
+                  <div>
+                    <Input 
+                      name="username" 
+                      placeholder="Username" 
+                      required 
+                      className={formErrors.username ? "border-red-500" : ""}
+                    />
+                    {formErrors.username && (
+                      <p className="text-sm text-red-600 mt-1">{formErrors.username}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Input
+                      name="email"
+                      type="email"
+                      placeholder="Email"
+                      required
+                      className={formErrors.email ? "border-red-500" : ""}
+                    />
+                    {formErrors.email && (
+                      <p className="text-sm text-red-600 mt-1">{formErrors.email}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Input
+                      name="password"
+                      type="password"
+                      placeholder="Password (min. 8 characters)"
+                      required
+                      className={formErrors.password ? "border-red-500" : ""}
+                    />
+                    {formErrors.password && (
+                      <p className="text-sm text-red-600 mt-1">{formErrors.password}</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Must contain uppercase, lowercase, and number
+                    </p>
+                  </div>
                   <select
                     name="role"
                     className="w-full p-2 border rounded"
@@ -475,13 +561,24 @@ export default function EmployeesPage() {
                     <Button
                       type="submit"
                       disabled={createUserMutation.isPending}
+                      className="flex-1"
                     >
-                      {createUserMutation.isPending ? "Creating..." : "Create"}
+                      {createUserMutation.isPending ? (
+                        <>
+                          <Icons.spinner className="h-4 w-4 mr-2 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        "Create Employee"
+                      )}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setShowCreateModal(false)}
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        setFormErrors({});
+                      }}
                     >
                       Cancel
                     </Button>
@@ -493,7 +590,7 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* Edit User Modal - Simple version for now */}
+      {/* Edit User Modal */}
       {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-md">
@@ -501,25 +598,52 @@ export default function EmployeesPage() {
               <CardTitle>Edit Employee</CardTitle>
             </CardHeader>
             <CardContent>
+              {formErrors.general && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-800">{formErrors.general}</p>
+                </div>
+              )}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
+                  const username = formData.get("username") as string;
+                  const email = formData.get("email") as string;
+                  const role = formData.get("role") as "FARM_MANAGER" | "EMPLOYEE";
+                  const password = formData.get("password") as string;
+
+                  // Client-side validation
+                  const errors: Record<string, string> = {};
+                  
+                  if (username && username.length < 3) {
+                    errors.username = "Username must be at least 3 characters long";
+                  } else if (username && !/^[a-zA-Z0-9_-]+$/.test(username)) {
+                    errors.username = "Username can only contain letters, numbers, underscores, and hyphens";
+                  }
+
+                  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    errors.email = "Please enter a valid email address";
+                  }
+
+                  if (password && password.length > 0 && password.length < 8) {
+                    errors.password = "Password must be at least 8 characters long";
+                  } else if (password && password.length > 0 && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+                    errors.password = "Password must contain at least one uppercase letter, one lowercase letter, and one number";
+                  }
+
+                  if (Object.keys(errors).length > 0) {
+                    setFormErrors(errors);
+                    return;
+                  }
+
                   const updateData: {
                     username?: string;
                     email?: string;
                     role?: "FARM_MANAGER" | "EMPLOYEE";
                     password?: string;
                   } = {};
-                  const username = formData.get("username") as string;
-                  const email = formData.get("email") as string;
-                  const role = formData.get("role") as
-                    | "FARM_MANAGER"
-                    | "EMPLOYEE";
-                  const password = formData.get("password") as string;
 
-                  if (username !== editingUser.username)
-                    updateData.username = username;
+                  if (username !== editingUser.username) updateData.username = username;
                   if (email !== editingUser.email) updateData.email = email;
                   if (role !== editingUser.role) updateData.role = role;
                   if (password) updateData.password = password;
@@ -528,24 +652,45 @@ export default function EmployeesPage() {
                 }}
               >
                 <div className="space-y-4">
-                  <Input
-                    name="username"
-                    placeholder="Username"
-                    defaultValue={editingUser.username}
-                    required
-                  />
-                  <Input
-                    name="email"
-                    type="email"
-                    placeholder="Email"
-                    defaultValue={editingUser.email}
-                    required
-                  />
-                  <Input
-                    name="password"
-                    type="password"
-                    placeholder="New Password (leave blank to keep current)"
-                  />
+                  <div>
+                    <Input
+                      name="username"
+                      placeholder="Username"
+                      defaultValue={editingUser.username}
+                      required
+                      className={formErrors.username ? "border-red-500" : ""}
+                    />
+                    {formErrors.username && (
+                      <p className="text-sm text-red-600 mt-1">{formErrors.username}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Input
+                      name="email"
+                      type="email"
+                      placeholder="Email"
+                      defaultValue={editingUser.email}
+                      required
+                      className={formErrors.email ? "border-red-500" : ""}
+                    />
+                    {formErrors.email && (
+                      <p className="text-sm text-red-600 mt-1">{formErrors.email}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Input
+                      name="password"
+                      type="password"
+                      placeholder="New Password (leave blank to keep current)" 
+                      className={formErrors.password ? "border-red-500" : ""}
+                    />
+                    {formErrors.password && (
+                      <p className="text-sm text-red-600 mt-1">{formErrors.password}</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Leave blank to keep current password
+                    </p>
+                  </div>
                   <select
                     name="role"
                     className="w-full p-2 border rounded"
@@ -559,13 +704,24 @@ export default function EmployeesPage() {
                     <Button
                       type="submit"
                       disabled={updateUserMutation.isPending}
+                      className="flex-1"
                     >
-                      {updateUserMutation.isPending ? "Updating..." : "Update"}
+                      {updateUserMutation.isPending ? (
+                        <>
+                          <Icons.spinner className="h-4 w-4 mr-2 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        "Update Employee"
+                      )}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setEditingUser(null)}
+                      onClick={() => {
+                        setEditingUser(null);
+                        setFormErrors({});
+                      }}
                     >
                       Cancel
                     </Button>

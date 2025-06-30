@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { handleApiError } from "@/lib/error-handler";
 import type {
   CreateAnimalInput,
   UpdateAnimalInput,
@@ -46,24 +47,29 @@ export function useCreateAnimal() {
 
   return useMutation({
     mutationFn: async (data: CreateAnimalInput) => {
-      const formData = new FormData();
+      try {
+        const formData = new FormData();
 
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (key === "image" && value instanceof File) {
-            formData.append(key, value);
-          } else if (key === "birthDate" && value instanceof Date) {
-            formData.append(key, value.toISOString());
-          } else {
-            formData.append(key, value.toString());
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            if (key === "image" && value instanceof File) {
+              formData.append(key, value);
+            } else if (key === "birthDate" && value instanceof Date) {
+              formData.append(key, value.toISOString());
+            } else {
+              formData.append(key, value.toString());
+            }
           }
-        }
-      });
+        });
 
-      const response = await apiClient.post("/animals", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      return response.data;
+        const response = await apiClient.post("/animals", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        return response.data;
+      } catch (error) {
+        const apiError = handleApiError(error);
+        throw new Error(apiError.message);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["animals"] });
@@ -76,28 +82,33 @@ export function useUpdateAnimal() {
 
   return useMutation({
     mutationFn: async (data: UpdateAnimalInput) => {
-      const formData = new FormData();
+      try {
+        const formData = new FormData();
 
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (key === "image" && value instanceof File) {
-            formData.append(key, value);
-          } else if (key === "birthDate" && value instanceof Date) {
-            formData.append(key, value.toISOString());
-          } else {
-            formData.append(key, value.toString());
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            if (key === "image" && value instanceof File) {
+              formData.append(key, value);
+            } else if (key === "birthDate" && value instanceof Date) {
+              formData.append(key, value.toISOString());
+            } else {
+              formData.append(key, value.toString());
+            }
           }
-        }
-      });
+        });
 
-      const response = await apiClient.put(
-        `/animals/${data.id}`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-      return response.data;
+        const response = await apiClient.put(
+          `/animals/${data.id}`,
+          formData,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          }
+        );
+        return response.data;
+      } catch (error) {
+        const apiError = handleApiError(error);
+        throw new Error(apiError.message);
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["animals"] });
@@ -111,8 +122,13 @@ export function useDeleteAnimal() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await apiClient.delete(`/animals/${id}`);
-      return response.data;
+      try {
+        const response = await apiClient.delete(`/animals/${id}`);
+        return response.data;
+      } catch (error) {
+        const apiError = handleApiError(error);
+        throw new Error(apiError.message);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["animals"] });

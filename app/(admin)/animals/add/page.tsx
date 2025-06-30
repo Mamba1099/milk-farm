@@ -56,6 +56,7 @@ export default function AddAnimalPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -69,6 +70,26 @@ export default function AddAnimalPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "Image must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Error",
+          description: "Please select a valid image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setImageFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -83,6 +104,30 @@ export default function AddAnimalPage() {
     setIsSubmitting(true);
 
     try {
+      // Client-side validation
+      const errors: Record<string, string> = {};
+
+      if (!formData.tagNumber || formData.tagNumber.trim() === "") {
+        errors.tagNumber = "Tag number is required";
+      }
+
+      if (!formData.birthDate) {
+        errors.birthDate = "Birth date is required";
+      } else {
+        const birthDate = new Date(formData.birthDate);
+        const today = new Date();
+        if (birthDate > today) {
+          errors.birthDate = "Birth date cannot be in the future";
+        }
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors);
+        return;
+      }
+
+      setFormErrors({});
+
       // Prepare submit data with image file
       const submitData = {
         ...formData,
@@ -101,6 +146,10 @@ export default function AddAnimalPage() {
       console.error("Error creating animal:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Failed to add animal";
+
+      // Set form error for general errors
+      setFormErrors({ general: errorMessage });
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -144,6 +193,11 @@ export default function AddAnimalPage() {
 
         <motion.div variants={fadeInUp}>
           <Card className="p-4 sm:p-6 lg:p-8">
+            {formErrors.general && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-800">{formErrors.general}</p>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Information */}
               <div>
@@ -161,8 +215,15 @@ export default function AddAnimalPage() {
                       onChange={handleInputChange}
                       placeholder="Enter tag number"
                       required
-                      className="text-sm sm:text-base"
+                      className={`text-sm sm:text-base ${
+                        formErrors.tagNumber ? "border-red-500" : ""
+                      }`}
                     />
+                    {formErrors.tagNumber && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {formErrors.tagNumber}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -217,8 +278,15 @@ export default function AddAnimalPage() {
                       value={formData.birthDate}
                       onChange={handleInputChange}
                       required
-                      className="text-sm sm:text-base"
+                      className={`text-sm sm:text-base ${
+                        formErrors.birthDate ? "border-red-500" : ""
+                      }`}
                     />
+                    {formErrors.birthDate && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {formErrors.birthDate}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

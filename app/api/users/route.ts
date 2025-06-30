@@ -149,6 +149,55 @@ async function handleCreateUser(request: NextRequest) {
       );
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Please enter a valid email address" },
+        { status: 400 }
+      );
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters long" },
+        { status: 400 }
+      );
+    }
+
+    // Check for at least one uppercase, one lowercase, and one number
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+    if (!passwordRegex.test(password)) {
+      return NextResponse.json(
+        {
+          error:
+            "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate username length
+    if (username.length < 3) {
+      return NextResponse.json(
+        { error: "Username must be at least 3 characters long" },
+        { status: 400 }
+      );
+    }
+
+    // Validate username format (no special characters except underscore and hyphen)
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!usernameRegex.test(username)) {
+      return NextResponse.json(
+        {
+          error:
+            "Username can only contain letters, numbers, underscores, and hyphens",
+        },
+        { status: 400 }
+      );
+    }
+
     // Validate role
     if (!["FARM_MANAGER", "EMPLOYEE"].includes(role)) {
       return NextResponse.json(
