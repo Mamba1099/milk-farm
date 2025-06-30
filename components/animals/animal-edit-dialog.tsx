@@ -17,6 +17,7 @@ interface Animal {
   type: "COW" | "BULL" | "CALF";
   gender: "MALE" | "FEMALE";
   birthDate: string;
+  expectedMaturityDate?: string | null;
   weight?: number | null;
   healthStatus: "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED";
   image?: string | null;
@@ -48,6 +49,9 @@ export function AnimalsEditDialog({
     type: animal.type,
     gender: animal.gender,
     birthDate: new Date(animal.birthDate).toISOString().split("T")[0],
+    expectedMaturityDate: animal.expectedMaturityDate
+      ? new Date(animal.expectedMaturityDate).toISOString().split("T")[0]
+      : "",
     weight: animal.weight?.toString() || "",
     healthStatus: animal.healthStatus,
     motherId: animal.motherId || "",
@@ -65,6 +69,9 @@ export function AnimalsEditDialog({
         type: animal.type,
         gender: animal.gender,
         birthDate: new Date(animal.birthDate).toISOString().split("T")[0],
+        expectedMaturityDate: animal.expectedMaturityDate
+          ? new Date(animal.expectedMaturityDate).toISOString().split("T")[0]
+          : "",
         weight: animal.weight?.toString() || "",
         healthStatus: animal.healthStatus,
         motherId: animal.motherId || "",
@@ -83,7 +90,7 @@ export function AnimalsEditDialog({
         toast({
           title: "Error",
           description: "Image must be less than 5MB",
-          variant: "destructive",
+          type: "error",
         });
         return;
       }
@@ -93,7 +100,7 @@ export function AnimalsEditDialog({
         toast({
           title: "Error",
           description: "Please select a valid image file",
-          variant: "destructive",
+          type: "error",
         });
         return;
       }
@@ -116,6 +123,9 @@ export function AnimalsEditDialog({
         ...formData,
         weight: formData.weight ? parseFloat(formData.weight) : undefined,
         birthDate: new Date(formData.birthDate),
+        expectedMaturityDate: formData.expectedMaturityDate
+          ? new Date(formData.expectedMaturityDate)
+          : undefined,
         image: imageFile,
         motherId: formData.motherId || undefined,
         fatherId: formData.fatherId || undefined,
@@ -126,6 +136,7 @@ export function AnimalsEditDialog({
       toast({
         title: "Success",
         description: "Animal updated successfully",
+        type: "success",
       });
 
       onClose();
@@ -135,7 +146,7 @@ export function AnimalsEditDialog({
       toast({
         title: "Error",
         description: errorMessage,
-        variant: "destructive",
+        type: "error",
       });
     }
   };
@@ -287,6 +298,28 @@ export function AnimalsEditDialog({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Expected Maturity Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={formData.expectedMaturityDate}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        expectedMaturityDate: e.target.value,
+                      })
+                    }
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    When this animal is expected to mature and be ready for
+                    production
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Weight (kg)
                   </label>
                   <Input
@@ -299,6 +332,7 @@ export function AnimalsEditDialog({
                     }
                   />
                 </div>
+                <div></div>
               </div>
 
               <div>
