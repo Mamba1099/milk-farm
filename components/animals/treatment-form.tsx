@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCreateTreatment } from "@/hooks/use-animal-hooks";
+import { useAnimals } from "@/hooks/use-animal-hooks";
 import {
   CreateTreatmentSchema,
   CreateTreatmentInput,
@@ -36,6 +37,12 @@ export function TreatmentForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const createTreatmentMutation = useCreateTreatment();
   const { toast } = useToast();
+
+  // Fetch all animals for the dropdown
+  const { data: animalsData } = useAnimals({
+    page: 1,
+    limit: 1000, // Get all animals
+  });
 
   const {
     register,
@@ -105,20 +112,35 @@ export function TreatmentForm({
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Animal ID */}
+            {/* Animal Selection */}
             <div className="space-y-2">
               <label
                 htmlFor="animalId"
                 className="text-sm font-medium text-gray-700"
               >
-                Animal ID *
+                Select Animal *
               </label>
-              <Input
+              <select
                 id="animalId"
-                placeholder="Enter animal ID"
                 {...register("animalId")}
-                className={errors.animalId ? "border-red-500" : ""}
-              />
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.animalId ? "border-red-500" : ""
+                }`}
+              >
+                <option value="">Select an animal</option>
+                {animalsData?.animals?.map(
+                  (animal: {
+                    id: string;
+                    name?: string;
+                    tagNumber: string;
+                  }) => (
+                    <option key={animal.id} value={animal.id}>
+                      {animal.name || `Animal ${animal.tagNumber}`} -{" "}
+                      {animal.tagNumber}
+                    </option>
+                  )
+                )}
+              </select>
               {errors.animalId && (
                 <p className="text-sm text-red-600">
                   {errors.animalId.message}

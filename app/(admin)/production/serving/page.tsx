@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
+import { ServingForm } from "@/components/production/serving-form";
 
 // Animation variants
 const fadeInUp = {
@@ -37,6 +38,7 @@ export default function ServingRecordsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
+  const [showServingForm, setShowServingForm] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 sm:p-6">
@@ -68,7 +70,10 @@ export default function ServingRecordsPage() {
             </p>
           </div>
           {user?.role === "FARM_MANAGER" && (
-            <Button className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 w-full sm:w-auto text-sm sm:text-base">
+            <Button
+              onClick={() => setShowServingForm(true)}
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 w-full sm:w-auto text-sm sm:text-base"
+            >
               <Plus size={18} className="sm:w-5 sm:h-5" />
               Add Serving Record
             </Button>
@@ -122,7 +127,10 @@ export default function ServingRecordsPage() {
                 Start tracking breeding activities by adding serving records
               </p>
               {user?.role === "FARM_MANAGER" && (
-                <Button className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base">
+                <Button
+                  onClick={() => setShowServingForm(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base"
+                >
                   Add First Serving Record
                 </Button>
               )}
@@ -130,6 +138,17 @@ export default function ServingRecordsPage() {
           </Card>
         </motion.div>
       </motion.div>
+
+      {/* Serving Form Modal */}
+      {showServingForm && (
+        <ServingForm
+          isOpen={showServingForm}
+          onClose={() => setShowServingForm(false)}
+          onSuccess={() => {
+            // Refresh the page or data here when implemented
+          }}
+        />
+      )}
     </div>
   );
 }
