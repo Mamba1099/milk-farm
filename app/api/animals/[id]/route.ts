@@ -185,30 +185,75 @@ async function handleUpdateAnimal(
       }
     }
 
-    // Calculate if animal is matured if birth date changed
+    // Calculate if animal is matured based on expected maturity date
     let isMatured = existingAnimal.isMatured;
-    if (validatedData.birthDate || validatedData.type) {
-      const today = new Date();
-      const birthDate = validatedData.birthDate || existingAnimal.birthDate;
-      const type = validatedData.type || existingAnimal.type;
-      const ageInMonths =
-        (today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
+    let isReadyForProduction = existingAnimal.isReadyForProduction;
+    let calculatedExpectedMaturityDate = null;
 
-      if (type === "CALF" && ageInMonths >= 12) {
+    if (
+      validatedData.expectedMaturityDate ||
+      validatedData.birthDate ||
+      validatedData.type ||
+      validatedData.gender
+    ) {
+      const today = new Date();
+
+      // Determine the expected maturity date to use
+      let expectedMaturityDate =
+        validatedData.expectedMaturityDate ||
+        existingAnimal.expectedMaturityDate;
+
+      // If expected maturity date is not set, calculate it based on birth date and type
+      if (!expectedMaturityDate) {
+        const birthDate = validatedData.birthDate || existingAnimal.birthDate;
+        const type = validatedData.type || existingAnimal.type;
+
+        expectedMaturityDate = new Date(birthDate);
+        switch (type) {
+          case "CALF":
+            expectedMaturityDate.setMonth(expectedMaturityDate.getMonth() + 20); // 20 months for calves
+            break;
+          case "COW":
+          case "BULL":
+            expectedMaturityDate.setMonth(expectedMaturityDate.getMonth() + 6); // Already mature, add buffer
+            break;
+        }
+        calculatedExpectedMaturityDate = expectedMaturityDate;
+      }
+
+      // Check if animal is matured based on expected maturity date
+      if (expectedMaturityDate <= today) {
         isMatured = true;
-      } else if ((type === "COW" || type === "BULL") && ageInMonths >= 24) {
-        isMatured = true;
+
+        const type = validatedData.type || existingAnimal.type;
+        const gender = validatedData.gender || existingAnimal.gender;
+
+        // Check if animal is ready for production (mature female cows)
+        if (type === "COW" && gender === "FEMALE") {
+          isReadyForProduction = true;
+        }
+        // If it's a mature calf, it should become a cow (will be handled by update logic if needed)
+        if (type === "CALF" && gender === "FEMALE") {
+          isReadyForProduction = true;
+        }
       }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id: _id, ...updateData } = validatedData;
+
+    const finalUpdateData = {
+      ...updateData,
+      isMatured,
+      isReadyForProduction,
+      ...(calculatedExpectedMaturityDate && {
+        expectedMaturityDate: calculatedExpectedMaturityDate,
+      }),
+    };
+
     const animal = await prisma.animal.update({
       where: { id },
-      data: {
-        ...updateData,
-        isMatured,
-      },
+      data: finalUpdateData,
       include: {
         mother: { select: { id: true, tagNumber: true, name: true } },
         father: { select: { id: true, tagNumber: true, name: true } },

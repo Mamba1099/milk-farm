@@ -281,8 +281,6 @@ async function handleCreateAnimal(request: NextRequest) {
     // Calculate if animal is matured and set expected maturity date
     const today = new Date();
     const birthDate = new Date(validatedData.birthDate);
-    const ageInMonths =
-      (today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
 
     let isMatured = false;
     let isReadyForProduction = false;
@@ -302,23 +300,18 @@ async function handleCreateAnimal(request: NextRequest) {
       }
     }
 
-    // Check if animal is already matured
-    if (validatedData.type === "CALF" && ageInMonths >= 12) {
+    // Check if animal is already matured based on expected maturity date
+    if (expectedMaturityDate <= today) {
       isMatured = true;
-    } else if (
-      (validatedData.type === "COW" || validatedData.type === "BULL") &&
-      ageInMonths >= 24
-    ) {
-      isMatured = true;
-    }
 
-    // Check if animal is ready for production (mature female cows)
-    if (
-      isMatured &&
-      validatedData.type === "COW" &&
-      validatedData.gender === "FEMALE"
-    ) {
-      isReadyForProduction = true;
+      // Check if animal is ready for production (mature female cows)
+      if (validatedData.type === "COW" && validatedData.gender === "FEMALE") {
+        isReadyForProduction = true;
+      }
+      // If it's a mature calf, it should become a cow (will be handled by update logic if needed)
+      if (validatedData.type === "CALF" && validatedData.gender === "FEMALE") {
+        isReadyForProduction = true;
+      }
     }
 
     const animal = await prisma.animal.create({
