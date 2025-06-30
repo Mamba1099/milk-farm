@@ -94,7 +94,8 @@ export default function EmployeesPage() {
         description: "Employee created successfully",
       });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to create employee";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create employee";
       setFormErrors({ general: errorMessage });
       toast({
         title: "Error",
@@ -122,7 +123,8 @@ export default function EmployeesPage() {
         description: "Employee updated successfully",
       });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update employee";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update employee";
       setFormErrors({ general: errorMessage });
       toast({
         title: "Error",
@@ -133,7 +135,12 @@ export default function EmployeesPage() {
   };
 
   const handleDeleteUser = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this employee? This action cannot be undone.")) return;
+    if (
+      !confirm(
+        "Are you sure you want to delete this employee? This action cannot be undone."
+      )
+    )
+      return;
 
     try {
       await deleteUserMutation.mutateAsync(id);
@@ -142,9 +149,10 @@ export default function EmployeesPage() {
         description: "Employee deleted successfully",
       });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to delete employee";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete employee";
       toast({
-        title: "Error", 
+        title: "Error",
         description: errorMessage,
         variant: "destructive",
       });
@@ -481,15 +489,19 @@ export default function EmployeesPage() {
                   const username = formData.get("username") as string;
                   const email = formData.get("email") as string;
                   const password = formData.get("password") as string;
-                  const role = formData.get("role") as "FARM_MANAGER" | "EMPLOYEE";
+                  const role = formData.get("role") as
+                    | "FARM_MANAGER"
+                    | "EMPLOYEE";
 
                   // Client-side validation
                   const errors: Record<string, string> = {};
-                  
+
                   if (!username || username.length < 3) {
-                    errors.username = "Username must be at least 3 characters long";
+                    errors.username =
+                      "Username must be at least 3 characters long";
                   } else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-                    errors.username = "Username can only contain letters, numbers, underscores, and hyphens";
+                    errors.username =
+                      "Username can only contain letters, numbers, underscores, and hyphens";
                   }
 
                   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -497,9 +509,13 @@ export default function EmployeesPage() {
                   }
 
                   if (!password || password.length < 8) {
-                    errors.password = "Password must be at least 8 characters long";
-                  } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-                    errors.password = "Password must contain at least one uppercase letter, one lowercase letter, and one number";
+                    errors.password =
+                      "Password must be at least 8 characters long";
+                  } else if (
+                    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)
+                  ) {
+                    errors.password =
+                      "Password must contain at least one uppercase letter, one lowercase letter, and one number";
                   }
 
                   if (Object.keys(errors).length > 0) {
@@ -512,14 +528,16 @@ export default function EmployeesPage() {
               >
                 <div className="space-y-4">
                   <div>
-                    <Input 
-                      name="username" 
-                      placeholder="Username" 
-                      required 
+                    <Input
+                      name="username"
+                      placeholder="Username"
+                      required
                       className={formErrors.username ? "border-red-500" : ""}
                     />
                     {formErrors.username && (
-                      <p className="text-sm text-red-600 mt-1">{formErrors.username}</p>
+                      <p className="text-sm text-red-600 mt-1">
+                        {formErrors.username}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -531,7 +549,9 @@ export default function EmployeesPage() {
                       className={formErrors.email ? "border-red-500" : ""}
                     />
                     {formErrors.email && (
-                      <p className="text-sm text-red-600 mt-1">{formErrors.email}</p>
+                      <p className="text-sm text-red-600 mt-1">
+                        {formErrors.email}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -543,7 +563,9 @@ export default function EmployeesPage() {
                       className={formErrors.password ? "border-red-500" : ""}
                     />
                     {formErrors.password && (
-                      <p className="text-sm text-red-600 mt-1">{formErrors.password}</p>
+                      <p className="text-sm text-red-600 mt-1">
+                        {formErrors.password}
+                      </p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
                       Must contain uppercase, lowercase, and number
@@ -609,16 +631,20 @@ export default function EmployeesPage() {
                   const formData = new FormData(e.currentTarget);
                   const username = formData.get("username") as string;
                   const email = formData.get("email") as string;
-                  const role = formData.get("role") as "FARM_MANAGER" | "EMPLOYEE";
+                  const role = formData.get("role") as
+                    | "FARM_MANAGER"
+                    | "EMPLOYEE";
                   const password = formData.get("password") as string;
 
                   // Client-side validation
                   const errors: Record<string, string> = {};
-                  
+
                   if (username && username.length < 3) {
-                    errors.username = "Username must be at least 3 characters long";
+                    errors.username =
+                      "Username must be at least 3 characters long";
                   } else if (username && !/^[a-zA-Z0-9_-]+$/.test(username)) {
-                    errors.username = "Username can only contain letters, numbers, underscores, and hyphens";
+                    errors.username =
+                      "Username can only contain letters, numbers, underscores, and hyphens";
                   }
 
                   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -626,9 +652,15 @@ export default function EmployeesPage() {
                   }
 
                   if (password && password.length > 0 && password.length < 8) {
-                    errors.password = "Password must be at least 8 characters long";
-                  } else if (password && password.length > 0 && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-                    errors.password = "Password must contain at least one uppercase letter, one lowercase letter, and one number";
+                    errors.password =
+                      "Password must be at least 8 characters long";
+                  } else if (
+                    password &&
+                    password.length > 0 &&
+                    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)
+                  ) {
+                    errors.password =
+                      "Password must contain at least one uppercase letter, one lowercase letter, and one number";
                   }
 
                   if (Object.keys(errors).length > 0) {
@@ -643,7 +675,8 @@ export default function EmployeesPage() {
                     password?: string;
                   } = {};
 
-                  if (username !== editingUser.username) updateData.username = username;
+                  if (username !== editingUser.username)
+                    updateData.username = username;
                   if (email !== editingUser.email) updateData.email = email;
                   if (role !== editingUser.role) updateData.role = role;
                   if (password) updateData.password = password;
@@ -661,7 +694,9 @@ export default function EmployeesPage() {
                       className={formErrors.username ? "border-red-500" : ""}
                     />
                     {formErrors.username && (
-                      <p className="text-sm text-red-600 mt-1">{formErrors.username}</p>
+                      <p className="text-sm text-red-600 mt-1">
+                        {formErrors.username}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -674,18 +709,22 @@ export default function EmployeesPage() {
                       className={formErrors.email ? "border-red-500" : ""}
                     />
                     {formErrors.email && (
-                      <p className="text-sm text-red-600 mt-1">{formErrors.email}</p>
+                      <p className="text-sm text-red-600 mt-1">
+                        {formErrors.email}
+                      </p>
                     )}
                   </div>
                   <div>
                     <Input
                       name="password"
                       type="password"
-                      placeholder="New Password (leave blank to keep current)" 
+                      placeholder="New Password (leave blank to keep current)"
                       className={formErrors.password ? "border-red-500" : ""}
                     />
                     {formErrors.password && (
-                      <p className="text-sm text-red-600 mt-1">{formErrors.password}</p>
+                      <p className="text-sm text-red-600 mt-1">
+                        {formErrors.password}
+                      </p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
                       Leave blank to keep current password
