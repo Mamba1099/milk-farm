@@ -182,29 +182,62 @@ async function handleCreateAnimal(request: NextRequest) {
       }
     }
 
+    // Helper function to find animal by name or tag number
+    const findAnimalByNameOrTag = async (nameOrTag: string) => {
+      return await prisma.animal.findFirst({
+        where: {
+          OR: [
+            { name: { equals: nameOrTag, mode: "insensitive" } },
+            { tagNumber: nameOrTag },
+          ],
+        },
+        select: { id: true, name: true, tagNumber: true },
+      });
+    };
+
+    // Look up parent IDs from names if provided
+    let motherId: string | undefined = undefined;
+    let fatherId: string | undefined = undefined;
+
+    if (data.motherName && data.motherName.trim() !== "") {
+      const motherAnimal = await findAnimalByNameOrTag(data.motherName.trim());
+      if (motherAnimal) {
+        motherId = motherAnimal.id;
+      } else {
+        return NextResponse.json(
+          {
+            error: `Mother animal "${data.motherName}" not found. Please check the name or tag number.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (data.fatherName && data.fatherName.trim() !== "") {
+      const fatherAnimal = await findAnimalByNameOrTag(data.fatherName.trim());
+      if (fatherAnimal) {
+        fatherId = fatherAnimal.id;
+      } else {
+        return NextResponse.json(
+          {
+            error: `Father animal "${data.fatherName}" not found. Please check the name or tag number.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Process form data
     const animalData = {
       ...data,
       image: imageUrl,
       weight: data.weight ? parseFloat(data.weight as string) : undefined,
-      motherId: data.motherId && data.motherId.trim() !== "" ? data.motherId : undefined,
-      fatherId: data.fatherId && data.fatherId.trim() !== "" ? data.fatherId : undefined,
+      motherId,
+      fatherId,
+      // Remove the name fields from the final data since they're not in the database schema
+      motherName: undefined,
+      fatherName: undefined,
     };
-
-    // Validate parent IDs if provided (they should be valid cuid strings)
-    if (animalData.motherId && !animalData.motherId.match(/^[a-z0-9]{25}$/)) {
-      return NextResponse.json(
-        { error: "Invalid Mother ID format. Please use a valid animal ID." },
-        { status: 400 }
-      );
-    }
-    
-    if (animalData.fatherId && !animalData.fatherId.match(/^[a-z0-9]{25}$/)) {
-      return NextResponse.json(
-        { error: "Invalid Father ID format. Please use a valid animal ID." },
-        { status: 400 }
-      );
-    }
 
     const validatedData = CreateAnimalSchema.parse(animalData);
 

@@ -33,6 +33,8 @@ export const CreateAnimalSchema = z.object({
   birthDate: z.string().transform((str) => new Date(str)),
   motherId: z.string().optional(),
   fatherId: z.string().optional(),
+  motherName: z.string().optional(),
+  fatherName: z.string().optional(),
   healthStatus: HealthStatusSchema.default("HEALTHY"),
   weight: z.number().positive().optional(),
   image: z

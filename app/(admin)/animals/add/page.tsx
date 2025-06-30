@@ -47,8 +47,8 @@ export default function AddAnimalPage() {
     type: "COW",
     gender: "FEMALE",
     birthDate: "",
-    motherId: "",
-    fatherId: "",
+    motherName: "",
+    fatherName: "",
     healthStatus: "HEALTHY",
     notes: "",
   });
@@ -247,32 +247,32 @@ export default function AddAnimalPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Mother ID (Optional)
+                      Mother Name (Optional)
                     </label>
                     <Input
-                      name="motherId"
-                      value={formData.motherId}
+                      name="motherName"
+                      value={formData.motherName}
                       onChange={handleInputChange}
-                      placeholder="e.g., cm0x8k2l5o0003xvh0s8k3k2l"
+                      placeholder="e.g., Bessie, Daisy, or Tag Number"
                       className="text-sm sm:text-base"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Enter the exact animal ID from the animals list
+                      Enter the mother&apos;s name or tag number
                     </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Father ID (Optional)
+                      Father Name (Optional)
                     </label>
                     <Input
-                      name="fatherId"
-                      value={formData.fatherId}
+                      name="fatherName"
+                      value={formData.fatherName}
                       onChange={handleInputChange}
-                      placeholder="e.g., cm0x8k2l5o0003xvh0s8k3k2l"
+                      placeholder="e.g., Thunder, Hercules, or Tag Number"
                       className="text-sm sm:text-base"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Enter the exact animal ID from the animals list
+                      Enter the father&apos;s name or tag number
                     </p>
                   </div>
                 </div>
