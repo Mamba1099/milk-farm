@@ -3,12 +3,36 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Search, Filter } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Search,
+  Filter,
+  Heart,
+  Calendar,
+  Edit,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useAuth } from "@/lib/auth-context";
 import { ServingForm } from "@/components/production/serving-form";
+import {
+  useServings,
+  ServingRecord,
+  useDeleteServing,
+} from "@/hooks/use-production-hooks";
+import { formatDate } from "@/lib/utils";
 
 // Animation variants
 const fadeInUp = {
@@ -38,7 +62,55 @@ export default function ServingRecordsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
+  const [outcomeFilter, setOutcomeFilter] = useState("");
   const [showServingForm, setShowServingForm] = useState(false);
+  const [editingServing, setEditingServing] = useState<ServingRecord | null>(
+    null
+  );
+
+  // Hooks
+  const deleteServingMutation = useDeleteServing();
+
+  // Fetch serving records
+  const {
+    data: servingData,
+    isLoading,
+    refetch,
+  } = useServings({
+    page: 1,
+    limit: 100,
+    search: searchTerm || undefined,
+    outcome: outcomeFilter || undefined,
+  });
+
+  const servings = servingData?.servings || [];
+
+  const handleServingSuccess = () => {
+    refetch();
+  };
+
+  const handleEdit = (serving: ServingRecord) => {
+    setEditingServing(serving);
+    setShowServingForm(true);
+  };
+
+  const handleDelete = async (servingId: string) => {
+    if (
+      window.confirm("Are you sure you want to delete this serving record?")
+    ) {
+      try {
+        await deleteServingMutation.mutateAsync(servingId);
+        refetch();
+      } catch (error) {
+        console.error("Error deleting serving:", error);
+      }
+    }
+  };
+
+  const handleFormClose = () => {
+    setShowServingForm(false);
+    setEditingServing(null);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 sm:p-6">
@@ -98,7 +170,11 @@ export default function ServingRecordsPage() {
                 className="pl-10 text-sm"
               />
             </div>
-            <select className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+            <select
+              value={outcomeFilter}
+              onChange={(e) => setOutcomeFilter(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
               <option value="">All Outcomes</option>
               <option value="SUCCESSFUL">Successful</option>
               <option value="FAILED">Failed</option>
@@ -106,7 +182,10 @@ export default function ServingRecordsPage() {
             </select>
             <Button
               variant="outline"
-              onClick={() => setSearchTerm("")}
+              onClick={() => {
+                setSearchTerm("");
+                setOutcomeFilter("");
+              }}
               className="flex items-center gap-2 text-sm sm:text-base"
             >
               <Filter size={16} className="sm:w-5 sm:h-5" />
@@ -117,25 +196,148 @@ export default function ServingRecordsPage() {
 
         {/* Serving Records List */}
         <motion.div className="space-y-4" variants={fadeInUp}>
-          {/* Placeholder for serving records */}
-          <Card className="p-6 sm:p-8">
-            <div className="text-center py-8 sm:py-12">
-              <div className="text-gray-500 mb-4 text-sm sm:text-base">
-                No serving records found
+          {isLoading ? (
+            <Card className="p-6">
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading serving records...</p>
               </div>
-              <p className="text-gray-400 mb-6 text-sm sm:text-base">
-                Start tracking breeding activities by adding serving records
-              </p>
-              {user?.role === "FARM_MANAGER" && (
-                <Button
-                  onClick={() => setShowServingForm(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base"
-                >
-                  Add First Serving Record
-                </Button>
-              )}
-            </div>
-          </Card>
+            </Card>
+          ) : servings.length === 0 ? (
+            <Card className="p-6 sm:p-8">
+              <div className="text-center py-8 sm:py-12">
+                <Heart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <div className="text-gray-500 mb-4 text-sm sm:text-base">
+                  {searchTerm || outcomeFilter
+                    ? "No serving records match your filters"
+                    : "No serving records found"}
+                </div>
+                <p className="text-gray-400 mb-6 text-sm sm:text-base">
+                  Start tracking breeding activities by adding serving records
+                </p>
+                {user?.role === "FARM_MANAGER" && (
+                  <Button
+                    onClick={() => setShowServingForm(true)}
+                    className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base"
+                  >
+                    Add First Serving Record
+                  </Button>
+                )}
+              </div>
+            </Card>
+          ) : (
+            <Card className="overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Female Animal</TableHead>
+                      <TableHead>Served Date</TableHead>
+                      <TableHead>Outcome</TableHead>
+                      <TableHead>Pregnancy Date</TableHead>
+                      <TableHead>Birth Date</TableHead>
+                      <TableHead>Served By</TableHead>
+                      <TableHead>Notes</TableHead>
+                      {user?.role === "FARM_MANAGER" && (
+                        <TableHead>Actions</TableHead>
+                      )}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {servings.map((serving: ServingRecord) => (
+                      <TableRow key={serving.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">
+                              {serving.female?.tagNumber || serving.femaleId}
+                            </Badge>
+                            {serving.female?.name && (
+                              <span className="text-sm text-gray-600">
+                                {serving.female.name}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                            <Calendar className="h-4 w-4" />
+                            {formatDate(serving.servedAt)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              serving.outcome === "SUCCESSFUL"
+                                ? "default"
+                                : serving.outcome === "FAILED"
+                                ? "destructive"
+                                : "secondary"
+                            }
+                          >
+                            {serving.outcome}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {serving.pregnancyDate ? (
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                              <Calendar className="h-4 w-4" />
+                              {formatDate(serving.pregnancyDate)}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {serving.actualBirthDate ? (
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                              <Calendar className="h-4 w-4" />
+                              {formatDate(serving.actualBirthDate)}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {serving.servedBy?.username || "-"}
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          {serving.notes ? (
+                            <div className="truncate" title={serving.notes}>
+                              {serving.notes}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        {user?.role === "FARM_MANAGER" && (
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(serving)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(serving.id)}
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          )}
         </motion.div>
       </motion.div>
 
@@ -143,10 +345,9 @@ export default function ServingRecordsPage() {
       {showServingForm && (
         <ServingForm
           isOpen={showServingForm}
-          onClose={() => setShowServingForm(false)}
-          onSuccess={() => {
-            // Refresh the page or data here when implemented
-          }}
+          onClose={handleFormClose}
+          onSuccess={handleServingSuccess}
+          serving={editingServing}
         />
       )}
     </div>
