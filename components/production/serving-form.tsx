@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
@@ -14,31 +13,34 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAnimals } from "@/hooks/use-animal-hooks";
+import {
+  useCreateServing,
+  useUpdateServing,
+  ServingRecord,
+} from "@/hooks/use-production-hooks";
 import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
-
-// Serving form schema
-const CreateServingSchema = z.object({
-  femaleId: z.string().min(1, "Please select a female animal"),
-  maleId: z.string().optional(),
-  servedAt: z.string().min(1, "Please select a serving date"),
-  outcome: z.enum(["SUCCESSFUL", "FAILED", "PENDING"]).default("PENDING"),
-  pregnancyDate: z.string().optional(),
-  actualBirthDate: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-type CreateServingInput = z.infer<typeof CreateServingSchema>;
+import {
+  CreateServingSchema,
+  CreateServingInput,
+} from "@/lib/validators/animal";
 
 interface ServingFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  serving?: ServingRecord | null;
 }
 
-export function ServingForm({ isOpen, onClose, onSuccess }: ServingFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export function ServingForm({
+  isOpen,
+  onClose,
+  onSuccess,
+  serving,
+}: ServingFormProps) {
   const { toast } = useToast();
+  const createServingMutation = useCreateServing();
+  const updateServingMutation = useUpdateServing();
+  const isEditing = !!serving;
 
   // Fetch all animals for the dropdown
   const { data: animalsData } = useAnimals({
@@ -55,68 +57,64 @@ export function ServingForm({ isOpen, onClose, onSuccess }: ServingFormProps) {
   } = useForm<CreateServingInput>({
     resolver: zodResolver(CreateServingSchema),
     defaultValues: {
-      femaleId: "",
-      maleId: "",
-      servedAt: new Date().toISOString().split("T")[0],
-      outcome: "PENDING",
-      pregnancyDate: "",
-      actualBirthDate: "",
-      notes: "",
+      femaleId: serving?.femaleId || "",
+      servedAt:
+        serving?.servedAt?.split("T")[0] ||
+        new Date().toISOString().split("T")[0],
+      outcome: serving?.outcome || "PENDING",
+      pregnancyDate: serving?.pregnancyDate?.split("T")[0] || "",
+      actualBirthDate: serving?.actualBirthDate?.split("T")[0] || "",
+      notes: serving?.notes || "",
     },
   });
 
   const watchedOutcome = watch("outcome");
 
   const onSubmit = async (data: CreateServingInput) => {
-    if (isSubmitting) return;
-
-    setIsSubmitting(true);
     try {
-      // Create serving record via API
-      const response = await fetch("/api/servings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          ...data,
-          servedAt: new Date(data.servedAt),
-          pregnancyDate: data.pregnancyDate
-            ? new Date(data.pregnancyDate)
-            : undefined,
-          actualBirthDate: data.actualBirthDate
-            ? new Date(data.actualBirthDate)
-            : undefined,
-        }),
-      });
+      const servingData = {
+        ...data,
+        servedAt: new Date(data.servedAt),
+        pregnancyDate: data.pregnancyDate
+          ? new Date(data.pregnancyDate)
+          : undefined,
+        actualBirthDate: data.actualBirthDate
+          ? new Date(data.actualBirthDate)
+          : undefined,
+      };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create serving record");
+      if (isEditing && serving) {
+        await updateServingMutation.mutateAsync({
+          id: serving.id,
+          ...servingData,
+        });
+        toast({
+          title: "Success",
+          description: "Serving record updated successfully",
+        });
+      } else {
+        await createServingMutation.mutateAsync(servingData);
+        toast({
+          title: "Success",
+          description: "Serving record created successfully",
+        });
       }
 
-      toast({
-        title: "Success",
-        description: "Serving record created successfully",
-      });
       reset();
       onSuccess?.();
       onClose();
     } catch (error) {
-      console.error("Serving creation error:", error);
+      console.error("Serving operation error:", error);
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Failed to create serving record";
+          : `Failed to ${isEditing ? "update" : "create"} serving record`;
 
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -131,18 +129,13 @@ export function ServingForm({ isOpen, onClose, onSuccess }: ServingFormProps) {
       (animal: { gender: string }) => animal.gender === "FEMALE"
     ) || [];
 
-  const maleAnimals =
-    animalsData?.animals?.filter(
-      (animal: { gender: string }) => animal.gender === "MALE"
-    ) || [];
-
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-pink-600" />
-            Add Serving Record
+            {isEditing ? "Edit Serving Record" : "Add Serving Record"}
           </DialogTitle>
         </DialogHeader>
 
@@ -183,36 +176,6 @@ export function ServingForm({ isOpen, onClose, onSuccess }: ServingFormProps) {
                 </p>
               )}
             </div>
-
-            {/* Male Animal Selection */}
-            <div className="space-y-2">
-              <label
-                htmlFor="maleId"
-                className="text-sm font-medium text-gray-700"
-              >
-                Male Animal
-              </label>
-              <select
-                id="maleId"
-                {...register("maleId")}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-              >
-                <option value="">Select a male animal (optional)</option>
-                {maleAnimals.map(
-                  (animal: {
-                    id: string;
-                    name?: string;
-                    tagNumber: string;
-                  }) => (
-                    <option key={animal.id} value={animal.id}>
-                      {animal.name || `Animal ${animal.tagNumber}`} -{" "}
-                      {animal.tagNumber}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
-
             {/* Serving Date */}
             <div className="space-y-2">
               <label
@@ -313,16 +276,23 @@ export function ServingForm({ isOpen, onClose, onSuccess }: ServingFormProps) {
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={isSubmitting}
+              disabled={
+                createServingMutation.isPending ||
+                updateServingMutation.isPending
+              }
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={
+                createServingMutation.isPending ||
+                updateServingMutation.isPending
+              }
               className="bg-pink-600 hover:bg-pink-700"
             >
-              {isSubmitting ? (
+              {createServingMutation.isPending ||
+              updateServingMutation.isPending ? (
                 <>
                   <motion.div
                     className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
@@ -333,8 +303,10 @@ export function ServingForm({ isOpen, onClose, onSuccess }: ServingFormProps) {
                       ease: "linear",
                     }}
                   />
-                  Creating...
+                  {isEditing ? "Updating..." : "Creating..."}
                 </>
+              ) : isEditing ? (
+                "Update Serving Record"
               ) : (
                 "Create Serving Record"
               )}
