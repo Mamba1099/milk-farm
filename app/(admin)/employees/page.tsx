@@ -9,13 +9,9 @@ import { Icons } from "@/components/icons";
 import { useState } from "react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
-import {
-  useUsers,
-  useCreateUser,
-  useUpdateUser,
-  useDeleteUser,
-  type User,
-} from "@/hooks";
+import { EmployeeCreateForm } from "@/components/employees/employee-create-form";
+import { EmployeeEditForm } from "@/components/employees/employee-edit-form";
+import { useUsers, useDeleteUser, type User } from "@/hooks";
 
 // Animation variants
 const fadeInUp = {
@@ -63,14 +59,13 @@ export default function EmployeesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Fetch users from backend
-  const { data: usersResponse, isLoading, error } = useUsers(currentPage, 10);
-  const createUserMutation = useCreateUser();
-  const updateUserMutation = useUpdateUser();
+  const {
+    data: usersResponse,
+    isLoading,
+    error,
+  } = useUsers(currentPage, 10);
   const deleteUserMutation = useDeleteUser();
 
   const users = usersResponse?.users || [];
@@ -82,63 +77,6 @@ export default function EmployeesPage() {
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleCreateUser = async (userData: {
-    username: string;
-    email: string;
-    password: string;
-    role: "FARM_MANAGER" | "EMPLOYEE";
-  }) => {
-    try {
-      setFormErrors({});
-      await createUserMutation.mutateAsync(userData);
-      setShowCreateModal(false);
-      toast({
-        title: "Success",
-        description: "Employee created successfully",
-      });
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create employee";
-      setFormErrors({ general: errorMessage });
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleUpdateUser = async (
-    id: string,
-    userData: {
-      username?: string;
-      email?: string;
-      role?: "FARM_MANAGER" | "EMPLOYEE";
-      password?: string;
-      image?: File;
-    }
-  ) => {
-    try {
-      setFormErrors({});
-      await updateUserMutation.mutateAsync({ id, data: userData });
-      setEditingUser(null);
-      resetImageUpload();
-      toast({
-        title: "Success",
-        description: "Employee updated successfully",
-      });
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to update employee";
-      setFormErrors({ general: errorMessage });
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleDeleteUser = async (id: string) => {
     if (
@@ -165,42 +103,10 @@ export default function EmployeesPage() {
     }
   };
 
-  // Image handling functions
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Error",
-          description: "Image must be less than 5MB",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        toast({
-          title: "Error",
-          description: "Please select a valid image file",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const resetImageUpload = () => {
-    setImageFile(null);
-    setImagePreview(null);
+  const handleFormSuccess = () => {
+    // Refresh the user list (you might want to implement refetch in your hook)
+    setShowCreateModal(false);
+    setEditingUser(null);
   };
 
   if (isLoading) {
@@ -431,10 +337,7 @@ export default function EmployeesPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              setEditingUser(user);
-                              resetImageUpload();
-                            }}
+                            onClick={() => setEditingUser(user)}
                             className="text-xs w-full sm:w-auto"
                           >
                             <Icons.settings className="h-3 w-3 mr-1" />
@@ -516,345 +419,20 @@ export default function EmployeesPage() {
         )}
       </motion.div>
 
-      {/* Create User Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Add New Employee</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {formErrors.general && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm text-red-800">{formErrors.general}</p>
-                </div>
-              )}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  const username = formData.get("username") as string;
-                  const email = formData.get("email") as string;
-                  const password = formData.get("password") as string;
-                  const role = formData.get("role") as
-                    | "FARM_MANAGER"
-                    | "EMPLOYEE";
+      {/* Forms */}
+      <EmployeeCreateForm
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleFormSuccess}
+      />
 
-                  // Client-side validation
-                  const errors: Record<string, string> = {};
-
-                  if (!username || username.length < 3) {
-                    errors.username =
-                      "Username must be at least 3 characters long";
-                  } else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-                    errors.username =
-                      "Username can only contain letters, numbers, underscores, and hyphens";
-                  }
-
-                  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                    errors.email = "Please enter a valid email address";
-                  }
-
-                  if (!password || password.length < 8) {
-                    errors.password =
-                      "Password must be at least 8 characters long";
-                  } else if (
-                    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)
-                  ) {
-                    errors.password =
-                      "Password must contain at least one uppercase letter, one lowercase letter, and one number";
-                  }
-
-                  if (Object.keys(errors).length > 0) {
-                    setFormErrors(errors);
-                    return;
-                  }
-
-                  handleCreateUser({ username, email, password, role });
-                }}
-              >
-                <div className="space-y-4">
-                  <div>
-                    <Input
-                      name="username"
-                      placeholder="Username"
-                      required
-                      className={formErrors.username ? "border-red-500" : ""}
-                    />
-                    {formErrors.username && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {formErrors.username}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Input
-                      name="email"
-                      type="email"
-                      placeholder="Email"
-                      required
-                      className={formErrors.email ? "border-red-500" : ""}
-                    />
-                    {formErrors.email && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {formErrors.email}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Input
-                      name="password"
-                      type="password"
-                      placeholder="Password (min. 8 characters)"
-                      required
-                      className={formErrors.password ? "border-red-500" : ""}
-                    />
-                    {formErrors.password && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {formErrors.password}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      Must contain uppercase, lowercase, and number
-                    </p>
-                  </div>
-                  <select
-                    name="role"
-                    className="w-full p-2 border rounded"
-                    required
-                  >
-                    <option value="EMPLOYEE">Employee</option>
-                    <option value="FARM_MANAGER">Farm Manager</option>
-                  </select>
-                  <div className="flex gap-2">
-                    <Button
-                      type="submit"
-                      disabled={createUserMutation.isPending}
-                      className="flex-1"
-                    >
-                      {createUserMutation.isPending ? (
-                        <>
-                          <Icons.spinner className="h-4 w-4 mr-2 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        "Create Employee"
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setShowCreateModal(false);
-                        setFormErrors({});
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Edit User Modal */}
       {editingUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Edit Employee</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {formErrors.general && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm text-red-800">{formErrors.general}</p>
-                </div>
-              )}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  const username = formData.get("username") as string;
-                  const email = formData.get("email") as string;
-                  const role = formData.get("role") as
-                    | "FARM_MANAGER"
-                    | "EMPLOYEE";
-                  const password = formData.get("password") as string;
-
-                  // Client-side validation
-                  const errors: Record<string, string> = {};
-
-                  if (username && username.length < 3) {
-                    errors.username =
-                      "Username must be at least 3 characters long";
-                  } else if (username && !/^[a-zA-Z0-9_-]+$/.test(username)) {
-                    errors.username =
-                      "Username can only contain letters, numbers, underscores, and hyphens";
-                  }
-
-                  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                    errors.email = "Please enter a valid email address";
-                  }
-
-                  if (password && password.length > 0 && password.length < 8) {
-                    errors.password =
-                      "Password must be at least 8 characters long";
-                  } else if (
-                    password &&
-                    password.length > 0 &&
-                    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)
-                  ) {
-                    errors.password =
-                      "Password must contain at least one uppercase letter, one lowercase letter, and one number";
-                  }
-
-                  if (Object.keys(errors).length > 0) {
-                    setFormErrors(errors);
-                    return;
-                  }
-
-                  const updateData: {
-                    username?: string;
-                    email?: string;
-                    role?: "FARM_MANAGER" | "EMPLOYEE";
-                    password?: string;
-                    image?: File;
-                  } = {};
-
-                  if (username !== editingUser.username)
-                    updateData.username = username;
-                  if (email !== editingUser.email) updateData.email = email;
-                  if (role !== editingUser.role) updateData.role = role;
-                  if (password) updateData.password = password;
-                  if (imageFile) updateData.image = imageFile;
-
-                  handleUpdateUser(editingUser.id, updateData);
-                }}
-              >
-                <div className="space-y-4">
-                  {/* Image Upload */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Profile Image
-                    </label>
-                    <div className="flex items-center space-x-4">
-                      <div className="relative h-20 w-20 rounded-full overflow-hidden bg-gray-100">
-                        {imagePreview ? (
-                          <Image
-                            src={imagePreview}
-                            alt="Preview"
-                            fill
-                            className="object-cover"
-                          />
-                        ) : editingUser.image ? (
-                          <Image
-                            src={editingUser.image}
-                            alt="Current"
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center">
-                            <Icons.user className="h-8 w-8 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Input
-                      name="username"
-                      placeholder="Username"
-                      defaultValue={editingUser.username}
-                      required
-                      className={formErrors.username ? "border-red-500" : ""}
-                    />
-                    {formErrors.username && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {formErrors.username}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Input
-                      name="email"
-                      type="email"
-                      placeholder="Email"
-                      defaultValue={editingUser.email}
-                      required
-                      className={formErrors.email ? "border-red-500" : ""}
-                    />
-                    {formErrors.email && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {formErrors.email}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Input
-                      name="password"
-                      type="password"
-                      placeholder="New Password (leave blank to keep current)"
-                      className={formErrors.password ? "border-red-500" : ""}
-                    />
-                    {formErrors.password && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {formErrors.password}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      Leave blank to keep current password
-                    </p>
-                  </div>
-                  <select
-                    name="role"
-                    className="w-full p-2 border rounded"
-                    defaultValue={editingUser.role}
-                    required
-                  >
-                    <option value="EMPLOYEE">Employee</option>
-                    <option value="FARM_MANAGER">Farm Manager</option>
-                  </select>
-                  <div className="flex gap-2">
-                    <Button
-                      type="submit"
-                      disabled={updateUserMutation.isPending}
-                      className="flex-1"
-                    >
-                      {updateUserMutation.isPending ? (
-                        <>
-                          <Icons.spinner className="h-4 w-4 mr-2 animate-spin" />
-                          Updating...
-                        </>
-                      ) : (
-                        "Update Employee"
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setEditingUser(null);
-                        setFormErrors({});
-                        resetImageUpload();
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+        <EmployeeEditForm
+          user={editingUser}
+          isOpen={!!editingUser}
+          onClose={() => setEditingUser(null)}
+          onSuccess={handleFormSuccess}
+        />
       )}
     </div>
   );
