@@ -121,21 +121,11 @@ export const UpdateDisposalSchema = CreateDisposalSchema.partial().extend({
 
 // Serving validation schemas
 export const CreateServingSchema = z.object({
-  femaleId: z.string(),
-  maleId: z.string().optional(),
-  servedAt: z
-    .string()
-    .transform((str) => new Date(str))
-    .optional(),
-  outcome: ServingOutcomeSchema.default("PENDING"),
-  pregnancyDate: z
-    .string()
-    .transform((str) => new Date(str))
-    .optional(),
-  actualBirthDate: z
-    .string()
-    .transform((str) => new Date(str))
-    .optional(),
+  femaleId: z.string().min(1, "Please select a female animal"),
+  servedAt: z.string().min(1, "Please select a serving date"),
+  outcome: z.enum(["SUCCESSFUL", "FAILED", "PENDING"]).default("PENDING"),
+  pregnancyDate: z.string().optional(),
+  actualBirthDate: z.string().optional(),
   notes: z.string().optional(),
 });
 
