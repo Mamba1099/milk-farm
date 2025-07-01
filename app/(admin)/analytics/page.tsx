@@ -219,7 +219,7 @@ export default function AnalyticsPage() {
                     <p className="text-xl sm:text-2xl font-bold text-orange-800">
                       {treatmentsLoading
                         ? "Loading..."
-                        : treatmentsStats?.total || 0}
+                        : treatmentsStats?.totalRecords || 0}
                     </p>
                     <p className="text-xs text-orange-600">
                       ${(treatmentsStats?.totalCost || 0).toFixed(2)} total cost
@@ -453,7 +453,7 @@ export default function AnalyticsPage() {
                         Total Treatments
                       </p>
                       <p className="text-2xl font-bold text-orange-800">
-                        {treatmentsStats?.total || 0}
+                        {treatmentsStats?.totalRecords || 0}
                       </p>
                     </div>
                     <div className="bg-red-50 p-4 rounded-lg">
@@ -473,7 +473,7 @@ export default function AnalyticsPage() {
                       $
                       {(
                         (treatmentsStats?.totalCost || 0) /
-                        Math.max(1, treatmentsStats?.total || 1)
+                        Math.max(1, treatmentsStats?.totalRecords || 1)
                       ).toFixed(2)}
                     </p>
                   </div>

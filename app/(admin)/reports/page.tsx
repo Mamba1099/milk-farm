@@ -89,7 +89,7 @@ export default function ReportsPage() {
   const totalAnimals = animalsStats?.total || 0;
   const healthyAnimals = animalsStats?.healthy || 0;
   const totalProduction = productionStats?.totalQuantity || 0;
-  const totalTreatments = treatmentsStats?.total || 0;
+  const totalTreatments = treatmentsStats?.totalRecords || 0;
   const treatmentCost = treatmentsStats?.totalCost || 0;
   const averageProduction = productionStats?.averageDaily || 0;
 
