@@ -513,14 +513,14 @@ export default function AnimalsPage() {
 
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <div className="flex justify-between text-xs sm:text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Heart size={12} className="sm:w-3.5 sm:h-3.5" />
+                          <div className="flex items-center gap-1 ">
+                            <Heart size={12} className="sm:w-3.5 sm:h-3 text-red-600 fill-red-600" />
                             <span>
                               {animalData.treatments?.length || 0} treatments
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <Activity size={12} className="sm:w-3.5 sm:h-3.5" />
+                            <Activity size={12} className="sm:w-4.5 sm:h-4.5" />
                             <span>
                               {animalData.productionRecords?.length || 0}{" "}
                               records
