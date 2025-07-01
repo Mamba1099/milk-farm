@@ -19,9 +19,15 @@ export interface Animal {
 export interface Production {
   id: string;
   date: string;
-  quantity: number;
+  totalQuantity: number;
+  morningQuantity: number;
+  eveningQuantity: number;
+  calfQuantity: number;
+  poshoQuantity: number;
+  availableForSales: number;
+  carryOverQuantity: number;
   animalId: string;
-  userId: string;
+  recordedById: string;
   notes?: string;
   createdAt: string;
 }
@@ -29,11 +35,12 @@ export interface Production {
 export interface Treatment {
   id: string;
   animalId: string;
-  treatmentType: string;
-  description: string;
-  dateAdministered: string;
-  veterinarian?: string;
-  cost?: number;
+  disease: string;
+  medicine: string;
+  dosage: string;
+  treatment: string;
+  cost: number;
+  treatedAt: string;
   notes?: string;
   createdAt: string;
 }
@@ -81,6 +88,9 @@ export interface DashboardStats {
     weeklyTotal: number;
     weeklyAverage: number;
     monthlyTotal: number;
+    totalQuantity: number;
+    averageDaily: number;
+    averagePerAnimal: number;
     lastRecordDate: string | null;
   };
   treatments: {
@@ -88,6 +98,7 @@ export interface DashboardStats {
     thisMonth: number;
     pendingFollowups: number;
     lastTreatmentDate: string | null;
+    totalCost: number;
   };
   users: UserStats;
   systemHealth: SystemHealth;
@@ -131,8 +142,10 @@ export const useAnimalStats = () => {
       }
     },
     retry: 2,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 1 * 60 * 1000, // 1 minute for real-time updates
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
   });
 };
 
@@ -152,6 +165,9 @@ export const useProductionStats = () => {
             weeklyTotal: 0,
             weeklyAverage: 0,
             monthlyTotal: 0,
+            totalQuantity: 0,
+            averageDaily: 0,
+            averagePerAnimal: 0,
             lastRecordDate: null,
           };
         }
@@ -176,15 +192,15 @@ export const useProductionStats = () => {
 
         // Calculate totals
         const todayQuantity = todayProductions.reduce(
-          (sum, p) => sum + p.quantity,
+          (sum, p) => sum + (p.totalQuantity || 0),
           0
         );
         const weeklyTotal = weeklyProductions.reduce(
-          (sum, p) => sum + p.quantity,
+          (sum, p) => sum + (p.totalQuantity || 0),
           0
         );
         const monthlyTotal = monthlyProductions.reduce(
-          (sum, p) => sum + p.quantity,
+          (sum, p) => sum + (p.totalQuantity || 0),
           0
         );
         const weeklyAverage = Math.round(weeklyTotal / 7);
@@ -202,6 +218,13 @@ export const useProductionStats = () => {
           weeklyTotal,
           weeklyAverage,
           monthlyTotal,
+          totalQuantity: monthlyTotal, // Total for the month
+          averageDaily: weeklyAverage, // Same as weekly average for now
+          averagePerAnimal:
+            productions.length > 0
+              ? monthlyTotal /
+                Math.max(1, new Set(productions.map((p) => p.animalId)).size)
+              : 0,
           lastRecordDate,
         };
       } catch (error) {
@@ -210,8 +233,8 @@ export const useProductionStats = () => {
       }
     },
     retry: 2,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 1 * 60 * 1000, // 1 minute for real-time updates
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -221,24 +244,40 @@ export const useTreatmentStats = () => {
     queryKey: ["dashboard", "treatments"],
     queryFn: async () => {
       try {
-        const response = await apiClient.get("/treatments?limit=1000");
-        const treatments: Treatment[] = response.data.treatments || [];
+        // Use the reports endpoint to get treatment data
+        const endDate = new Date().toISOString();
+        const startDate = new Date(
+          Date.now() - 30 * 24 * 60 * 60 * 1000
+        ).toISOString(); // 30 days ago
 
-        if (treatments.length === 0) {
+        const response = await apiClient.get(
+          `/reports?type=treatments&startDate=${startDate}&endDate=${endDate}`
+        );
+        const treatmentsReport = response.data.report;
+
+        if (!treatmentsReport || !treatmentsReport.details) {
           return {
             totalRecords: 0,
             thisMonth: 0,
             pendingFollowups: 0,
             lastTreatmentDate: null,
+            totalCost: 0,
           };
         }
 
+        const treatments: Treatment[] = treatmentsReport.details;
         const now = new Date();
         const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
         // Filter treatments by date ranges
         const thisMonthTreatments = treatments.filter(
-          (t) => new Date(t.dateAdministered) >= monthAgo
+          (t: Treatment) => new Date(t.treatedAt) >= monthAgo
+        );
+
+        // Calculate total cost
+        const totalCost = treatments.reduce(
+          (sum: number, t: Treatment) => sum + (t.cost || 0),
+          0
         );
 
         // For pending followups, we'll estimate based on treatments in last 30 days
@@ -247,29 +286,33 @@ export const useTreatmentStats = () => {
 
         // Get most recent treatment date
         const sortedTreatments = [...treatments].sort(
-          (a, b) =>
-            new Date(b.dateAdministered).getTime() -
-            new Date(a.dateAdministered).getTime()
+          (a: Treatment, b: Treatment) =>
+            new Date(b.treatedAt).getTime() - new Date(a.treatedAt).getTime()
         );
         const lastTreatmentDate =
-          sortedTreatments.length > 0
-            ? sortedTreatments[0].dateAdministered
-            : null;
+          sortedTreatments.length > 0 ? sortedTreatments[0].treatedAt : null;
 
         return {
           totalRecords: treatments.length,
           thisMonth: thisMonthTreatments.length,
           pendingFollowups,
           lastTreatmentDate,
+          totalCost,
         };
       } catch (error) {
         console.error("Error fetching treatment stats:", error);
-        throw new Error("Failed to fetch treatment statistics");
+        return {
+          totalRecords: 0,
+          thisMonth: 0,
+          pendingFollowups: 0,
+          lastTreatmentDate: null,
+          totalCost: 0,
+        };
       }
     },
     retry: 2,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 1 * 60 * 1000, // 1 minute for real-time updates
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 

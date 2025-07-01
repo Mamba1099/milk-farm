@@ -90,6 +90,9 @@ export const useCreateUser = () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate reports
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 };

@@ -226,8 +226,14 @@ export const useCreateProduction = () => {
       return response.data.production;
     },
     onSuccess: () => {
+      // Invalidate production queries
       queryClient.invalidateQueries({ queryKey: ["production"] });
+      // Invalidate sales queries (production affects available sales)
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate reports
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 };
@@ -242,9 +248,14 @@ export const useCreateSales = () => {
       return response.data.sales;
     },
     onSuccess: () => {
+      // Invalidate sales queries
       queryClient.invalidateQueries({ queryKey: ["sales"] });
+      // Invalidate production queries (sales affect available production)
       queryClient.invalidateQueries({ queryKey: ["production"] });
+      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate reports
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 };
@@ -491,7 +502,12 @@ export const useCreateServing = () => {
       return response.data;
     },
     onSuccess: () => {
+      // Invalidate serving queries
       queryClient.invalidateQueries({ queryKey: ["servings"] });
+      // Invalidate dashboard stats
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate reports
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 };
@@ -509,7 +525,12 @@ export const useUpdateServing = () => {
       return response.data;
     },
     onSuccess: () => {
+      // Invalidate serving queries
       queryClient.invalidateQueries({ queryKey: ["servings"] });
+      // Invalidate dashboard stats
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate reports
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 };
@@ -522,7 +543,12 @@ export const useDeleteServing = () => {
       await apiClient.delete(`/servings/${id}`);
     },
     onSuccess: () => {
+      // Invalidate serving queries
       queryClient.invalidateQueries({ queryKey: ["servings"] });
+      // Invalidate dashboard stats
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate reports
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 };

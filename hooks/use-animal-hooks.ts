@@ -72,7 +72,16 @@ export function useCreateAnimal() {
       }
     },
     onSuccess: () => {
+      // Invalidate all animal-related queries
       queryClient.invalidateQueries({ queryKey: ["animals"] });
+      queryClient.invalidateQueries({ queryKey: ["available-parents"] });
+      queryClient.invalidateQueries({
+        queryKey: ["available-production-animals"],
+      });
+      // Invalidate dashboard stats
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate reports
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 }
@@ -111,8 +120,17 @@ export function useUpdateAnimal() {
       }
     },
     onSuccess: (data) => {
+      // Invalidate all animal-related queries
       queryClient.invalidateQueries({ queryKey: ["animals"] });
       queryClient.invalidateQueries({ queryKey: ["animal", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["available-parents"] });
+      queryClient.invalidateQueries({
+        queryKey: ["available-production-animals"],
+      });
+      // Invalidate dashboard stats
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate reports
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 }
@@ -131,7 +149,20 @@ export function useDeleteAnimal() {
       }
     },
     onSuccess: () => {
+      // Invalidate all animal-related queries
       queryClient.invalidateQueries({ queryKey: ["animals"] });
+      queryClient.invalidateQueries({ queryKey: ["available-parents"] });
+      queryClient.invalidateQueries({
+        queryKey: ["available-production-animals"],
+      });
+      // Invalidate treatments and production records
+      queryClient.invalidateQueries({ queryKey: ["treatments"] });
+      queryClient.invalidateQueries({ queryKey: ["production"] });
+      queryClient.invalidateQueries({ queryKey: ["servings"] });
+      // Invalidate dashboard stats
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate reports
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 }
@@ -157,9 +188,15 @@ export function useCreateTreatment() {
       return response.data;
     },
     onSuccess: (data) => {
+      // Invalidate treatment queries
       queryClient.invalidateQueries({ queryKey: ["treatments"] });
+      // Invalidate animal queries to update health status
       queryClient.invalidateQueries({ queryKey: ["animal", data.animalId] });
       queryClient.invalidateQueries({ queryKey: ["animals"] });
+      // Invalidate dashboard stats
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate reports
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 }
@@ -188,9 +225,17 @@ export function useCreateProduction() {
       return response.data;
     },
     onSuccess: (data) => {
+      // Invalidate production queries
       queryClient.invalidateQueries({ queryKey: ["production"] });
+      // Invalidate sales queries (production affects available sales)
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      // Invalidate animal queries
       queryClient.invalidateQueries({ queryKey: ["animal", data.animalId] });
       queryClient.invalidateQueries({ queryKey: ["animals"] });
+      // Invalidate dashboard stats
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate reports
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 }
@@ -203,7 +248,7 @@ export function useAvailableParents(gender?: "MALE" | "FEMALE") {
       const params = new URLSearchParams();
       if (gender) params.set("gender", gender);
       params.set("isMatured", "true");
-      params.set("limit", "100"); // Get all available parents
+      params.set("limit", "100");
 
       const response = await apiClient.get(`/animals?${params}`);
       return response.data.animals;
