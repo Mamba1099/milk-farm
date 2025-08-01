@@ -2,110 +2,19 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Animal,
+  Production,
+  Treatment,
+  UserStats,
+  SystemHealth,
+  DashboardStats,
+} from "@/lib/types";
 
-// Types for dashboard data
-export interface Animal {
-  id: string;
-  tagNumber: string;
-  name?: string;
-  type: "COW" | "BULL" | "CALF";
-  gender: "MALE" | "FEMALE";
-  healthStatus: "HEALTHY" | "SICK" | "INJURED";
-  isMatured: boolean;
-  birthDate: string;
-  createdAt: string;
-}
-
-export interface Production {
-  id: string;
-  date: string;
-  totalQuantity: number;
-  morningQuantity: number;
-  eveningQuantity: number;
-  calfQuantity: number;
-  poshoQuantity: number;
-  availableForSales: number;
-  carryOverQuantity: number;
-  animalId: string;
-  recordedById: string;
-  notes?: string;
-  createdAt: string;
-}
-
-export interface Treatment {
-  id: string;
-  animalId: string;
-  disease: string;
-  medicine: string;
-  dosage: string;
-  treatment: string;
-  cost: number;
-  treatedAt: string;
-  notes?: string;
-  createdAt: string;
-}
-
-export interface UserStats {
-  totalUsers: number;
-  activeUsers: number;
-  farmManagers: number;
-  employees: number;
-}
-
-export interface SystemHealth {
-  environment: string;
-  database: {
-    status: string;
-    error?: string | null;
-  };
-  fileStorage: {
-    status: string;
-  };
-  authSystem: {
-    status: string;
-  };
-  api: {
-    status: string;
-  };
-  lastBackup: string | null;
-  timestamp: string;
-}
-
-export interface DashboardStats {
-  animals: {
-    total: number;
-    cows: number;
-    bulls: number;
-    calves: number;
-    healthy: number;
-    sick: number;
-    injured: number;
-    matured: number;
-  };
-  production: {
-    totalRecords: number;
-    todayQuantity: number;
-    weeklyTotal: number;
-    weeklyAverage: number;
-    monthlyTotal: number;
-    totalQuantity: number;
-    averageDaily: number;
-    averagePerAnimal: number;
-    lastRecordDate: string | null;
-  };
-  treatments: {
-    totalRecords: number;
-    thisMonth: number;
-    pendingFollowups: number;
-    lastTreatmentDate: string | null;
-    totalCost: number;
-  };
-  users: UserStats;
-  systemHealth: SystemHealth;
-}
-
-// Hook to fetch animal statistics
 export const useAnimalStats = () => {
+  const { toast } = useToast();
+
   return useQuery<DashboardStats["animals"], Error>({
     queryKey: ["dashboard", "animals"],
     queryFn: async () => {
@@ -137,20 +46,25 @@ export const useAnimalStats = () => {
           matured: animals.filter((a) => a.isMatured === true).length,
         };
       } catch (error) {
-        console.error("Error fetching animal stats:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch animal statistics",
+          type: "error",
+        });
         throw new Error("Failed to fetch animal statistics");
       }
     },
     retry: 2,
-    staleTime: 1 * 60 * 1000, // 1 minute for real-time updates
-    gcTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    staleTime: 1 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 5 * 60 * 1000,
   });
 };
 
-// Hook to fetch production statistics
 export const useProductionStats = () => {
+  const { toast } = useToast();
+
   return useQuery<DashboardStats["production"], Error>({
     queryKey: ["dashboard", "production"],
     queryFn: async () => {
@@ -177,7 +91,6 @@ export const useProductionStats = () => {
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-        // Filter productions by date ranges
         const todayProductions = productions.filter((p) =>
           p.date.startsWith(today)
         );
@@ -190,7 +103,6 @@ export const useProductionStats = () => {
           (p) => new Date(p.date) >= monthAgo
         );
 
-        // Calculate totals
         const todayQuantity = todayProductions.reduce(
           (sum, p) => sum + (p.totalQuantity || 0),
           0
@@ -205,7 +117,6 @@ export const useProductionStats = () => {
         );
         const weeklyAverage = Math.round(weeklyTotal / 7);
 
-        // Get most recent production date
         const sortedProductions = [...productions].sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
@@ -218,8 +129,8 @@ export const useProductionStats = () => {
           weeklyTotal,
           weeklyAverage,
           monthlyTotal,
-          totalQuantity: monthlyTotal, // Total for the month
-          averageDaily: weeklyAverage, // Same as weekly average for now
+          totalQuantity: monthlyTotal,
+          averageDaily: weeklyAverage,
           averagePerAnimal:
             productions.length > 0
               ? monthlyTotal /
@@ -228,27 +139,31 @@ export const useProductionStats = () => {
           lastRecordDate,
         };
       } catch (error) {
-        console.error("Error fetching production stats:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch production statistics",
+          type: "error",
+        });
         throw new Error("Failed to fetch production statistics");
       }
     },
     retry: 2,
-    staleTime: 1 * 60 * 1000, // 1 minute for real-time updates
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 1 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 };
 
-// Hook to fetch treatment statistics
 export const useTreatmentStats = () => {
+  const { toast } = useToast();
+
   return useQuery<DashboardStats["treatments"], Error>({
     queryKey: ["dashboard", "treatments"],
     queryFn: async () => {
       try {
-        // Use the reports endpoint to get treatment data
         const endDate = new Date().toISOString();
         const startDate = new Date(
           Date.now() - 30 * 24 * 60 * 60 * 1000
-        ).toISOString(); // 30 days ago
+        ).toISOString();
 
         const response = await apiClient.get(
           `/reports?type=treatments&startDate=${startDate}&endDate=${endDate}`
@@ -269,22 +184,17 @@ export const useTreatmentStats = () => {
         const now = new Date();
         const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-        // Filter treatments by date ranges
         const thisMonthTreatments = treatments.filter(
           (t: Treatment) => new Date(t.treatedAt) >= monthAgo
         );
 
-        // Calculate total cost
         const totalCost = treatments.reduce(
           (sum: number, t: Treatment) => sum + (t.cost || 0),
           0
         );
 
-        // For pending followups, we'll estimate based on treatments in last 30 days
-        // that might need follow-up (this is a simple estimation)
-        const pendingFollowups = Math.floor(thisMonthTreatments.length * 0.1); // 10% estimation
+        const pendingFollowups = Math.floor(thisMonthTreatments.length * 0.1);
 
-        // Get most recent treatment date
         const sortedTreatments = [...treatments].sort(
           (a: Treatment, b: Treatment) =>
             new Date(b.treatedAt).getTime() - new Date(a.treatedAt).getTime()
@@ -300,7 +210,11 @@ export const useTreatmentStats = () => {
           totalCost,
         };
       } catch (error) {
-        console.error("Error fetching treatment stats:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch treatment statistics",
+          type: "error",
+        });
         return {
           totalRecords: 0,
           thisMonth: 0,
@@ -311,13 +225,14 @@ export const useTreatmentStats = () => {
       }
     },
     retry: 2,
-    staleTime: 1 * 60 * 1000, // 1 minute for real-time updates
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 1 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 };
 
-// Hook to fetch user statistics
 export const useUserStats = () => {
+  const { toast } = useToast();
+
   return useQuery<UserStats, Error>({
     queryKey: ["dashboard", "users"],
     queryFn: async () => {
@@ -325,10 +240,13 @@ export const useUserStats = () => {
         const response = await apiClient.get("/users?stats=true");
         return response.data.stats;
       } catch (error) {
-        console.error("Error fetching user stats:", error);
-        // Fallback to basic data if API fails
+        toast({
+          title: "Error",
+          description: "Failed to fetch user statistics",
+          type: "error",
+        });
         return {
-          totalUsers: 1, // At least the current user exists
+          totalUsers: 1,
           activeUsers: 1,
           farmManagers: 1,
           employees: 0,
@@ -336,13 +254,14 @@ export const useUserStats = () => {
       }
     },
     retry: 2,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 
-// Hook to fetch system health
 export const useSystemHealth = () => {
+  const { toast } = useToast();
+
   return useQuery<SystemHealth, Error>({
     queryKey: ["dashboard", "systemHealth"],
     queryFn: async () => {
@@ -350,8 +269,11 @@ export const useSystemHealth = () => {
         const response = await apiClient.get("/system/health");
         return response.data.health;
       } catch (error) {
-        console.error("Error fetching system health:", error);
-        // Fallback to basic data if API fails
+        toast({
+          title: "Error",
+          description: "Failed to fetch system health",
+          type: "error",
+        });
         return {
           environment: process.env.NODE_ENV || "development",
           database: {
@@ -373,12 +295,11 @@ export const useSystemHealth = () => {
       }
     },
     retry: 2,
-    staleTime: 2 * 60 * 1000, // 2 minutes (shorter for health checks)
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 };
 
-// Combined hook for all dashboard data
 export const useDashboardStats = () => {
   const animalStats = useAnimalStats();
   const productionStats = useProductionStats();
@@ -412,3 +333,5 @@ export const useDashboardStats = () => {
       systemHealth.error,
   };
 };
+export type { Animal };
+

@@ -2,27 +2,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
-
-interface ChartData {
-  label: string;
-  value: number;
-  color?: string;
-  percentage?: number;
-}
-
-interface SimpleBarChartProps {
-  title: string;
-  data: ChartData[];
-  icon?: keyof typeof Icons;
-  maxHeight?: number;
-}
-
-interface SimpleProgressChartProps {
-  title: string;
-  data: ChartData[];
-  icon?: keyof typeof Icons;
-  showPercentage?: boolean;
-}
+import type {
+  ChartData,
+  SimpleBarChartProps,
+  SimpleProgressChartProps,
+  StatCardProps,
+  TrendData,
+  SimpleTrendChartProps,
+} from "@/lib/types";
 
 export function SimpleBarChart({
   title,
@@ -119,18 +106,6 @@ export function SimpleProgressChart({
   );
 }
 
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: keyof typeof Icons;
-  color?: "blue" | "green" | "orange" | "purple" | "red" | "indigo";
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
-}
-
 export function StatCard({
   title,
   value,
@@ -220,18 +195,6 @@ export function StatCard({
 }
 
 // Simple line chart component for trends
-interface TrendData {
-  label: string;
-  value: number;
-}
-
-interface SimpleTrendChartProps {
-  title: string;
-  data: TrendData[];
-  icon?: keyof typeof Icons;
-  color?: string;
-}
-
 export function SimpleTrendChart({
   title,
   data,
