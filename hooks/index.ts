@@ -1,9 +1,6 @@
 // Auth mutations
-export {
-  useRegisterMutation,
-  type RegisterResponse,
-  type RegisterError,
-} from "./use-auth-mutations";
+export { useRegisterMutation } from "./use-register";
+export { useLoginMutation } from "./use-login";
 
 // Dashboard hooks
 export {
@@ -23,7 +20,6 @@ export {
 
 // Auth hooks
 export {
-  useLoginMutation,
   useLogoutMutation,
   useRefreshTokenMutation,
   useCurrentUser,
@@ -36,7 +32,6 @@ export {
 // Auth queries
 export {
   useFarmManagerExists,
-  useRegistrationStatus,
 } from "./use-auth-queries";
 
 // UI hooks

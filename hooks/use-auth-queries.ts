@@ -2,17 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
-
-// Types for user data
-export interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-  image: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import { User } from "@/lib/types";
 
 export const useCurrentUser = () => {
   return useQuery<User | null>({
@@ -34,11 +24,10 @@ export const useCurrentUser = () => {
       }
     },
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 };
 
-// Check if farm manager exists (useful for UI decisions)
 export const useFarmManagerExists = () => {
   return useQuery<boolean>({
     queryKey: ["user", "farm-manager-exists"],
@@ -48,26 +37,15 @@ export const useFarmManagerExists = () => {
           "/users/farm-manager-exists"
         );
         return response.data.exists;
-      } catch {
+      } catch (error) {
+        console.warn("Failed to check farm manager existence, defaulting to false:", error);
         return false;
       }
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 0,
+    retry: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 };
 
-// Get registration endpoint status (health check)
-export const useRegistrationStatus = () => {
-  return useQuery<{ message: string; environment: string }>({
-    queryKey: ["registration", "status"],
-    queryFn: async () => {
-      const response = await apiClient.get<{
-        message: string;
-        environment: string;
-      }>(API_ENDPOINTS.auth.register);
-      return response.data;
-    },
-    staleTime: 30 * 60 * 1000, // 30 minutes
-    retry: 1,
-  });
-};
