@@ -20,6 +20,7 @@ export const apiClient = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
+  withCredentials: true,
 });
 
 apiClient.interceptors.request.use(
@@ -35,27 +36,6 @@ apiClient.interceptors.request.use(
       }
     }
 
-    if (config.url?.includes("/auth/logout")) {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const tokenPayload = JSON.parse(atob(token.split(".")[1]));
-          const currentTime = Math.floor(Date.now() / 1000);
-
-          if (tokenPayload.exp > currentTime) {
-            config.headers.Authorization = `Bearer ${token}`;
-          }
-        } catch (error) {
-          console.warn("Invalid token format during logout");
-        }
-      }
-    } else {
-      const token = localStorage.getItem("token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
-
     return config;
   },
   (error) => {
@@ -68,6 +48,7 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     const { status } = error.response || {};
+  
     if (
       originalRequest.url?.includes("/auth") ||
       originalRequest.url?.includes("/farm-manager-exists") ||
@@ -76,17 +57,10 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      if (sessionExpiryNotified) {
-        return Promise.reject(error);
-      }
-
+    if (status === 401) {
       if (!sessionExpiryNotified) {
         sessionExpiryNotified = true;
         console.error("Session expired");
-        localStorage.removeItem("token");
         
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('tokenExpired', {
@@ -137,7 +111,6 @@ export const API_ENDPOINTS = {
     register: "/register",
     login: "/auth",
     logout: "/auth/logout",
-    refresh: "/auth/refresh",
-    profile: "/auth",
+    profile: "/auth/me",
   },
 } as const;

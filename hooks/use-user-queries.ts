@@ -7,12 +7,17 @@ import { User, AuthError } from "@/lib/types";
 export const useCurrentUser = () => {
   return useQuery<User | null>({
     queryKey: ["user", "current"],
-    queryFn: async () => {
+    queryFn: async (): Promise<User | null> => {
       try {
         const response = await apiClient.get<{ user: User }>(
           API_ENDPOINTS.auth.profile
         );
-        return response.data.user;
+        
+        if (response.data && response.data.user) {
+          return response.data.user;
+        }
+        
+        return null;
       } catch (error) {
         if (error && typeof error === "object" && "response" in error) {
           const axiosError = error as { response?: { status?: number } };
@@ -20,7 +25,9 @@ export const useCurrentUser = () => {
             return null;
           }
         }
-        throw error;
+
+        console.warn("User query failed:", error);
+        return null;
       }
     },
     retry: (failureCount, error) => {
@@ -36,6 +43,7 @@ export const useCurrentUser = () => {
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
+    initialData: null,
   });
 };
 
