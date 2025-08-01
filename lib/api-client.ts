@@ -1,49 +1,61 @@
 import axios from "axios";
 
-// Create axios instance with base configuration
+let handleSessionExpiry: (() => void) | null = null;
+let sessionExpiryNotified = false;
+
+const baseURL = process.env.NEXT_API_URL || "http://localhost:3000";
+
+export const setSessionExpiryHandler = (handler: () => void) => {
+  handleSessionExpiry = handler;
+};
+
+export const resetSessionExpiryNotified = () => {
+  sessionExpiryNotified = false;
+};
+
 export const apiClient = axios.create({
-  baseURL: "/api", // Use relative path for API calls
-  timeout: 30000,
+  baseURL: `${baseURL}/api`,
+  timeout: 50000,
   headers: {
     "Content-Type": "application/json",
+    Accept: "application/json",
   },
 });
 
-// Flag to prevent multiple simultaneous logout attempts
-let isLoggingOut = false;
-
-// Helper function to handle token expiration
-const handleTokenExpiration = () => {
-  if (isLoggingOut) return;
-  isLoggingOut = true;
-
-  // Clear tokens
-  localStorage.removeItem("token");
-  document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-  // Show session expired message
-  if (typeof window !== 'undefined') {
-    // Use a custom event to notify the auth context
-    window.dispatchEvent(new CustomEvent('tokenExpired', {
-      detail: { message: 'Your session has expired. Please log in again.' }
-    }));
-
-    // Redirect to login after a brief delay
-    setTimeout(() => {
-      window.location.href = '/login';
-      isLoggingOut = false;
-    }, 1500);
-  }
-};
-
-// Request interceptor
 apiClient.interceptors.request.use(
-  (config) => {
-    // Add auth token if available
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    if (typeof window === "undefined") return config;
+
+    if (config.data && typeof config.data === 'object') {
+      const sensitiveFields = ['password', 'confirmPassword', 'oldPassword', 'newPassword'];
+      const hasPassword = sensitiveFields.some(field => field in config.data);
+      
+      if (hasPassword && process.env.NODE_ENV === 'development') {
+        console.log('🔒 API Request with sensitive data hidden for security');
+      }
     }
+
+    if (config.url?.includes("/auth/logout")) {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const tokenPayload = JSON.parse(atob(token.split(".")[1]));
+          const currentTime = Math.floor(Date.now() / 1000);
+
+          if (tokenPayload.exp > currentTime) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
+        } catch (error) {
+          console.warn("Invalid token format during logout");
+        }
+      }
+    } else {
+      const token = localStorage.getItem("token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
     return config;
   },
   (error) => {
@@ -51,27 +63,71 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    // Handle 401 Unauthorized errors (token expired/invalid)
-    if (error.response?.status === 401) {
-      // Skip logout handling for login endpoint
-      const isLoginEndpoint =
-        error.config?.url?.includes("/auth") &&
-        error.config?.method === "post" &&
-        !error.config?.url?.includes("/logout");
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    const { status } = error.response || {};
+    if (
+      originalRequest.url?.includes("/auth") ||
+      originalRequest.url?.includes("/farm-manager-exists") ||
+      originalRequest._isRetry
+    ) {
+      return Promise.reject(error);
+    }
 
-      if (!isLoginEndpoint) {
-        handleTokenExpiration();
+    if (status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      if (sessionExpiryNotified) {
+        return Promise.reject(error);
+      }
+
+      if (!sessionExpiryNotified) {
+        sessionExpiryNotified = true;
+        console.error("Session expired");
+        localStorage.removeItem("token");
+        
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tokenExpired', {
+            detail: { message: 'Your session has expired. Please log in again.' }
+          }));
+
+          if (handleSessionExpiry) {
+            handleSessionExpiry();
+          } else {
+            window.location.href = '/login';
+          }
+        }
+      }
+      return Promise.reject(error);
+    }
+
+    if (status === 403) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('accessDenied', {
+          detail: { message: "You don't have permission for this action" }
+        }));
+      }
+      return Promise.reject(error);
+    }
+
+    if (status >= 500) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('serverError', {
+          detail: { message: "Server error. Please try again later." }
+        }));
       }
     }
 
-    // Handle common errors
-    console.error("API Error:", error);
+    const errorToLog = {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      method: error.config?.method,
+    };
+    console.error("API Error:", errorToLog);
     return Promise.reject(error);
   }
 );
@@ -84,5 +140,4 @@ export const API_ENDPOINTS = {
     refresh: "/auth/refresh",
     profile: "/auth",
   },
-  // Add more endpoints as needed
 } as const;

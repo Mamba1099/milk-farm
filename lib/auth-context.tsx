@@ -10,15 +10,16 @@ import React, {
 import { useRouter } from "next/navigation";
 import {
   useCurrentUser,
+} from "@/hooks/use-user-queries";
+import {
   useLoginMutation,
   useLogoutMutation,
-  User,
-  LoginInput,
-} from "@/hooks/use-auth-hooks";
-import { useAuthErrorHandler } from "@/hooks/use-auth-expiration";
+} from "@/hooks";
+import { User, LoginInput } from "@/lib/types";
+import { useAuthErrorHandler } from "@/hooks/use-token-expiration";
 
 export interface AuthContextType {
-  user: User | null;
+  user: User | null | undefined;
   isAuthenticated: boolean;
   isLoading: boolean;
   isFarmManager: boolean;

@@ -2,6 +2,14 @@
 export { useRegisterMutation } from "./use-register";
 export { useLoginMutation } from "./use-login";
 
+// User queries and mutations
+export {
+  useCurrentUser,
+  useFarmManagerExists,
+  useLogoutMutation,
+  useRefreshTokenMutation,
+} from "./use-user-queries";
+
 // Dashboard hooks
 export {
   useDashboardStats,
@@ -17,22 +25,6 @@ export {
   type SystemHealth,
   type DashboardStats,
 } from "./use-dashboard-hooks";
-
-// Auth hooks
-export {
-  useLogoutMutation,
-  useRefreshTokenMutation,
-  useCurrentUser,
-  type LoginInput,
-  type LoginResponse,
-  type User,
-  type AuthError,
-} from "./use-auth-hooks";
-
-// Auth queries
-export {
-  useFarmManagerExists,
-} from "./use-auth-queries";
 
 // UI hooks
 export { useToast, type Toast } from "./use-toast";
