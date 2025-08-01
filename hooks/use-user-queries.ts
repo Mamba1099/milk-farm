@@ -16,15 +16,26 @@ export const useCurrentUser = () => {
       } catch (error) {
         if (error && typeof error === "object" && "response" in error) {
           const axiosError = error as { response?: { status?: number } };
-          if (axiosError.response?.status === 401) {
+          if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
             return null;
           }
         }
         throw error;
       }
     },
-    retry: false,
+    retry: (failureCount, error) => {
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
+          return false;
+        }
+      }
+      return failureCount < 2;
+    },
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 };
 
@@ -66,24 +77,6 @@ export const useLogoutMutation = () => {
       console.error("Logout failed:", error);
       queryClient.removeQueries({ queryKey: ["user"] });
       queryClient.clear();
-    },
-  });
-};
-
-export const useRefreshTokenMutation = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation<{ message: string; user: any; token: string }, AuthError, void>({
-    mutationFn: async () => {
-      const response = await apiClient.post(API_ENDPOINTS.auth.refresh);
-      return response.data;
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(["user"], data.user);
-    },
-    onError: (error) => {
-      console.error("Token refresh failed:", error);
-      queryClient.removeQueries({ queryKey: ["user"] });
     },
   });
 };

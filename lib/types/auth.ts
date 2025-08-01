@@ -1,4 +1,4 @@
-// Authentication related types and interfaces
+import { ReactNode } from "react";
 
 export type Role = "FARM_MANAGER" | "EMPLOYEE";
 
@@ -38,7 +38,6 @@ export interface LoginResponse {
     image: string | null;
     image_url: string | null;
   };
-  token: string;
 }
 
 export interface RegisterInput {
@@ -68,6 +67,32 @@ export interface ApiError extends Error {
     data: ApiErrorResponse;
     status: number;
   };
+}
+
+export interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export interface AuthContextType {
+  user: User | null | undefined;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  isFarmManager: boolean;
+  isEmployee: boolean;
+  login: (credentials: LoginInput) => Promise<void>;
+  logout: () => Promise<void>;
+  hasRole: (roles: string | string[]) => boolean;
+  hasAnyRole: (roles: string[]) => boolean;
+  canEdit: boolean;
+  canView: boolean;
+}
+
+export interface LoginError {
+  error: string;
+  details?: Array<{
+    field: string;
+    message: string;
+  }>;
 }
 
 export type AuthError = ApiErrorResponse | ApiError;

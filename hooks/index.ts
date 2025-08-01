@@ -2,12 +2,11 @@
 export { useRegisterMutation } from "./use-register";
 export { useLoginMutation } from "./use-login";
 
-// User queries and mutations
+// User queries and auth mutations
 export {
   useCurrentUser,
   useFarmManagerExists,
   useLogoutMutation,
-  useRefreshTokenMutation,
 } from "./use-user-queries";
 
 // Dashboard hooks

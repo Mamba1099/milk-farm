@@ -1,41 +1,13 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
+import React, { createContext, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  useCurrentUser,
-} from "@/hooks/use-user-queries";
-import {
-  useLoginMutation,
-  useLogoutMutation,
-} from "@/hooks";
-import { User, LoginInput } from "@/lib/types";
-import { useAuthErrorHandler } from "@/hooks/use-token-expiration";
+import { useCurrentUser, useLogoutMutation } from "@/hooks/use-user-queries";
+import { useLoginMutation } from "@/hooks/use-login";
+import { LoginInput, AuthContextType, AuthProviderProps } from "@/lib/types";
 
-export interface AuthContextType {
-  user: User | null | undefined;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  isFarmManager: boolean;
-  isEmployee: boolean;
-  login: (credentials: LoginInput) => Promise<void>;
-  logout: () => Promise<void>;
-  hasRole: (roles: string | string[]) => boolean;
-  hasAnyRole: (roles: string[]) => boolean;
-  canEdit: boolean;
-  canView: boolean;
-}
-
-// Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Custom hook to use auth context
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -44,51 +16,45 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-// Auth provider component
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
-  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Use auth error handler hook
-  useAuthErrorHandler();
-
-  // Use the auth hooks
   const {
     data: user,
     isLoading: userLoading,
     error: userError,
     refetch: refetchUser,
   } = useCurrentUser();
+  
   const loginMutation = useLoginMutation();
   const logoutMutation = useLogoutMutation();
 
-  const isLoading = userLoading || !isInitialized;
+  const isLoading = userLoading;
   const isAuthenticated = !!user && !userError;
   const isFarmManager = user?.role === "FARM_MANAGER";
   const isEmployee = user?.role === "EMPLOYEE";
 
-  // Permission checks
-  const canEdit = isFarmManager; // Only farm managers can edit
-  const canView = isAuthenticated; // Both roles can view
+  const canEdit = isFarmManager;
+  const canView = isAuthenticated;
 
-  // Initialize auth state on mount
   useEffect(() => {
-    // Just mark as initialized - the useCurrentUser hook will handle token validation
-    setIsInitialized(true);
-  }, []);
+    if (!isLoading) {
+      const currentPath = window.location.pathname;
+      const isAuthPage = ["/login", "/signup"].includes(currentPath);
+      const isProtectedRoute = currentPath.startsWith("/dashboard") || 
+                              currentPath.startsWith("/admin") ||
+                              currentPath.startsWith("/animals") ||
+                              currentPath.startsWith("/production") ||
+                              currentPath.startsWith("/employees") ||
+                              currentPath.startsWith("/reports");
 
-  // Handle authentication errors - clean up if user query fails
-  useEffect(() => {
-    if (isInitialized && userError && !userLoading) {
-      // If there's an auth error and we're not loading, clear auth data
-      localStorage.removeItem("token");
-      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      if (!isAuthenticated && isProtectedRoute) {
+        router.push("/login");
+      } else if (isAuthenticated && isAuthPage) {
+        router.push("/dashboard");
+      }
     }
-  }, [userError, isInitialized, userLoading]);
+  }, [isAuthenticated, isLoading, router]);
 
   const hasRole = (roles: string | string[]): boolean => {
     if (!user) return false;
@@ -102,20 +68,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: LoginInput) => {
     try {
-      const result = await loginMutation.mutateAsync(credentials);
-
-      // Store token in localStorage and as httpOnly cookie
-      localStorage.setItem("token", result.token);
-
-      // Set cookie for server-side access
-      document.cookie = `token=${result.token}; path=/; max-age=${
-        7 * 24 * 60 * 60
-      }; samesite=strict; secure=${process.env.NODE_ENV === "production"}`;
-
-      // Refetch user data
+      await loginMutation.mutateAsync(credentials);
       await refetchUser();
-
-      // Redirect to dashboard (both roles use same dashboard)
       router.push("/dashboard");
     } catch (error) {
       throw error;
@@ -128,9 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      // Always clear local storage and cookies
-      localStorage.removeItem("token");
-      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      await refetchUser();
       router.push("/login");
     }
   };
@@ -150,6 +102,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
   );
 };

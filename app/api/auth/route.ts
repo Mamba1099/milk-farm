@@ -4,9 +4,12 @@ import jwt from "jsonwebtoken";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators/auth";
-import { withApiTimeout } from "@/lib/api-timeout";
+import { 
+  validateSecurity, 
+  createSecureResponse, 
+  createSecureErrorResponse 
+} from "@/lib/security";
 
-// JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
@@ -14,37 +17,37 @@ if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
   throw new Error("JWT secrets are not configured");
 }
 
-async function handleLogin(request: NextRequest) {
+export async function POST(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) return securityError;
+
   try {
     const body = await request.json();
-
-    // Validate input
     const validatedData = loginSchema.parse(body);
     const { email, password } = validatedData;
 
-    // Find user by email
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
+      return createSecureErrorResponse(
+        "Invalid credentials",
+        401,
+        request
       );
     }
 
-    // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
+      return createSecureErrorResponse(
+        "Invalid credentials",
+        401,
+        request
       );
     }
 
-    // Create JWT payload
     const payload = {
       sub: user.id,
       username: user.username,
@@ -53,42 +56,36 @@ async function handleLogin(request: NextRequest) {
       image: user.image,
     };
 
-    // Generate access token (expires in 1 hour)
-    const accessToken = jwt.sign(payload, JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
-    // Generate refresh token (expires in 7 days)
-    const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, {
+    const sessionToken = jwt.sign(payload, JWT_SECRET as string, {
       expiresIn: "7d",
     });
 
-    // Update user's last login
     await prisma.user.update({
       where: { id: user.id },
       data: { updatedAt: new Date() },
     });
 
-    // Return success response
-    const response = NextResponse.json({
-      message: "Login successful",
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        image: user.image,
-        createdAt: user.createdAt.toISOString(),
+    const response = createSecureResponse(
+      {
+        message: "Login successful",
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          image: user.image,
+          createdAt: user.createdAt.toISOString(),
+        },
       },
-      token: accessToken,
-    });
+      { status: 200 },
+      request
+    );
 
-    // Set refresh token as httpOnly cookie for security
-    response.cookies.set("refresh-token", refreshToken, {
+    response.cookies.set("session", sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
+      maxAge: 7 * 24 * 60 * 60,
       path: "/",
     });
 
@@ -96,9 +93,8 @@ async function handleLogin(request: NextRequest) {
   } catch (error) {
     console.error("Login error:", error);
 
-    // Handle validation errors
     if (error instanceof ZodError) {
-      return NextResponse.json(
+      return createSecureResponse(
         {
           error: "Validation failed",
           details: error.issues.map((issue) => ({
@@ -106,22 +102,23 @@ async function handleLogin(request: NextRequest) {
             message: issue.message,
           })),
         },
-        { status: 400 }
+        { status: 400 },
+        request
       );
     }
 
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+    return createSecureErrorResponse(
+      "Internal server error",
+      500,
+      request
     );
   }
 }
 
-// Health check for login endpoint
-async function handleHealthCheck() {
-  return NextResponse.json({ message: "Login endpoint is working" });
+export async function GET(request: NextRequest) {
+  return createSecureResponse(
+    { message: "Login endpoint is working" },
+    { status: 200 },
+    request
+  );
 }
-
-// Export wrapped handlers with timeout
-export const POST = withApiTimeout(handleLogin, 30000); // 20 second timeout
-export const GET = withApiTimeout(handleHealthCheck, 10000); // 5 second timeout

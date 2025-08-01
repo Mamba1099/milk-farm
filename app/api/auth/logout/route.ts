@@ -1,16 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-import { withApiTimeout } from "@/lib/api-timeout";
+import { NextRequest } from "next/server";
+import { 
+  validateSecurity, 
+  createSecureResponse, 
+  createSecureErrorResponse 
+} from "@/lib/security";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function handleLogout(request: NextRequest) {
+export async function POST(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) return securityError;
+
   try {
-    // Create response
-    const response = NextResponse.json({
-      message: "Logged out successfully",
-    });
+    const response = createSecureResponse(
+      { message: "Logged out successfully" },
+      { status: 200 },
+      request
+    );
 
-    // Clear the refresh token cookie
-    response.cookies.set("refresh-token", "", {
+    response.cookies.set("session", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -21,12 +27,10 @@ async function handleLogout(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Logout error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+    return createSecureErrorResponse(
+      "Internal server error",
+      500,
+      request
     );
   }
 }
-
-// Export wrapped handler with timeout
-export const POST = withApiTimeout(handleLogout, 20000); // 10 second timeout

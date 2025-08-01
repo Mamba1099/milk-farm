@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Icons } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { LoginError } from "@/lib/types";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -26,7 +27,6 @@ export default function LoginPage() {
   const { login, isAuthenticated, user } = useAuth();
   const { toast } = useToast();
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
       router.push("/dashboard");
@@ -54,13 +54,13 @@ export default function LoginPage() {
         description: "Welcome back!",
       });
     } catch (error) {
-      if (error && typeof error === "object" && "error" in error) {
-        const loginError = error as {
-          error: string;
-          details?: Array<{ field: string; message: string }>;
-        };
+      console.error("Login error:", error);
+      
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as any;
+        const loginError = axiosError.response?.data as LoginError;
 
-        if (loginError.details) {
+        if (loginError?.details && Array.isArray(loginError.details)) {
           loginError.details.forEach((detail) => {
             toast({
               type: "error",
@@ -68,11 +68,17 @@ export default function LoginPage() {
               description: detail.message,
             });
           });
-        } else {
+        } else if (loginError?.error) {
           toast({
             type: "error",
             title: "Login Failed",
             description: loginError.error,
+          });
+        } else {
+          toast({
+            type: "error",
+            title: "Login Failed",
+            description: "Invalid credentials. Please try again.",
           });
         }
       } else {
@@ -97,7 +103,7 @@ export default function LoginPage() {
       y: 0,
       transition: {
         duration: 0.5,
-        ease: "easeOut",
+        ease: "easeOut" as const,
       },
     },
   };
@@ -125,7 +131,6 @@ export default function LoginPage() {
 
           <CardContent className="px-8 pb-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Email Field */}
               <div className="space-y-3">
                 <label
                   htmlFor="email"
@@ -146,7 +151,6 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-              {/* Password Field */}
               <div className="space-y-3">
                 <label
                   htmlFor="password"
@@ -178,8 +182,6 @@ export default function LoginPage() {
                   </button>
                 </div>
               </div>
-              {/* Remember Me & Forgot Password */}
-              {/* Login Button */}
               <Button
                 type="submit"
                 disabled={isLoading}
@@ -197,7 +199,6 @@ export default function LoginPage() {
                   </>
                 )}
               </Button>
-              {/* Divider */}
               <div className="relative my-8">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t border-[#4a6b3d]/20" />
@@ -206,7 +207,6 @@ export default function LoginPage() {
               </div>
             </form>
 
-            {/* Sign Up Link */}
             <div className="mt-8 text-center text-lg text-[#4a6b3d]">
               Don&apos;t have an account?{" "}
               <Link

@@ -1,25 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
-import { withApiTimeout } from "@/lib/api-timeout";
+import { 
+  validateSecurity, 
+  createSecureResponse, 
+  createSecureErrorResponse 
+} from "@/lib/security";
 
-async function handleAuthMe(request: NextRequest) {
+export async function GET(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) return securityError;
+
   try {
-    // Get token from Authorization header or cookies
-    const authHeader = request.headers.get("authorization");
-    const cookieToken = request.cookies.get("token")?.value;
+    const sessionToken = request.cookies.get("session")?.value;
 
-    const token = authHeader?.replace("Bearer ", "") || cookieToken;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: "No authentication token provided" },
-        { status: 401 }
+    if (!sessionToken) {
+      return createSecureErrorResponse(
+        "No session found",
+        401,
+        request
       );
     }
 
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+    const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as {
       sub: string;
       username: string;
       email: string;
@@ -27,7 +30,6 @@ async function handleAuthMe(request: NextRequest) {
       image: string | null;
     };
 
-    // Get user from database
     const user = await prisma.user.findUnique({
       where: { id: decoded.sub },
       select: {
@@ -41,27 +43,29 @@ async function handleAuthMe(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return createSecureErrorResponse("User not found", 404, request);
     }
 
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        image: user.image,
-        createdAt: user.createdAt.toISOString(),
+    return createSecureResponse(
+      {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          image: user.image,
+          createdAt: user.createdAt.toISOString(),
+        },
       },
-    });
+      { status: 200 },
+      request
+    );
   } catch (error) {
     console.error("Auth verification error:", error);
-    return NextResponse.json(
-      { error: "Invalid or expired token" },
-      { status: 401 }
+    return createSecureErrorResponse(
+      "Invalid or expired token",
+      401,
+      request
     );
   }
 }
-
-// Export the wrapped handler with timeout
-export const GET = withApiTimeout(handleAuthMe, 20000); // 15 second timeout
