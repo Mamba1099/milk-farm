@@ -1,7 +1,6 @@
 "use client";
-import { useState } from "react";
-import { motion } from "framer-motion";
-import Image from "next/image";
+import { useState, useEffect } from "react";
+import { motion, Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,101 +12,90 @@ import {
 import { Input } from "@/components/ui/input";
 import { Icons } from "@/components/icons";
 import Link from "next/link";
-import { useRegisterMutation } from "@/hooks";
+import { useRegisterMutation, useFarmManagerExists } from "@/hooks";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-
-type Role = "farm_manager" | "employee";
+import { ProfileImageField } from "@/components/auth/profile-image-field";
+import { LoadingOverlay } from "@/components/ui/loading-overlay";
+import { Role } from "@/lib/types";
 
 export default function SignUpPage() {
   const router = useRouter();
   const registerMutation = useRegisterMutation();
   const { toast } = useToast();
-
+  const { data: farmManagerExists, isLoading: checkingManager } = useFarmManagerExists();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<Role>("employee"); // Default to employee
+  const [role, setRole] = useState<Role>("EMPLOYEE");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  useEffect(() => {
+    if (checkingManager) return;
+    
+    if (farmManagerExists) {
+      setRole("EMPLOYEE");
+      toast({
+        type: "info",
+        title: "Role Automatically Set",
+        description: "Since a farm manager already exists, you'll be registered as an employee.",
+      });
+    } else {
+      setRole("FARM_MANAGER");
+    }
+  }, [farmManagerExists, checkingManager, toast]);
+
+  const handleImageChange = (file: File | null) => {
+    setProfileImage(file);
     if (file) {
-      setProfileImage(file);
-
-      // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    } else {
+      setImagePreview(null);
     }
-  };
-
-  const removeImage = () => {
-    setProfileImage(null);
-    setImagePreview(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Basic validation
     if (password !== confirmPassword) {
-      toast.error("Password Mismatch", "Passwords do not match!");
+      toast({
+        type: "error",
+        title: "Password Mismatch",
+        description: "Passwords do not match!",
+      });
       return;
     }
 
-    // Prepare the registration data
+    setIsRegistering(true);
+
     const registrationData = {
       username,
       email,
       password,
       confirmPassword,
       role,
-      image: profileImage || undefined,
+      image: profileImage ?? null,
     };
 
     try {
-      const result = await registerMutation.mutateAsync(registrationData);
-      toast.success("Account Created", result.message);
-      if (result.roleChanged) {
-        toast.warning(
-          "Role Changed",
-          `You were registered as ${result.assignedRole} instead of ${result.originalRole}`
-        );
-      }
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      await registerMutation.mutateAsync(registrationData);
+      router.push("/login");
     } catch (error) {
-      if (error && typeof error === "object" && "error" in error) {
-        const registrationError = error as {
-          error: string;
-          details?: Array<{ field: string; message: string }>;
-        };
-
-        if (registrationError.details) {
-          registrationError.details.forEach((detail) => {
-            toast.error(`Validation Error: ${detail.field}`, detail.message);
-          });
-        } else {
-          toast.error("Registration Failed", registrationError.error);
-        }
-      } else {
-        toast.error(
-          "Unexpected Error",
-          "An unexpected error occurred. Please try again."
-        );
-      }
+      console.error("Unexpected registration error:", error);
+    } finally {
+      setIsRegistering(false);
     }
   };
 
-  const fadeInUp = {
+  const fadeInUp: Variants = {
     initial: {
       opacity: 0,
       y: 20,
@@ -124,19 +112,24 @@ export default function SignUpPage() {
 
   const roleOptions = [
     {
-      value: "farm_manager",
+      value: "FARM_MANAGER",
       label: "Manager",
       description: "Full access to farm management",
     },
     {
-      value: "employee",
+      value: "EMPLOYEE",
       label: "Farm Employee",
       description: "Daily operations and data entry",
     },
   ];
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-[#f7f5f2] to-[#e8f5e9] flex items-center justify-center p-4">
+    <>
+      <LoadingOverlay 
+        isVisible={isRegistering} 
+        message="Creating your account and setting up your profile..." 
+      />
+      <div className="min-h-screen w-full bg-gradient-to-b from-[#f7f5f2] to-[#e8f5e9] flex items-center justify-center p-4">
       <motion.div
         initial="initial"
         animate="animate"
@@ -158,7 +151,6 @@ export default function SignUpPage() {
 
           <CardContent className="px-8 pb-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Username Field */}
               <div className="space-y-3">
                 <label
                   htmlFor="username"
@@ -180,60 +172,11 @@ export default function SignUpPage() {
                 </div>
               </div>
 
-              {/* Profile Image Field */}
-              <div className="space-y-3">
-                <label
-                  htmlFor="profileImage"
-                  className="text-lg font-semibold text-[#2d5523]"
-                >
-                  Profile Picture
-                </label>
-                <div className="flex items-center space-x-6">
-                  {imagePreview ? (
-                    <div className="relative">
-                      <Image
-                        src={imagePreview}
-                        alt="Profile preview"
-                        width={80}
-                        height={80}
-                        className="h-20 w-20 rounded-full object-cover border-2 border-[#4a6b3d]/20"
-                      />
-                      <button
-                        type="button"
-                        onClick={removeImage}
-                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="h-16 w-16 rounded-full bg-[#f7f5f2] border-2 border-dashed border-[#4a6b3d]/30 flex items-center justify-center">
-                      <Icons.camera className="h-6 w-6 text-[#4a6b3d]" />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <label
-                      htmlFor="profileImageInput"
-                      className="cursor-pointer inline-flex items-center px-3 py-2 border border-[#4a6b3d]/20 rounded-md text-sm font-medium text-[#4a6b3d] bg-white hover:bg-[#f7f5f2] transition-colors"
-                    >
-                      <Icons.upload className="mr-2 h-4 w-4" />
-                      {imagePreview ? "Change Photo" : "Upload Photo"}
-                    </label>
-                    <input
-                      id="profileImageInput"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                    <p className="text-xs text-[#4a6b3d] mt-1">
-                      JPG, PNG or GIF (max 5MB)
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <ProfileImageField
+                onImageChange={handleImageChange}
+                imagePreview={imagePreview}
+              />
 
-              {/* Email Field */}
               <div className="space-y-3">
                 <label
                   htmlFor="email"
@@ -255,7 +198,6 @@ export default function SignUpPage() {
                 </div>
               </div>
 
-              {/* Role Selection */}
               <div className="space-y-3">
                 <label
                   htmlFor="role"
@@ -269,7 +211,8 @@ export default function SignUpPage() {
                     id="role"
                     value={role}
                     onChange={(e) => setRole(e.target.value as Role)}
-                    className="w-full pl-12 pr-4 py-4 text-lg border border-[#4a6b3d]/20 rounded-md focus:border-[#2d5523] focus:ring-[#2d5523]/20 focus:outline-none bg-white text-[#2d5523]"
+                    disabled={checkingManager || farmManagerExists}
+                    className="w-full pl-12 pr-4 py-4 text-lg border border-[#4a6b3d]/20 rounded-md focus:border-[#2d5523] focus:ring-[#2d5523]/20 focus:outline-none bg-white text-[#2d5523] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     required
                   >
                     {roleOptions.map((option) => (
@@ -280,11 +223,15 @@ export default function SignUpPage() {
                   </select>
                 </div>
                 <p className="text-sm text-[#4a6b3d] mt-2">
-                  {roleOptions.find((opt) => opt.value === role)?.description}
+                  {checkingManager ? 
+                    "Checking farm manager status..." : 
+                    farmManagerExists ? 
+                      "Role automatically set to Employee - Farm Manager already exists" : 
+                      roleOptions.find((opt) => opt.value === role)?.description
+                  }
                 </p>
               </div>
 
-              {/* Password Field */}
               <div className="space-y-3">
                 <label
                   htmlFor="password"
@@ -317,7 +264,6 @@ export default function SignUpPage() {
                 </div>
               </div>
 
-              {/* Confirm Password Field */}
               <div className="space-y-3">
                 <label
                   htmlFor="confirmPassword"
@@ -357,15 +303,14 @@ export default function SignUpPage() {
                   )}
               </div>
 
-              {/* Sign Up Button */}
               <Button
                 type="submit"
                 disabled={
-                  registerMutation.isPending || password !== confirmPassword
+                  isRegistering || password !== confirmPassword
                 }
                 className="w-full bg-[#2d5523] hover:bg-[#1e3a1a] text-white font-semibold py-4 text-lg transition-colors disabled:opacity-50 mt-8"
               >
-                {registerMutation.isPending ? (
+                {isRegistering ? (
                   <>
                     <Icons.spinner className="mr-3 h-5 w-5 animate-spin" />
                     Creating account...
@@ -378,7 +323,6 @@ export default function SignUpPage() {
                 )}
               </Button>
 
-              {/* Divider */}
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t border-[#4a6b3d]/20" />
@@ -386,12 +330,9 @@ export default function SignUpPage() {
                 <div className="relative flex justify-center text-xs uppercase"></div>
               </div>
 
-              {/* Social Sign Up */}
               <div className="grid grid-cols-2 gap-3"></div>
             </form>
 
-            {/* Sign In Link */}
-            {/* Login Link */}
             <div className="mt-8 text-center text-lg text-[#4a6b3d]">
               Already have an account?{" "}
               <Link
@@ -404,6 +345,7 @@ export default function SignUpPage() {
           </CardContent>
         </Card>
       </motion.div>
-    </div>
+      </div>
+    </>
   );
 }

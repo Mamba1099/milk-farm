@@ -1,12 +1,11 @@
 "use client";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import HeroSection from "@/components/home/hero-section";
 import FeaturesSection from "@/components/home/features-section";
 import { HowItWorks } from "@/components/home/how-it-work";
 import CtaSection from "@/components/home/cta-section";
 
-// Animation variants
-const fadeInUp = {
+const fadeInUp: Variants = {
   initial: {
     opacity: 0,
     y: 60,
@@ -16,12 +15,12 @@ const fadeInUp = {
     y: 0,
     transition: {
       duration: 0.6,
-      ease: "easeOut",
+      ease: "easeInOut",
     },
   },
 };
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   animate: {
     transition: {
       staggerChildren: 0.2,

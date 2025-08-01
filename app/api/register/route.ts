@@ -1,62 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { registerApiSchema } from "@/lib/validators/auth";
+import { registerSchema } from "@/lib/validators/auth";
 import { ZodError } from "zod";
-import { withApiTimeout } from "@/lib/api-timeout";
+import {
+  validateSecurity,
+  createSecureResponse,
+  createSecureErrorResponse,
+} from "@/lib/security";
+import { getPublicImageUrl } from "@/supabase/storage/client";
 
-function createResponse(
-  data: Record<string, unknown>,
-  status: number,
-  headers?: Record<string, string>
-) {
-  const response = NextResponse.json(data, { status });
-
-  // Security headers for production
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("X-XSS-Protection", "1; mode=block");
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set(
-    "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()"
-  );
-
-  // CORS headers (adjust origins for production)
-  const origin =
-    process.env.NODE_ENV === "production"
-      ? process.env.ALLOWED_ORIGIN || "https://yourdomain.com"
-      : "*";
-  response.headers.set("Access-Control-Allow-Origin", origin);
-  response.headers.set(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS"
-  );
-  response.headers.set(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization"
-  );
-
-  response.headers.set(
-    "Cache-Control",
-    "no-store, no-cache, must-revalidate, proxy-revalidate"
-  );
-  response.headers.set("Pragma", "no-cache");
-  response.headers.set("Expires", "0");
-
-  if (headers) {
-    Object.entries(headers).forEach(([key, value]) => {
-      response.headers.set(key, value);
-    });
+export async function POST(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
   }
 
-  return response;
-}
-
-async function handleRegister(request: NextRequest) {
   try {
     const body = await request.json();
-    const validatedData = registerApiSchema.parse(body);
+    const validatedData = registerSchema.parse(body);
     const { username, email, password, role, image } = validatedData;
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -66,15 +28,17 @@ async function handleRegister(request: NextRequest) {
 
     if (existingUser) {
       if (existingUser.email === email) {
-        return createResponse(
-          { error: "A user with this email already exists" },
-          400
+        return createSecureErrorResponse(
+          "A user with this email already exists",
+          400,
+          request
         );
       }
       if (existingUser.username === username) {
-        return createResponse(
-          { error: "A user with this username already exists" },
-          400
+        return createSecureErrorResponse(
+          "A user with this username already exists",
+          400,
+          request
         );
       }
     }
@@ -82,13 +46,13 @@ async function handleRegister(request: NextRequest) {
     let finalRole = role;
     let roleChangeMessage = "";
 
-    if (role === "farm_manager") {
+    if (role === "FARM_MANAGER") {
       const existingFarmManager = await prisma.user.findFirst({
         where: { role: "FARM_MANAGER" },
       });
 
       if (existingFarmManager) {
-        finalRole = "employee";
+        finalRole = "EMPLOYEE";
         roleChangeMessage =
           "A farm manager already exists. Account created as employee instead.";
       }
@@ -105,7 +69,7 @@ async function handleRegister(request: NextRequest) {
         email,
         password: hashedPassword,
         role: prismaRole,
-        image: image || null,
+        image: typeof image === "string" ? image : null,
       },
       select: {
         id: true,
@@ -118,6 +82,7 @@ async function handleRegister(request: NextRequest) {
     });
 
     const responseData = {
+      success: true,
       message: roleChangeMessage || "User created successfully",
       user: {
         id: user.id,
@@ -125,6 +90,7 @@ async function handleRegister(request: NextRequest) {
         email: user.email,
         role: user.role.toLowerCase(),
         image: user.image,
+        image_url: user.image ? getPublicImageUrl(user.image) : null,
         createdAt: user.createdAt,
       },
       ...(roleChangeMessage && {
@@ -134,7 +100,11 @@ async function handleRegister(request: NextRequest) {
       }),
     };
 
-    return createResponse(responseData, 201);
+    return createSecureResponse(
+      responseData,
+      { status: 201 },
+      request
+    );
   } catch (error) {
     console.error("Registration error:", error);
 
@@ -144,49 +114,57 @@ async function handleRegister(request: NextRequest) {
         message: err.message,
       }));
 
-      return createResponse(
+      return createSecureResponse(
         {
+          success: false,
           error: "Validation failed",
           details: fieldErrors,
         },
-        400
+        { status: 400 },
+        request
       );
     }
 
     if (error && typeof error === "object" && "code" in error) {
       if (error.code === "P2002") {
-        return createResponse(
-          { error: "Username or email already exists" },
-          400
+        return createSecureErrorResponse(
+          "Username or email already exists",
+          400,
+          request
         );
       }
     }
 
-    return createResponse(
-      { error: "Something went wrong. Please try again." },
-      500
+    return createSecureErrorResponse(
+      "Something went wrong. Please try again.",
+      500,
+      request
     );
   }
 }
 
-async function handleOptions() {
-  return createResponse({}, 200, {
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  });
-}
-
-async function handleHealthCheck() {
-  return createResponse(
+export async function OPTIONS(request: NextRequest) {
+  return createSecureResponse(
+    { success: true },
     {
-      message: "Registration endpoint is working",
-      environment: process.env.NODE_ENV || "development",
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
     },
-    200
+    request
   );
 }
 
-// Export wrapped handlers with timeout
-export const POST = withApiTimeout(handleRegister, 30000); // 25 second timeout
-export const OPTIONS = withApiTimeout(handleOptions, 15000); // 5 second timeout
-export const GET = withApiTimeout(handleHealthCheck, 15000); // 5 second timeout
+export async function GET(request: NextRequest) {
+  return createSecureResponse(
+    {
+      success: true,
+      message: "Registration endpoint is working",
+      environment: process.env.NODE_ENV || "development",
+    },
+    { status: 200 },
+    request
+  );
+}
