@@ -61,7 +61,6 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   treatments        Treatment[]
   disposals         Disposal[]
   servings          Serving[]
@@ -118,7 +117,6 @@ model Treatment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations
   animal    Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
   treatedBy User   @relation(fields: [treatedById], references: [id])
 
@@ -136,7 +134,6 @@ model Disposal {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  // Relations
   animal     Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
   disposedBy User   @relation(fields: [disposedById], references: [id])
 
@@ -156,7 +153,6 @@ model Serving {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  // Relations
   female   Animal @relation(fields: [femaleId], references: [id], onDelete: Cascade)
   servedBy User   @relation(fields: [servedById], references: [id])
 
@@ -179,11 +175,9 @@ model Production {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  // Relations
   animal     Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
   recordedBy User   @relation(fields: [recordedById], references: [id])
 
-  // Unique constraint: one production record per animal per day
   @@unique([animalId, date])
   @@map("production")
 }
@@ -202,7 +196,6 @@ model Sales {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  // Relations
   animal Animal? @relation(fields: [animalId], references: [id], onDelete: SetNull)
   soldBy User    @relation(fields: [soldById], references: [id])
 
