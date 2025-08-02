@@ -1,54 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { productionSchema } from "@/lib/validators/animal";
-import jwt from "jsonwebtoken";
-import { withApiTimeout } from "@/lib/api-timeout";
+import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
 
-// Helper function to get user from token
-async function getUserFromToken(request: NextRequest) {
-  const token = request.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) {
-    return null;
-  }
-
+export async function GET(request: NextRequest) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      sub: string;
-      username: string;
-      email: string;
-      role: string;
-      image: string | null;
-    };
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { id: true, role: true, username: true },
-    });
-    return user;
-  } catch {
-    return null;
-  }
-}
+    const securityError = validateSecurity(request);
+    if (securityError) return securityError;
 
-// GET /api/production - Get production records with pagination and filters
-async function GET_handler(request: NextRequest) {
-  try {
-    const user = await getUserFromToken(request);
+    const user = await getUserFromSession(request);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
-
-    // Filter parameters
     const animalId = searchParams.get("animalId");
     const date = searchParams.get("date");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    // Build where clause
     const where: {
       animalId?: string;
       date?: {
@@ -85,7 +59,6 @@ async function GET_handler(request: NextRequest) {
       }
     }
 
-    // Get production records with related data
     const [productions, total] = await Promise.all([
       prisma.production.findMany({
         where,
@@ -117,7 +90,7 @@ async function GET_handler(request: NextRequest) {
 
     const totalPages = Math.ceil(total / limit);
 
-    return NextResponse.json({
+    return createSecureResponse({
       productions,
       pagination: {
         page,
@@ -125,37 +98,32 @@ async function GET_handler(request: NextRequest) {
         total,
         totalPages,
       },
-    });
+    }, { status: 200 }, request);
+
   } catch (error) {
     console.error("Error fetching production records:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch production records" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to fetch production records", 500, request);
   }
 }
 
-// POST /api/production - Create new production record
-async function POST_handler(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const securityError = validateSecurity(request);
+    if (securityError) return securityError;
 
-    // Check if user has permission (Farm Manager or Employee)
+    const user = await getUserFromSession(request);
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
     const body = await request.json();
 
-    // Validate request body
     const validation = productionSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        { error: "Invalid data", details: validation.error.issues },
-        { status: 400 }
+      return createSecureErrorResponse(
+        `Invalid data: ${validation.error.issues.map(i => i.message).join(', ')}`,
+        400,
+        request
       );
     }
 
@@ -169,23 +137,22 @@ async function POST_handler(request: NextRequest) {
       notes,
     } = validation.data;
 
-    // Check if animal exists and is ready for production
     const animal = await prisma.animal.findUnique({
       where: { id: animalId },
     });
 
     if (!animal) {
-      return NextResponse.json({ error: "Animal not found" }, { status: 404 });
+      return createSecureErrorResponse("Animal not found", 404, request);
     }
 
     if (!animal.isReadyForProduction) {
-      return NextResponse.json(
-        { error: "Animal is not ready for production" },
-        { status: 400 }
+      return createSecureErrorResponse(
+        "Animal is not ready for production",
+        400,
+        request
       );
     }
 
-    // Check if production record already exists for this animal on this date
     const targetDate = new Date(date);
     const startOfDay = new Date(
       targetDate.getFullYear(),
@@ -205,21 +172,17 @@ async function POST_handler(request: NextRequest) {
     });
 
     if (existingRecord) {
-      return NextResponse.json(
-        {
-          error:
-            "Production record already exists for this animal on this date",
-        },
-        { status: 409 }
+      return createSecureErrorResponse(
+        "Production record already exists for this animal on this date",
+        409,
+        request
       );
     }
 
-    // Calculate totals
     const totalQuantity = morningQuantity + eveningQuantity;
     const totalDeductions = calfQuantity + poshoQuantity;
     const availableForSales = Math.max(0, totalQuantity - totalDeductions);
 
-    // Create production record
     const production = await prisma.production.create({
       data: {
         animalId,
@@ -230,7 +193,7 @@ async function POST_handler(request: NextRequest) {
         calfQuantity,
         poshoQuantity,
         availableForSales,
-        carryOverQuantity: 0, // Will be updated by carry-over logic
+        carryOverQuantity: 0,
         recordedById: user.id,
         notes,
       },
@@ -253,50 +216,46 @@ async function POST_handler(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "Production record created successfully",
       production,
-    });
+    }, { status: 201 }, request);
+
   } catch (error) {
     console.error("Error creating production record:", error);
-    return NextResponse.json(
-      { error: "Failed to create production record" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to create production record", 500, request);
   }
 }
 
-// PUT /api/production/[id] - Update production record
-async function PUT_handler(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request);
+    const securityError = validateSecurity(request);
+    if (securityError) return securityError;
+
+    const user = await getUserFromSession(request);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
-    // Check if user is Farm Manager
     if (user.role !== "FARM_MANAGER") {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Production ID is required" },
-        { status: 400 }
-      );
+      return createSecureErrorResponse("Production ID is required", 400, request);
     }
 
     const body = await request.json();
 
-    // Validate request body
     const validation = productionSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        { error: "Invalid data", details: validation.error.issues },
-        { status: 400 }
+      return createSecureErrorResponse(
+        `Invalid data: ${validation.error.issues.map(i => i.message).join(', ')}`,
+        400,
+        request
       );
     }
 
@@ -308,24 +267,18 @@ async function PUT_handler(request: NextRequest) {
       notes,
     } = validation.data;
 
-    // Check if production record exists
     const existingRecord = await prisma.production.findUnique({
       where: { id },
     });
 
     if (!existingRecord) {
-      return NextResponse.json(
-        { error: "Production record not found" },
-        { status: 404 }
-      );
+      return createSecureErrorResponse("Production record not found", 404, request);
     }
 
-    // Calculate totals
     const totalQuantity = morningQuantity + eveningQuantity;
     const totalDeductions = calfQuantity + poshoQuantity;
     const availableForSales = Math.max(0, totalQuantity - totalDeductions);
 
-    // Update production record
     const production = await prisma.production.update({
       where: { id },
       data: {
@@ -357,73 +310,60 @@ async function PUT_handler(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "Production record updated successfully",
       production,
-    });
+    }, { status: 200 }, request);
+
   } catch (error) {
     console.error("Error updating production record:", error);
-    return NextResponse.json(
-      { error: "Failed to update production record" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to update production record", 500, request);
   }
 }
 
-// DELETE /api/production/[id] - Delete production record
-async function DELETE_handler(request: NextRequest) {
+export async function DELETE(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request);
+    const securityError = validateSecurity(request);
+    if (securityError) return securityError;
+
+    const user = await getUserFromSession(request);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
-    // Check if user is Farm Manager
     if (user.role !== "FARM_MANAGER") {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Production ID is required" },
-        { status: 400 }
-      );
+      return createSecureErrorResponse("Production ID is required", 400, request);
     }
 
-    // Check if production record exists
     const existingRecord = await prisma.production.findUnique({
       where: { id },
     });
 
     if (!existingRecord) {
-      return NextResponse.json(
-        { error: "Production record not found" },
-        { status: 404 }
-      );
+      return createSecureErrorResponse("Production record not found", 404, request);
     }
 
-    // Delete production record
     await prisma.production.delete({
       where: { id },
     });
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "Production record deleted successfully",
-    });
+    }, { status: 200 }, request);
+
   } catch (error) {
     console.error("Error deleting production record:", error);
-    return NextResponse.json(
-      { error: "Failed to delete production record" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to delete production record", 500, request);
   }
 }
 
-// Export handlers with timeout middleware
-export const GET = withApiTimeout(GET_handler, 30000);
-export const POST = withApiTimeout(POST_handler, 30000);
-export const PUT = withApiTimeout(PUT_handler, 30000);
-export const DELETE = withApiTimeout(DELETE_handler, 30000);
+export async function OPTIONS(request: NextRequest) {
+  return createSecureResponse({}, { status: 200 }, request);
+}

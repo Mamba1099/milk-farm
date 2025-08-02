@@ -1,46 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withApiTimeout } from "@/lib/api-timeout";
-import { verifyToken } from "@/lib/jwt-utils";
+import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
+import { uploadUserImage } from "@/lib/user-storage";
+import { getPublicImageUrl } from "@/supabase/storage/client";
 import bcrypt from "bcryptjs";
 
-async function handleGetUsers(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    // Verify authentication
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    const user = await getUserFromSession(request);
+    if (!user) {
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 }
-      );
-    }
-
-    // Check if user has admin privileges (only farm managers can see users)
-    const currentUser = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { role: true },
-    });
-
-    if (!currentUser || currentUser.role !== "FARM_MANAGER") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+    if (user.role !== "FARM_MANAGER") {
+      return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 
     const url = new URL(request.url);
     const statsOnly = url.searchParams.get("stats") === "true";
 
     if (statsOnly) {
-      // Get user statistics only
       const [totalUsers, farmManagers, employees] = await Promise.all([
         prisma.user.count(),
         prisma.user.count({
@@ -53,18 +37,17 @@ async function handleGetUsers(request: NextRequest) {
 
       const userStats = {
         totalUsers,
-        activeUsers: totalUsers, // For now, consider all users as active
+        activeUsers: totalUsers,
         farmManagers,
         employees,
       };
 
-      return NextResponse.json({
+      return createSecureResponse({
         message: "User statistics retrieved successfully",
         stats: userStats,
-      });
+      }, { status: 200 }, request);
     }
 
-    // Get all users with pagination
     const page = parseInt(url.searchParams.get("page") || "1");
     const limit = parseInt(url.searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
@@ -87,177 +70,195 @@ async function handleGetUsers(request: NextRequest) {
       prisma.user.count(),
     ]);
 
-    return NextResponse.json({
+    const usersWithImageUrls = users.map(user => ({
+      ...user,
+      image_url: user.image ? getPublicImageUrl(user.image) : null,
+    }));
+
+    return createSecureResponse({
       message: "Users retrieved successfully",
-      users,
+      users: usersWithImageUrls,
       pagination: {
         page,
         limit,
         total: totalCount,
         totalPages: Math.ceil(totalCount / limit),
       },
-    });
+    }, { status: 200 }, request);
+
   } catch (error) {
     console.error("Error fetching users:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Internal server error", 500, request);
   }
 }
 
-async function handleCreateUser(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    const user = await getUserFromSession(request);
+    if (!user) {
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 }
-      );
+    if (user.role !== "FARM_MANAGER") {
+      return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 
-    // Check if user has admin privileges
-    const currentUser = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { role: true },
-    });
+    const contentType = request.headers.get("content-type") || "";
+    let data: Record<string, unknown> = {};
+    let imageFile: File | null = null;
 
-    if (!currentUser || currentUser.role !== "FARM_MANAGER") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      data = Object.fromEntries(formData.entries());
+      imageFile = formData.get("image") as File;
+
+      if (data.image) {
+        delete data.image;
+      }
+    } else {
+      const body = await request.json();
+      data = body;
     }
 
-    const body = await request.json();
-    const { username, email, password, role } = body;
+    const { username, email, password, role } = data;
 
-    // Validate required fields
     if (!username || !email || !password || !role) {
-      return NextResponse.json(
-        { error: "Username, email, password, and role are required" },
-        { status: 400 }
+      return createSecureErrorResponse(
+        "Username, email, password, and role are required",
+        400,
+        request
       );
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: "Please enter a valid email address" },
-        { status: 400 }
+    if (!emailRegex.test(email as string)) {
+      return createSecureErrorResponse(
+        "Please enter a valid email address",
+        400,
+        request
       );
     }
 
-    // Validate password strength
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters long" },
-        { status: 400 }
+    if ((password as string).length < 8) {
+      return createSecureErrorResponse(
+        "Password must be at least 8 characters long",
+        400,
+        request
       );
     }
 
-    // Check for at least one uppercase, one lowercase, and one number
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
-    if (!passwordRegex.test(password)) {
-      return NextResponse.json(
-        {
-          error:
-            "Password must contain at least one uppercase letter, one lowercase letter, and one number",
-        },
-        { status: 400 }
+    if (!passwordRegex.test(password as string)) {
+      return createSecureErrorResponse(
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+        400,
+        request
       );
     }
 
-    // Validate username length
-    if (username.length < 3) {
-      return NextResponse.json(
-        { error: "Username must be at least 3 characters long" },
-        { status: 400 }
+    if ((username as string).length < 3) {
+      return createSecureErrorResponse(
+        "Username must be at least 3 characters long",
+        400,
+        request
       );
     }
 
-    // Validate username format (no special characters except underscore and hyphen)
     const usernameRegex = /^[a-zA-Z0-9_-]+$/;
-    if (!usernameRegex.test(username)) {
-      return NextResponse.json(
-        {
-          error:
-            "Username can only contain letters, numbers, underscores, and hyphens",
-        },
-        { status: 400 }
+    if (!usernameRegex.test(username as string)) {
+      return createSecureErrorResponse(
+        "Username can only contain letters, numbers, underscores, and hyphens",
+        400,
+        request
       );
     }
 
-    // Validate role
-    if (!["FARM_MANAGER", "EMPLOYEE"].includes(role)) {
-      return NextResponse.json(
-        { error: "Invalid role. Must be FARM_MANAGER or EMPLOYEE" },
-        { status: 400 }
+    if (!["FARM_MANAGER", "EMPLOYEE"].includes(role as string)) {
+      return createSecureErrorResponse(
+        "Invalid role. Must be FARM_MANAGER or EMPLOYEE",
+        400,
+        request
       );
     }
 
-    // Check if user already exists
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [{ username }, { email }],
+        OR: [{ username: username as string }, { email: email as string }],
       },
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "User with this username or email already exists" },
-        { status: 409 }
+      return createSecureErrorResponse(
+        "User with this username or email already exists",
+        409,
+        request
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
+    let imageUrl = null;
+    if (imageFile && imageFile.size > 0) {
+      const uploadResult = await uploadUserImage(imageFile);
+      if (uploadResult.error) {
+        return createSecureErrorResponse(uploadResult.error, 500, request);
+      }
+      imageUrl = uploadResult.imageUrl;
+    }
 
-    // Create user
+    const hashedPassword = await bcrypt.hash(password as string, 12);
+
     const newUser = await prisma.user.create({
       data: {
-        username,
-        email,
+        username: username as string,
+        email: email as string,
         password: hashedPassword,
-        role,
+        role: role as "FARM_MANAGER" | "EMPLOYEE",
+        image: imageUrl,
       },
       select: {
         id: true,
         username: true,
         email: true,
         role: true,
+        image: true,
         createdAt: true,
       },
     });
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "User created successfully",
-      user: newUser,
-    });
+      user: {
+        ...newUser,
+        image_url: newUser.image ? getPublicImageUrl(newUser.image) : null,
+      },
+    }, { status: 201 }, request);
+
   } catch (error) {
     console.error("Error creating user:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Internal server error", 500, request);
   }
 }
 
-async function handleHealthCheck() {
-  return NextResponse.json({ message: "Users endpoint is working" });
+export async function PUT(request: NextRequest) {
+  try {
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    return createSecureResponse({
+      message: "Users endpoint is working",
+      timestamp: new Date().toISOString(),
+    }, { status: 200 }, request);
+
+  } catch (error) {
+    console.error("Error in users health check:", error);
+    return createSecureErrorResponse("Internal server error", 500, request);
+  }
 }
 
-// Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleGetUsers, 20000); // 15 second timeout
-export const POST = withApiTimeout(handleCreateUser, 20000); // 15 second timeout
-export const PUT = withApiTimeout(handleHealthCheck, 10000); // 5 second timeout for health check
+export async function OPTIONS(request: NextRequest) {
+  return createSecureResponse({}, { status: 200 }, request);
+}

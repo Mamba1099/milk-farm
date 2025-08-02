@@ -1,40 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withApiTimeout } from "@/lib/api-timeout";
-import { verifyToken } from "@/lib/jwt-utils";
+import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
 
-async function handleSystemHealth(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    const user = await getUserFromSession(request);
+    if (!user) {
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 }
-      );
+    if (user.role !== "FARM_MANAGER") {
+      return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 
-    // Check if user has admin privileges
-    const currentUser = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { role: true },
-    });
-
-    if (!currentUser || currentUser.role !== "FARM_MANAGER") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
-    // Check database connectivity
     let databaseStatus = "Disconnected";
     let databaseError = null;
 
@@ -46,11 +29,9 @@ async function handleSystemHealth(request: NextRequest) {
       databaseError = error instanceof Error ? error.message : "Unknown error";
       databaseStatus = "Error";
     }
+
     const fileStorageStatus = "Active";
-
     const authSystemStatus = "Secure";
-
-    // API is operational if this endpoint responds
     const apiStatus = "Operational";
 
     const systemHealth = {
@@ -72,24 +53,34 @@ async function handleSystemHealth(request: NextRequest) {
       timestamp: new Date().toISOString(),
     };
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "System health check completed",
       health: systemHealth,
-    });
+    }, { status: 200 }, request);
+
   } catch (error) {
     console.error("Error checking system health:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Internal server error", 500, request);
   }
 }
 
-// Health check for the health endpoint itself
-async function handleHealthCheck() {
-  return NextResponse.json({ message: "System health endpoint is working" });
+export async function POST(request: NextRequest) {
+  try {
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    return createSecureResponse({
+      message: "System health endpoint is working",
+      timestamp: new Date().toISOString(),
+    }, { status: 200 }, request);
+
+  } catch (error) {
+    console.error("Error in health check ping:", error);
+    return createSecureErrorResponse("Internal server error", 500, request);
+  }
 }
 
-// Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleSystemHealth, 20000); // 15 second timeout
-export const POST = withApiTimeout(handleHealthCheck, 10000);
+export async function OPTIONS(request: NextRequest) {
+  return createSecureResponse({}, { status: 200 }, request);
+}

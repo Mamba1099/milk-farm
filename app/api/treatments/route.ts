@@ -1,40 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CreateTreatmentSchema } from "@/lib/validators/animal";
-import jwt from "jsonwebtoken";
-import { withApiTimeout } from "@/lib/api-timeout";
+import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
 
-// Helper function to get user from token
-async function getUserFromToken(request: NextRequest) {
-  const token = request.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) {
-    return null;
-  }
-
+export async function GET(request: NextRequest) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      sub: string;
-      username: string;
-      email: string;
-      role: string;
-      image: string | null;
-    };
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { id: true, role: true, username: true },
-    });
-    return user;
-  } catch {
-    return null;
-  }
-}
-
-// GET /api/treatments - Get all treatments with filtering
-async function handleGetTreatments(request: NextRequest) {
-  try {
-    const user = await getUserFromToken(request);
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    const user = await getUserFromSession(request);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
     const { searchParams } = new URL(request.url);
@@ -48,8 +26,19 @@ async function handleGetTreatments(request: NextRequest) {
     const treatments = await prisma.treatment.findMany({
       where,
       include: {
-        animal: { select: { id: true, tagNumber: true, name: true } },
-        treatedBy: { select: { id: true, username: true } },
+        animal: {
+          select: {
+            id: true,
+            name: true,
+            tagNumber: true,
+          },
+        },
+        treatedBy: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
       },
       skip,
       take: limit,
@@ -58,7 +47,7 @@ async function handleGetTreatments(request: NextRequest) {
 
     const total = await prisma.treatment.count({ where });
 
-    return NextResponse.json({
+    return createSecureResponse({
       treatments,
       pagination: {
         total,
@@ -66,73 +55,87 @@ async function handleGetTreatments(request: NextRequest) {
         current: page,
         limit,
       },
-    });
+    }, { status: 200 }, request);
+
   } catch (error) {
     console.error("Error fetching treatments:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch treatments" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to fetch treatments", 500, request);
   }
 }
 
-// POST /api/treatments - Create new treatment
-async function handleCreateTreatment(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request);
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    const user = await getUserFromSession(request);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
     const body = await request.json();
-    const validatedData = CreateTreatmentSchema.parse(body);
 
-    // Check if animal exists and is not disposed
-    const animal = await prisma.animal.findUnique({
-      where: { id: validatedData.animalId },
-      include: { disposals: true },
-    });
+    try {
+      const validatedData = CreateTreatmentSchema.parse(body);
 
-    if (!animal) {
-      return NextResponse.json({ error: "Animal not found" }, { status: 404 });
-    }
-
-    if (animal.disposals.length > 0) {
-      return NextResponse.json(
-        { error: "Cannot add treatment to disposed animal" },
-        { status: 400 }
-      );
-    }
-
-    // Update animal health status to SICK if it's currently HEALTHY
-    if (animal.healthStatus === "HEALTHY") {
-      await prisma.animal.update({
+      const animal = await prisma.animal.findUnique({
         where: { id: validatedData.animalId },
-        data: { healthStatus: "SICK" },
+        include: { disposals: true },
       });
+
+      if (!animal) {
+        return createSecureErrorResponse("Animal not found", 404, request);
+      }
+
+      if (animal.disposals.length > 0) {
+        return createSecureErrorResponse(
+          "Cannot add treatment to disposed animal",
+          400,
+          request
+        );
+      }
+
+      if (animal.healthStatus === "HEALTHY") {
+        await prisma.animal.update({
+          where: { id: validatedData.animalId },
+          data: { healthStatus: "SICK" },
+        });
+      }
+
+      const treatment = await prisma.treatment.create({
+        data: {
+          animalId: validatedData.animalId,
+          disease: validatedData.disease,
+          medicine: validatedData.medicine || "",
+          dosage: validatedData.dosage || "",
+          treatment: validatedData.treatment,
+          cost: validatedData.cost,
+          treatedAt: validatedData.treatedAt,
+          notes: validatedData.notes,
+          treatedById: user.id,
+        },
+        include: {
+          animal: { select: { id: true, tagNumber: true, name: true } },
+          treatedBy: { select: { id: true, username: true } },
+        },
+      });
+
+      return createSecureResponse({
+        message: "Treatment created successfully",
+        treatment,
+      }, { status: 201 }, request);
+
+    } catch (validationError) {
+      return createSecureErrorResponse("Invalid treatment data", 400, request);
     }
 
-    const treatment = await prisma.treatment.create({
-      data: {
-        ...validatedData,
-        treatedById: user.id,
-      },
-      include: {
-        animal: { select: { id: true, tagNumber: true, name: true } },
-        treatedBy: { select: { id: true, username: true } },
-      },
-    });
-
-    return NextResponse.json(treatment, { status: 201 });
   } catch (error) {
     console.error("Error creating treatment:", error);
-    return NextResponse.json(
-      { error: "Failed to create treatment" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to create treatment", 500, request);
   }
 }
 
-// Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleGetTreatments, 30000); // 20 second timeout
-export const POST = withApiTimeout(handleCreateTreatment, 25000); // 25 second timeout
+export async function OPTIONS(request: NextRequest) {
+  return createSecureResponse({}, { status: 200 }, request);
+}

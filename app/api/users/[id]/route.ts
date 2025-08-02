@@ -1,51 +1,32 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withApiTimeout } from "@/lib/api-timeout";
-import { verifyToken } from "@/lib/jwt-utils";
+import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
+import { uploadUserImage, deleteUserImage } from "@/lib/user-storage";
+import { getPublicImageUrl } from "@/supabase/storage/client";
 import bcrypt from "bcryptjs";
-import { uploadUserAvatar } from "@/lib/file-storage";
 
-async function handleGetUser(
+export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Verify authentication
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
     }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 }
-      );
+    const user = await getUserFromSession(request);
+    if (!user) {
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
     const { id } = await params;
 
-    // Check if user has admin privileges or is requesting their own data
-    const currentUser = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { role: true },
-    });
-
-    if (
-      !currentUser ||
-      (currentUser.role !== "FARM_MANAGER" && decoded.sub !== id)
-    ) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+    if (user.role !== "FARM_MANAGER" && user.id !== id) {
+      return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 
-    const user = await prisma.user.findUnique({
+    const foundUser = await prisma.user.findUnique({
       where: { id },
       select: {
         id: true,
@@ -58,186 +39,160 @@ async function handleGetUser(
       },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!foundUser) {
+      return createSecureErrorResponse("User not found", 404, request);
     }
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "User retrieved successfully",
-      user,
-    });
+      user: {
+        ...foundUser,
+        image_url: foundUser.image ? getPublicImageUrl(foundUser.image) : null,
+      },
+    }, { status: 200 }, request);
+
   } catch (error) {
     console.error("Error fetching user:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Internal server error", 500, request);
   }
 }
 
-async function handleUpdateUser(
+export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Verify authentication
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    const user = await getUserFromSession(request);
+    if (!user) {
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 }
-      );
-    }
-
-    // Check if user has admin privileges
-    const currentUser = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { role: true },
-    });
-
-    if (!currentUser || currentUser.role !== "FARM_MANAGER") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+    if (user.role !== "FARM_MANAGER") {
+      return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 
     const { id } = await params;
 
-    // Check if request contains multipart form data (image upload)
-    const contentType = request.headers.get("content-type");
-    let username, email, role, password, imageFile;
+    const contentType = request.headers.get("content-type") || "";
+    let data: Record<string, unknown> = {};
+    let imageFile: File | null = null;
 
-    if (contentType?.includes("multipart/form-data")) {
-      // Handle form data with image upload
+    if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
-      username = formData.get("username")?.toString() || undefined;
-      email = formData.get("email")?.toString() || undefined;
-      role = formData.get("role")?.toString() || undefined;
-      password = formData.get("password")?.toString() || undefined;
+      data = Object.fromEntries(formData.entries());
       imageFile = formData.get("image") as File;
 
-      // Convert empty strings to undefined
-      if (username === "") username = undefined;
-      if (email === "") email = undefined;
-      if (role === "") role = undefined;
-      if (password === "") password = undefined;
+      if (data.image) {
+        delete data.image;
+      }
     } else {
-      // Handle regular JSON data
       const body = await request.json();
-      ({ username, email, role, password } = body);
+      data = body;
     }
 
-    // Check if user exists
+    const { username, email, role, password } = data;
+
     const existingUser = await prisma.user.findUnique({
       where: { id },
     });
 
     if (!existingUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return createSecureErrorResponse("User not found", 404, request);
     }
 
-    // Validate fields if provided
-    if (username !== undefined && username !== null && username !== "") {
-      if (username.length < 3) {
-        return NextResponse.json(
-          { error: "Username must be at least 3 characters long" },
-          { status: 400 }
-        );
-      }
-      const usernameRegex = /^[a-zA-Z0-9_-]+$/;
-      if (!usernameRegex.test(username)) {
-        return NextResponse.json(
-          {
-            error:
-              "Username can only contain letters, numbers, underscores, and hyphens",
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (email !== undefined && email !== null && email !== "") {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return NextResponse.json(
-          { error: "Please enter a valid email address" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (password !== undefined && password !== null && password !== "") {
-      if (password.length < 8) {
-        return NextResponse.json(
-          { error: "Password must be at least 8 characters long" },
-          { status: 400 }
-        );
-      }
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
-      if (!passwordRegex.test(password)) {
-        return NextResponse.json(
-          {
-            error:
-              "Password must contain at least one uppercase letter, one lowercase letter, and one number",
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (
-      role !== undefined &&
-      role !== null &&
-      role !== "" &&
-      !["FARM_MANAGER", "EMPLOYEE"].includes(role)
-    ) {
-      return NextResponse.json(
-        { error: "Invalid role. Must be FARM_MANAGER or EMPLOYEE" },
-        { status: 400 }
+    if (username && (username as string).length < 3) {
+      return createSecureErrorResponse(
+        "Username must be at least 3 characters long",
+        400,
+        request
       );
     }
 
-    // Prepare update data
+    if (username) {
+      const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+      if (!usernameRegex.test(username as string)) {
+        return createSecureErrorResponse(
+          "Username can only contain letters, numbers, underscores, and hyphens",
+          400,
+          request
+        );
+      }
+    }
+
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email as string)) {
+        return createSecureErrorResponse(
+          "Please enter a valid email address",
+          400,
+          request
+        );
+      }
+    }
+
+    if (password && (password as string).length < 8) {
+      return createSecureErrorResponse(
+        "Password must be at least 8 characters long",
+        400,
+        request
+      );
+    }
+
+    if (password) {
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+      if (!passwordRegex.test(password as string)) {
+        return createSecureErrorResponse(
+          "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+          400,
+          request
+        );
+      }
+    }
+
+    if (role && !["FARM_MANAGER", "EMPLOYEE"].includes(role as string)) {
+      return createSecureErrorResponse(
+        "Invalid role. Must be FARM_MANAGER or EMPLOYEE",
+        400,
+        request
+      );
+    }
+
     const updateData: {
       username?: string;
       email?: string;
-      role?: string;
+      role?: "FARM_MANAGER" | "EMPLOYEE";
       password?: string;
       image?: string;
     } = {};
 
-    if (username && username.trim() !== "") updateData.username = username;
-    if (email && email.trim() !== "") updateData.email = email;
-    if (role && ["FARM_MANAGER", "EMPLOYEE"].includes(role)) {
-      updateData.role = role;
+    if (username && (username as string).trim() !== "") {
+      updateData.username = username as string;
     }
-    if (password && password.trim() !== "") {
-      updateData.password = await bcrypt.hash(password, 12);
+    if (email && (email as string).trim() !== "") {
+      updateData.email = email as string;
+    }
+    if (role && ["FARM_MANAGER", "EMPLOYEE"].includes(role as string)) {
+      updateData.role = role as "FARM_MANAGER" | "EMPLOYEE";
+    }
+    if (password && (password as string).trim() !== "") {
+      updateData.password = await bcrypt.hash(password as string, 12);
     }
 
-    // Handle image upload if provided
     if (imageFile && imageFile.size > 0) {
-      const imageUrl = await uploadUserAvatar(imageFile);
-      if (imageUrl) {
-        updateData.image = imageUrl;
-      } else {
-        return NextResponse.json(
-          { error: "Failed to upload image" },
-          { status: 500 }
-        );
+      if (existingUser.image) {
+        await deleteUserImage(existingUser.image);
       }
+      const uploadResult = await uploadUserImage(imageFile);
+      if (uploadResult.error) {
+        return createSecureErrorResponse(uploadResult.error, 500, request);
+      }
+      updateData.image = uploadResult.imageUrl;
     }
 
-    // Check for username/email conflicts
     if (username || email) {
       const conflictUser = await prisma.user.findFirst({
         where: {
@@ -245,8 +200,8 @@ async function handleUpdateUser(
             { id: { not: id } },
             {
               OR: [
-                ...(username ? [{ username }] : []),
-                ...(email ? [{ email }] : []),
+                ...(username ? [{ username: username as string }] : []),
+                ...(email ? [{ email: email as string }] : []),
               ],
             },
           ],
@@ -254,9 +209,10 @@ async function handleUpdateUser(
       });
 
       if (conflictUser) {
-        return NextResponse.json(
-          { error: "Username or email already exists" },
-          { status: 409 }
+        return createSecureErrorResponse(
+          "Username or email already exists",
+          409,
+          request
         );
       }
     }
@@ -275,90 +231,74 @@ async function handleUpdateUser(
       },
     });
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "User updated successfully",
-      user: updatedUser,
-    });
+      user: {
+        ...updatedUser,
+        image_url: updatedUser.image ? getPublicImageUrl(updatedUser.image) : null,
+      },
+    }, { status: 200 }, request);
+
   } catch (error) {
     console.error("Error updating user:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Internal server error", 500, request);
   }
 }
 
-async function handleDeleteUser(
+export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Verify authentication
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    const user = await getUserFromSession(request);
+    if (!user) {
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 }
-      );
-    }
-
-    // Check if user has admin privileges
-    const currentUser = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { role: true },
-    });
-
-    if (!currentUser || currentUser.role !== "FARM_MANAGER") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+    if (user.role !== "FARM_MANAGER") {
+      return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 
     const { id } = await params;
 
-    // Prevent self-deletion
-    if (decoded.sub === id) {
-      return NextResponse.json(
-        { error: "Cannot delete your own account" },
-        { status: 400 }
-      );
+    if (user.id === id) {
+      return createSecureErrorResponse("Cannot delete your own account", 400, request);
     }
 
-    // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id },
+      select: {
+        id: true,
+        image: true,
+      },
     });
 
     if (!existingUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return createSecureErrorResponse("User not found", 404, request);
+    }
+
+    if (existingUser.image) {
+      await deleteUserImage(existingUser.image);
     }
 
     await prisma.user.delete({
       where: { id },
     });
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "User deleted successfully",
-    });
+    }, { status: 200 }, request);
+
   } catch (error) {
     console.error("Error deleting user:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Internal server error", 500, request);
   }
 }
 
-// Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleGetUser, 20000);
-export const PUT = withApiTimeout(handleUpdateUser, 20000);
-export const DELETE = withApiTimeout(handleDeleteUser, 20000);
+export async function OPTIONS(request: NextRequest) {
+  return createSecureResponse({}, { status: 200 }, request);
+}

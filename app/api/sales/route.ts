@@ -1,51 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import jwt from "jsonwebtoken";
 import { Prisma } from "@prisma/client";
-import { withApiTimeout } from "@/lib/api-timeout";
 import { z } from "zod";
+import {validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
+import { CreateSalesSchema } from "@/lib/validators/sales";
 
-// Validation schema for sales records
-const CreateSalesSchema = z.object({
-  animalId: z.string().optional(),
-  date: z.string().datetime("Invalid date format"),
-  quantity: z.number().min(0.1, "Quantity must be greater than 0"),
-  pricePerLiter: z.number().min(0.1, "Price per liter must be greater than 0"),
-  customerName: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-// Helper function to get user from token
-async function getUserFromToken(request: NextRequest) {
-  const token = request.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) {
-    return null;
-  }
-
+export async function GET(request: NextRequest) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      sub: string;
-      username: string;
-      email: string;
-      role: string;
-      image: string | null;
-    };
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { id: true, role: true, username: true },
-    });
-    return user;
-  } catch {
-    return null;
-  }
-}
-
-// GET /api/sales - Get all sales records with filtering
-async function handleGetSales(request: NextRequest) {
-  try {
-    const user = await getUserFromToken(request);
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    const user = await getUserFromSession(request);
+    if (!user || !["FARM_MANAGER", "EMPLOYEE"].includes(user.role)) {
+      return createSecureErrorResponse("Unauthorized", 401, request);
     }
 
     const { searchParams } = new URL(request.url);
@@ -113,7 +82,7 @@ async function handleGetSales(request: NextRequest) {
 
     const totalPages = Math.ceil(total / limit);
 
-    return NextResponse.json({
+    return createSecureResponse({
       sales,
       pagination: {
         page,
@@ -121,35 +90,31 @@ async function handleGetSales(request: NextRequest) {
         total,
         totalPages,
       },
-    });
+    }, {}, request);
   } catch (error) {
     console.error("Error fetching sales records:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch sales records" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to fetch sales records", 500, request);
   }
 }
 
-// POST /api/sales - Create a new sales record
-async function handleCreateSales(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    const user = await getUserFromSession(request);
+    if (!user || !["FARM_MANAGER", "EMPLOYEE"].includes(user.role)) {
+      return createSecureErrorResponse("Unauthorized", 401, request);
     }
 
     const body = await request.json();
     const validatedData = CreateSalesSchema.parse(body);
 
-    // Parse the date
     const salesDate = new Date(validatedData.date);
     const timeRecorded = new Date();
-
-    // Calculate total amount
     const totalAmount = validatedData.quantity * validatedData.pricePerLiter;
 
-    // Check if there's available milk for sales today if animalId is provided
     if (validatedData.animalId) {
       const animal = await prisma.animal.findUnique({
         where: { id: validatedData.animalId },
@@ -159,21 +124,13 @@ async function handleCreateSales(request: NextRequest) {
       });
 
       if (!animal) {
-        return NextResponse.json(
-          { error: "Animal not found" },
-          { status: 404 }
-        );
+        return createSecureErrorResponse("Animal not found", 404, request);
       }
 
-      // Check if animal is disposed
       if (animal.disposals.length > 0) {
-        return NextResponse.json(
-          { error: "Cannot record sales for disposed animal" },
-          { status: 400 }
-        );
+        return createSecureErrorResponse("Cannot record sales for disposed animal", 400, request);
       }
 
-      // Get today's production record for this animal
       const productionToday = await prisma.production.findUnique({
         where: {
           animalId_date: {
@@ -188,13 +145,9 @@ async function handleCreateSales(request: NextRequest) {
       });
 
       if (!productionToday) {
-        return NextResponse.json(
-          { error: "No production record found for this animal today" },
-          { status: 400 }
-        );
+        return createSecureErrorResponse("No production record found for this animal today", 400, request);
       }
 
-      // Check if there's enough milk available for sales
       const totalSalesToday = await prisma.sales.aggregate({
         where: {
           animalId: validatedData.animalId,
@@ -221,16 +174,14 @@ async function handleCreateSales(request: NextRequest) {
         productionToday.availableForSales - totalSoldToday;
 
       if (validatedData.quantity > availableQuantity) {
-        return NextResponse.json(
-          {
-            error: `Insufficient milk available. Available: ${availableQuantity} liters, Requested: ${validatedData.quantity} liters`,
-          },
-          { status: 400 }
+        return createSecureErrorResponse(
+          `Insufficient milk available. Available: ${availableQuantity} liters, Requested: ${validatedData.quantity} liters`,
+          400,
+          request
         );
       }
     }
 
-    // Create sales record
     const sales = await prisma.sales.create({
       data: {
         animalId: validatedData.animalId,
@@ -262,26 +213,21 @@ async function handleCreateSales(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "Sales record created successfully",
       sales,
-    });
+    }, { status: 201 }, request);
   } catch (error) {
     console.error("Error creating sales record:", error);
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.errors[0].message },
-        { status: 400 }
-      );
+      return createSecureErrorResponse(error.errors[0].message, 400, request);
     }
 
     const errorMessage =
       error instanceof Error ? error.message : "Failed to create sales record";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return createSecureErrorResponse(errorMessage, 500, request);
   }
 }
 
-// Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleGetSales, 30000);
-export const POST = withApiTimeout(handleCreateSales, 30000);
+

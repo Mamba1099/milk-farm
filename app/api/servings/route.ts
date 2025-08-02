@@ -1,46 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import jwt from "jsonwebtoken";
-import { withApiTimeout } from "@/lib/api-timeout";
+import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
 
-interface JWTPayload {
-  sub: string;
-  username: string;
-  email: string;
-  role: string;
-}
-
-async function getUserFromToken(request: NextRequest) {
-  const token = request.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) {
-    return null;
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { id: true, role: true, username: true },
-    });
-    return user;
-  } catch {
-    return null;
-  }
-}
-
-async function handleCreateServing(request: NextRequest) {
-  try {
-    const user = await getUserFromToken(request);
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
     }
-
-    // Only farm managers can create serving records
-    if (user.role !== "FARM_MANAGER") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+    const user = await getUserFromSession(request);
+    if (!user || !["FARM_MANAGER", "EMPLOYEE"].includes(user.role)) {
+      return createSecureErrorResponse("Unauthorized", 401, request);
     }
 
     const body = await request.json();
@@ -53,49 +24,34 @@ async function handleCreateServing(request: NextRequest) {
       notes,
     } = body;
 
-    // Validate required fields
     if (!femaleId) {
-      return NextResponse.json(
-        { error: "Female animal ID is required" },
-        { status: 400 }
-      );
+      return createSecureErrorResponse("Female animal ID is required", 400, request);
     }
 
     if (!servedAt) {
-      return NextResponse.json(
-        { error: "Serving date is required" },
-        { status: 400 }
-      );
+      return createSecureErrorResponse("Serving date is required", 400, request);
     }
 
-    // Validate that femaleId exists and is a female animal
     const femaleAnimal = await prisma.animal.findUnique({
       where: { id: femaleId },
     });
 
     if (!femaleAnimal) {
-      return NextResponse.json(
-        { error: "Female animal not found" },
-        { status: 404 }
-      );
+      return createSecureErrorResponse("Female animal not found", 404, request);
     }
 
     if (femaleAnimal.gender !== "FEMALE") {
-      return NextResponse.json(
-        { error: "Selected animal must be female" },
-        { status: 400 }
-      );
+      return createSecureErrorResponse("Selected animal must be female", 400, request);
     }
 
-    // Validate outcome
     if (!["SUCCESSFUL", "FAILED", "PENDING"].includes(outcome)) {
-      return NextResponse.json(
-        { error: "Invalid outcome. Must be SUCCESSFUL, FAILED, or PENDING" },
-        { status: 400 }
+      return createSecureErrorResponse(
+        "Invalid outcome. Must be SUCCESSFUL, FAILED, or PENDING",
+        400,
+        request
       );
     }
 
-    // Create the serving record
     const serving = await prisma.serving.create({
       data: {
         femaleId,
@@ -123,21 +79,25 @@ async function handleCreateServing(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ serving }, { status: 201 });
+    return createSecureResponse({
+      message: "Serving record created successfully",
+      serving,
+    }, { status: 201 }, request);
   } catch (error) {
     console.error("Error creating serving record:", error);
-    return NextResponse.json(
-      { error: "Failed to create serving record" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to create serving record", 500, request);
   }
 }
 
-async function handleGetServings(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    const user = await getUserFromSession(request);
+    if (!user || !["FARM_MANAGER", "EMPLOYEE"].includes(user.role)) {
+      return createSecureErrorResponse("Unauthorized", 401, request);
     }
 
     const url = new URL(request.url);
@@ -148,8 +108,7 @@ async function handleGetServings(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Build where clause for filtering
-    const where: unknown = {};
+    let where: any = {};
 
     if (outcome) {
       where.outcome = outcome;
@@ -182,7 +141,6 @@ async function handleGetServings(request: NextRequest) {
       ];
     }
 
-    // Get servings with pagination
     const [servings, total] = await Promise.all([
       prisma.serving.findMany({
         where,
@@ -210,7 +168,7 @@ async function handleGetServings(request: NextRequest) {
 
     const totalPages = Math.ceil(total / limit);
 
-    return NextResponse.json({
+    return createSecureResponse({
       servings,
       pagination: {
         page,
@@ -220,29 +178,22 @@ async function handleGetServings(request: NextRequest) {
         hasNext: page < totalPages,
         hasPrev: page > 1,
       },
-    });
+    }, {}, request);
   } catch (error) {
     console.error("Error fetching servings:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch servings" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to fetch servings", 500, request);
   }
 }
 
-async function handleUpdateServing(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
     }
-
-    // Only farm managers can update serving records
-    if (user.role !== "FARM_MANAGER") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+    const user = await getUserFromSession(request);
+    if (!user || !["FARM_MANAGER"].includes(user.role)) {
+      return createSecureErrorResponse("Unauthorized", 401, request);
     }
 
     const body = await request.json();
@@ -256,56 +207,40 @@ async function handleUpdateServing(request: NextRequest) {
       notes,
     } = body;
 
-    // Validate required fields
     if (!id) {
-      return NextResponse.json(
-        { error: "Serving ID is required" },
-        { status: 400 }
-      );
+      return createSecureErrorResponse("Serving ID is required", 400, request);
     }
 
-    // Check if serving exists
     const existingServing = await prisma.serving.findUnique({
       where: { id },
     });
 
     if (!existingServing) {
-      return NextResponse.json(
-        { error: "Serving record not found" },
-        { status: 404 }
-      );
+      return createSecureErrorResponse("Serving record not found", 404, request);
     }
 
-    // Validate female animal if provided
     if (femaleId && femaleId !== existingServing.femaleId) {
       const femaleAnimal = await prisma.animal.findUnique({
         where: { id: femaleId },
       });
 
       if (!femaleAnimal) {
-        return NextResponse.json(
-          { error: "Female animal not found" },
-          { status: 404 }
-        );
+        return createSecureErrorResponse("Female animal not found", 404, request);
       }
 
       if (femaleAnimal.gender !== "FEMALE") {
-        return NextResponse.json(
-          { error: "Selected animal must be female" },
-          { status: 400 }
-        );
+        return createSecureErrorResponse("Selected animal must be female", 400, request);
       }
     }
 
-    // Validate outcome
     if (outcome && !["SUCCESSFUL", "FAILED", "PENDING"].includes(outcome)) {
-      return NextResponse.json(
-        { error: "Invalid outcome. Must be SUCCESSFUL, FAILED, or PENDING" },
-        { status: 400 }
+      return createSecureErrorResponse(
+        "Invalid outcome. Must be SUCCESSFUL, FAILED, or PENDING",
+        400,
+        request
       );
     }
 
-    // Update the serving record
     const serving = await prisma.serving.update({
       where: { id },
       data: {
@@ -333,17 +268,14 @@ async function handleUpdateServing(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ serving }, { status: 200 });
+    return createSecureResponse({
+      message: "Serving record updated successfully",
+      serving,
+    }, { status: 200 }, request);
   } catch (error) {
     console.error("Error updating serving record:", error);
-    return NextResponse.json(
-      { error: "Failed to update serving record" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to update serving record", 500, request);
   }
 }
 
-// Export wrapped handlers with timeout
-export const POST = withApiTimeout(handleCreateServing, 30000);
-export const GET = withApiTimeout(handleGetServings, 30000);
-export const PATCH = withApiTimeout(handleUpdateServing, 30000);
+

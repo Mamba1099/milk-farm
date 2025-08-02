@@ -9,6 +9,7 @@ import {
   createSecureErrorResponse,
 } from "@/lib/security";
 import { getPublicImageUrl } from "@/supabase/storage/client";
+import { uploadUserImage } from "@/lib/user-storage";
 
 export async function POST(request: NextRequest) {
   const securityError = validateSecurity(request);
@@ -17,9 +18,25 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const validatedData = registerSchema.parse(body);
-    const { username, email, password, role, image } = validatedData;
+    const contentType = request.headers.get("content-type") || "";
+    let data: Record<string, unknown> = {};
+    let imageFile: File | null = null;
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      data = Object.fromEntries(formData.entries());
+      imageFile = formData.get("image") as File;
+
+      if (data.image) {
+        delete data.image;
+      }
+    } else {
+      const body = await request.json();
+      data = body;
+    }
+
+    const validatedData = registerSchema.parse(data);
+    const { username, email, password, role } = validatedData;
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [{ email: email }, { username: username }],
@@ -63,13 +80,22 @@ export async function POST(request: NextRequest) {
 
     const prismaRole = finalRole.toUpperCase() as "FARM_MANAGER" | "EMPLOYEE";
 
+    let imageUrl = null;
+    if (imageFile && imageFile.size > 0) {
+      const uploadResult = await uploadUserImage(imageFile);
+      if (uploadResult.error) {
+        return createSecureErrorResponse(uploadResult.error, 500, request);
+      }
+      imageUrl = uploadResult.imageUrl;
+    }
+
     const user = await prisma.user.create({
       data: {
         username,
         email,
         password: hashedPassword,
         role: prismaRole,
-        image: typeof image === "string" ? image : null,
+        image: imageUrl,
       },
       select: {
         id: true,

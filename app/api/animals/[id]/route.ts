@@ -1,42 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { UpdateAnimalSchema } from "@/lib/validators/animal";
-import { uploadAnimalImage } from "@/lib/file-storage";
-import jwt from "jsonwebtoken";
-import { withApiTimeout } from "@/lib/api-timeout";
+import { uploadAnimalImage, deleteAnimalImage } from "@/lib/animal-storage";
+import { 
+  validateSecurity, 
+  createSecureResponse, 
+  createSecureErrorResponse 
+} from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
 
-async function getUserFromToken(request: NextRequest) {
-  const token = request.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      sub: string;
-      username: string;
-      email: string;
-      role: string;
-      image: string | null;
-    };
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { id: true, role: true, username: true },
-    });
-    return user;
-  } catch {
-    return null;
-  }
-}
-
-async function handleGetAnimal(
+export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getUserFromToken(request);
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+
+    const user = await getUserFromSession(request);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureErrorResponse("Unauthorized", 401, request);
     }
 
     const { id } = await params;
@@ -83,34 +68,32 @@ async function handleGetAnimal(
     });
 
     if (!animal) {
-      return NextResponse.json({ error: "Animal not found" }, { status: 404 });
+      return createSecureErrorResponse("Animal not found", 404, request);
     }
 
-    return NextResponse.json(animal);
+    return createSecureResponse(animal, {}, request);
   } catch (error) {
-    console.error("Error fetching animal:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch animal" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to fetch animal", 500, request);
   }
 }
 
-async function handleUpdateAnimal(
+export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getUserFromToken(request);
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+
+    const user = await getUserFromSession(request);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureErrorResponse("Unauthorized", 401, request);
     }
 
     if (user.role !== "FARM_MANAGER") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+      return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 
     const { id } = await params;
@@ -120,7 +103,7 @@ async function handleUpdateAnimal(
     });
 
     if (!existingAnimal) {
-      return NextResponse.json({ error: "Animal not found" }, { status: 404 });
+      return createSecureErrorResponse("Animal not found", 404, request);
     }
 
     const formData = await request.formData();
@@ -129,17 +112,25 @@ async function handleUpdateAnimal(
     let imageUrl = existingAnimal.image;
     const imageFile = formData.get("image") as File;
     if (imageFile && imageFile.size > 0) {
-      imageUrl = await uploadAnimalImage(imageFile);
+      const uploadResult = await uploadAnimalImage(imageFile);
+      if (uploadResult.error) {
+        return createSecureErrorResponse(uploadResult.error, 500, request);
+      }
+      
+      if (existingAnimal.image) {
+        await deleteAnimalImage(existingAnimal.image);
+      }
+      
+      imageUrl = uploadResult.imageUrl;
     }
 
-    // Process form data
     const animalData = {
       id,
       ...data,
       image: imageUrl,
       weight: data.weight ? parseFloat(data.weight as string) : undefined,
-      motherId: data.motherId || undefined,
-      fatherId: data.fatherId || undefined,
+      motherId: data.motherId === "" || data.motherId === undefined ? null : (data.motherId as string),
+      fatherId: data.fatherId === "" || data.fatherId === undefined ? null : (data.fatherId as string),
     };
 
     const validatedData = UpdateAnimalSchema.parse(animalData);
@@ -153,185 +144,137 @@ async function handleUpdateAnimal(
       });
 
       if (existingTag) {
-        return NextResponse.json(
-          { error: "An animal with this tag number already exists" },
-          { status: 400 }
-        );
+        return createSecureErrorResponse("Tag number already exists", 409, request);
       }
     }
 
-    // Validate parent relationships
-    if (validatedData.motherId) {
-      const mother = await prisma.animal.findUnique({
-        where: { id: validatedData.motherId },
-      });
-      if (!mother || mother.gender !== "FEMALE") {
-        return NextResponse.json(
-          { error: "Mother must be a female animal" },
-          { status: 400 }
-        );
+    const birthDate = new Date(validatedData.birthDate || existingAnimal.birthDate);
+    const today = new Date();
+    const ageInMonths = (today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
+
+    let expectedMaturityDate: Date;
+    const animalType = validatedData.type || existingAnimal.type;
+    
+    if (animalType === "COW") {
+      expectedMaturityDate = new Date(birthDate.getTime() + 24 * 30.44 * 24 * 60 * 60 * 1000);
+    } else if (animalType === "BULL") {
+      expectedMaturityDate = new Date(birthDate.getTime() + 18 * 30.44 * 24 * 60 * 60 * 1000);
+    } else {
+      expectedMaturityDate = new Date(birthDate.getTime() + 12 * 30.44 * 24 * 60 * 60 * 1000);
+    }
+
+    let isMatured = false;
+    let isReadyForProduction = false;
+
+    if (animalType === "COW") {
+      isMatured = ageInMonths >= 24;
+      if (isMatured && (validatedData.gender || existingAnimal.gender) === "FEMALE") {
+        isReadyForProduction = true;
+      }
+    } else if (animalType === "BULL") {
+      isMatured = ageInMonths >= 18;
+    } else {
+      isMatured = ageInMonths >= 12;
+      if (isMatured && (validatedData.gender || existingAnimal.gender) === "FEMALE") {
+        isReadyForProduction = true;
       }
     }
 
-    if (validatedData.fatherId) {
-      const father = await prisma.animal.findUnique({
-        where: { id: validatedData.fatherId },
-      });
-      if (!father || father.gender !== "MALE") {
-        return NextResponse.json(
-          { error: "Father must be a male animal" },
-          { status: 400 }
-        );
+    if (expectedMaturityDate <= today) {
+      isMatured = true;
+      if (animalType === "COW" && (validatedData.gender || existingAnimal.gender) === "FEMALE") {
+        isReadyForProduction = true;
+      }
+      if (animalType === "CALF" && (validatedData.gender || existingAnimal.gender) === "FEMALE") {
+        isReadyForProduction = true;
       }
     }
 
-    // Calculate if animal is matured based on expected maturity date
-    let isMatured = existingAnimal.isMatured;
-    let isReadyForProduction = existingAnimal.isReadyForProduction;
-    let calculatedExpectedMaturityDate = null;
+    const { id: _id, fatherName, motherName, ...updateData } = validatedData;
 
-    if (
-      validatedData.expectedMaturityDate ||
-      validatedData.birthDate ||
-      validatedData.type ||
-      validatedData.gender
-    ) {
-      const today = new Date();
-
-      // Determine the expected maturity date to use
-      let expectedMaturityDate =
-        validatedData.expectedMaturityDate ||
-        existingAnimal.expectedMaturityDate;
-
-      // If expected maturity date is not set, calculate it based on birth date and type
-      if (!expectedMaturityDate) {
-        const birthDate = validatedData.birthDate || existingAnimal.birthDate;
-        const type = validatedData.type || existingAnimal.type;
-
-        expectedMaturityDate = new Date(birthDate);
-        switch (type) {
-          case "CALF":
-            expectedMaturityDate.setMonth(expectedMaturityDate.getMonth() + 20); // 20 months for calves
-            break;
-          case "COW":
-          case "BULL":
-            expectedMaturityDate.setMonth(expectedMaturityDate.getMonth() + 6); // Already mature, add buffer
-            break;
-        }
-        calculatedExpectedMaturityDate = expectedMaturityDate;
-      }
-
-      // Check if animal is matured based on expected maturity date
-      if (expectedMaturityDate <= today) {
-        isMatured = true;
-
-        const type = validatedData.type || existingAnimal.type;
-        const gender = validatedData.gender || existingAnimal.gender;
-
-        // Check if animal is ready for production (mature female cows)
-        if (type === "COW" && gender === "FEMALE") {
-          isReadyForProduction = true;
-        }
-        // If it's a mature calf, it should become a cow (will be handled by update logic if needed)
-        if (type === "CALF" && gender === "FEMALE") {
-          isReadyForProduction = true;
-        }
-      }
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id: _id, ...updateData } = validatedData;
-
-    const finalUpdateData = {
+    const cleanUpdateData: any = {
       ...updateData,
+      expectedMaturityDate,
       isMatured,
       isReadyForProduction,
-      ...(calculatedExpectedMaturityDate && {
-        expectedMaturityDate: calculatedExpectedMaturityDate,
-      }),
     };
 
-    const animal = await prisma.animal.update({
+    Object.keys(cleanUpdateData).forEach((key: string) => {
+      if (cleanUpdateData[key] === undefined) {
+        delete cleanUpdateData[key];
+      }
+    });
+
+    const updatedAnimal = await prisma.animal.update({
       where: { id },
-      data: finalUpdateData,
+      data: cleanUpdateData,
       include: {
         mother: { select: { id: true, tagNumber: true, name: true } },
         father: { select: { id: true, tagNumber: true, name: true } },
+        treatments: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          include: { treatedBy: { select: { username: true } } },
+        },
+        servings: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          include: { servedBy: { select: { username: true } } },
+        },
+        productionRecords: {
+          orderBy: { date: "desc" },
+          take: 10,
+          include: { recordedBy: { select: { username: true } } },
+        },
       },
     });
 
-    return NextResponse.json(animal);
+    return createSecureResponse(updatedAnimal, {}, request);
   } catch (error) {
-    console.error("Error updating animal:", error);
-    return NextResponse.json(
-      { error: "Failed to update animal" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to update animal", 500, request);
   }
 }
 
-// DELETE /api/animals/[id] - Delete specific animal
-async function handleDeleteAnimal(
+export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
     }
 
-    // Only farm managers can delete animals
+    const user = await getUserFromSession(request);
+    if (!user) {
+      return createSecureErrorResponse("Unauthorized", 401, request);
+    }
+
     if (user.role !== "FARM_MANAGER") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+      return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 
     const { id } = await params;
 
     const animal = await prisma.animal.findUnique({
       where: { id },
-      include: {
-        motherOf: true,
-        fatherOf: true,
-        treatments: true,
-        servings: true,
-        productionRecords: true,
-      },
+      select: { image: true },
     });
 
     if (!animal) {
-      return NextResponse.json({ error: "Animal not found" }, { status: 404 });
+      return createSecureErrorResponse("Animal not found", 404, request);
     }
 
-    // Check if animal has children or other dependencies
-    if (animal.motherOf.length > 0 || animal.fatherOf.length > 0) {
-      return NextResponse.json(
-        {
-          error:
-            "Cannot delete animal that has offspring. Consider disposing instead.",
-        },
-        { status: 400 }
-      );
+    if (animal.image) {
+      await deleteAnimalImage(animal.image);
     }
 
     await prisma.animal.delete({
       where: { id },
     });
 
-    return NextResponse.json({ message: "Animal deleted successfully" });
+    return createSecureResponse({ message: "Animal deleted successfully" }, {}, request);
   } catch (error) {
-    console.error("Error deleting animal:", error);
-    return NextResponse.json(
-      { error: "Failed to delete animal" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to delete animal", 500, request);
   }
 }
-
-// Export wrapped handlers with timeout
-export const GET = withApiTimeout(handleGetAnimal, 30000); // 20 second timeout
-export const PUT = withApiTimeout(handleUpdateAnimal, 30000); // 30 second timeout  
-export const DELETE = withApiTimeout(handleDeleteAnimal, 20000); // 15 second timeout

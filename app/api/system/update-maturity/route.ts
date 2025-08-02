@@ -1,55 +1,37 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import {
   updateAnimalMaturityStatus,
   updateProductionCarryOver,
 } from "@/lib/animal-maturity";
-import jwt from "jsonwebtoken";
-import { prisma } from "@/lib/prisma";
-import { withApiTimeout } from "@/lib/api-timeout";
+import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
 
-// Helper function to get user from token
-async function getUserFromToken(request: NextRequest) {
-  const token = request.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) {
-    return null;
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      sub: string;
-      username: string;
-      email: string;
-      role: string;
-      image: string | null;
-    };
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.sub },
-      select: { id: true, role: true, username: true },
-    });
-    return user;
-  } catch {
-    return null;
-  }
-}
-
-// POST /api/system/update-maturity - Update animal maturity status
-async function handleUpdateMaturity(request: NextRequest) {
-  try {
-    const user = await getUserFromToken(request);
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+    
+    const user = await getUserFromSession(request);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureErrorResponse("Authentication required", 401, request);
     }
 
-    // Only farm managers can run system operations
     if (user.role !== "FARM_MANAGER") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+      return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 
     const body = await request.json();
     const operation = body.operation;
+
+    if (!operation) {
+      return createSecureErrorResponse(
+        "Operation is required. Use 'maturity', 'carry-over', or 'both'",
+        400,
+        request
+      );
+    }
 
     let result;
     switch (operation) {
@@ -68,25 +50,27 @@ async function handleUpdateMaturity(request: NextRequest) {
         };
         break;
       default:
-        return NextResponse.json(
-          {
-            error: "Invalid operation. Use 'maturity', 'carry-over', or 'both'",
-          },
-          { status: 400 }
+        return createSecureErrorResponse(
+          "Invalid operation. Use 'maturity', 'carry-over', or 'both'",
+          400,
+          request
         );
     }
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "System update completed successfully",
       result,
-    });
+      timestamp: new Date().toISOString(),
+    }, { status: 200 }, request);
+
   } catch (error) {
     console.error("Error running system update:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Failed to run system update";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return createSecureErrorResponse(errorMessage, 500, request);
   }
 }
 
-// Export wrapped handlers with timeout
-export const POST = withApiTimeout(handleUpdateMaturity, 60000); // 60 seconds timeout for system operations
+export async function OPTIONS(request: NextRequest) {
+  return createSecureResponse({}, { status: 200 }, request);
+}
