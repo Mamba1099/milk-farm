@@ -9,16 +9,7 @@ import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { navigationItems } from "./navigation-items";
 import { SidebarProps } from "@/lib/types";
-
-// Helper function to validate image URLs
-const isValidImageUrl = (url: string): boolean => {
-  try {
-    const parsedUrl = new URL(url);
-    return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
-  } catch {
-    return url.startsWith('/') && url.length > 1;
-  }
-};
+import { getPublicImageUrl } from "@/supabase/storage/client";
 
 export function Sidebar({ 
   className, 
@@ -36,6 +27,20 @@ export function Sidebar({
   const filteredNavItems = navigationItems.filter((item: { roles: string | string[]; }) =>
     item.roles.includes(user?.role || "")
   );
+
+  const getUserImageUrl = () => {
+    if (!user?.image) return null;
+    
+    try {
+      const imageUrl = getPublicImageUrl(user.image);
+      return imageUrl;
+    } catch (error) {
+      console.error("Error generating image URL:", error);
+      return null;
+    }
+  };
+
+  const userImageUrl = getUserImageUrl();
 
   return (
     <div
@@ -149,20 +154,21 @@ export function Sidebar({
       {/* User Info & Logout */}
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center gap-3 mb-3">
-          {user?.image && isValidImageUrl(user.image) ? (
+          {userImageUrl ? (
             <Image
-              src={user.image}
-              alt={user.username || "User"}
-              width={32}
-              height={32}
-              className="rounded-full object-cover"
-              onError={() => {
-                console.warn("Failed to load user image:", user.image);
+              src={userImageUrl}
+              alt={user?.username || "User"}
+              width={48}
+              height={48}
+              className="rounded-full object-cover w-12 h-12"
+              unoptimized={true}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
               }}
             />
           ) : (
-            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-              <Icons.user className="h-4 w-4 text-gray-600" />
+            <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
+              <Icons.user className="h-6 w-6 text-gray-600" />
             </div>
           )}
           <div className="flex-1 min-w-0">
