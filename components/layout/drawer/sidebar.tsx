@@ -52,8 +52,8 @@ export function Sidebar({
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-            <Icons.cow className="h-5 w-5 text-white" />
+          <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+            <Icons.cow className="h-6 w-6 text-white" />
           </div>
           <div>
             <h2 className="font-semibold text-gray-900">Milk Farm</h2>
@@ -85,18 +85,18 @@ export function Sidebar({
                   <>
                     <div
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer",
+                        "flex items-center gap-3 px-4 py-3 text-base rounded-lg transition-colors cursor-pointer",
                         hasActiveSubItem
                           ? "bg-green-100 text-green-700 font-medium"
                           : "text-gray-700 hover:bg-gray-100"
                       )}
                       onClick={() => onToggleExpansion(item.name)}
                     >
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className="h-5 w-5" />
                       <span className="flex-1">{item.name}</span>
                       <Icons.chevronDown
                         className={cn(
-                          "h-4 w-4 transition-transform",
+                          "h-5 w-5 transition-transform",
                           isExpanded ? "rotate-180" : ""
                         )}
                       />
@@ -114,7 +114,7 @@ export function Sidebar({
                                 <Link
                                   href={subItem.href}
                                   className={cn(
-                                    "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
+                                    "flex items-center gap-3 px-4 py-2 text-sm rounded-lg transition-colors",
                                     isSubActive
                                       ? "bg-green-50 text-green-600 font-medium"
                                       : "text-gray-600 hover:bg-gray-50"
@@ -134,14 +134,14 @@ export function Sidebar({
                   <Link
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
+                      "flex items-center gap-3 px-4 py-3 text-base rounded-lg transition-colors",
                       isActive
                         ? "bg-green-100 text-green-700 font-medium"
                         : "text-gray-700 hover:bg-gray-100"
                     )}
                     onClick={onCloseDrawer}
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="h-5 w-5" />
                     {item.name}
                   </Link>
                 )}
@@ -184,9 +184,9 @@ export function Sidebar({
           onClick={handleLogout}
           variant="outline"
           size="sm"
-          className="w-full flex items-center gap-2"
+          className="w-full flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 border-red-200 hover:border-red-300"
         >
-          <Icons.logOut className="h-4 w-4" />
+          <Icons.logOut className="h-5 w-5" />
           Logout
         </Button>
       </div>

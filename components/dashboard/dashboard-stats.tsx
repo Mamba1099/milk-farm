@@ -90,7 +90,7 @@ export const AnimalStatsCard: React.FC = () => {
       <LoadingCard
         title="Animal Statistics"
         icon={<Icons.cow className="h-5 w-5 text-green-800" />}
-        gradient="bg-gradient-to-br from-green-50 to-green-100 border-green-200"
+        gradient="bg-gradient-to-br from-green-100 to-green-200 border-green-300"
       />
     );
   }
@@ -100,7 +100,7 @@ export const AnimalStatsCard: React.FC = () => {
       <ErrorCard
         title="Animal Statistics"
         icon={<Icons.cow className="h-5 w-5 text-green-800" />}
-        gradient="bg-gradient-to-br from-green-50 to-green-100 border-green-200"
+        gradient="bg-gradient-to-br from-green-100 to-green-200 border-green-300"
         error="Failed to load animal data"
       />
     );
@@ -111,7 +111,7 @@ export const AnimalStatsCard: React.FC = () => {
       <NoDataCard
         title="Animal Statistics"
         icon={<Icons.cow className="h-5 w-5 text-green-800" />}
-        gradient="bg-gradient-to-br from-green-50 to-green-100 border-green-200"
+        gradient="bg-gradient-to-br from-green-100 to-green-200 border-green-300"
         message="No animals found. Add your first animal to get started!"
       />
     );
@@ -123,7 +123,7 @@ export const AnimalStatsCard: React.FC = () => {
     <StatCard
       title="Animal Statistics"
       icon={<Icons.cow className="h-5 w-5 text-green-800" />}
-      gradient="bg-gradient-to-br from-green-50 to-green-100 border-green-200"
+      gradient="bg-gradient-to-br from-green-100 to-green-200 border-green-300"
     >
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
@@ -195,7 +195,7 @@ export const ProductionStatsCard: React.FC = () => {
       <LoadingCard
         title="Production Statistics"
         icon={<Icons.milk className="h-5 w-5 text-purple-800" />}
-        gradient="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200"
+        gradient="bg-gradient-to-br from-purple-100 to-purple-200 border-purple-300"
       />
     );
   }
@@ -205,7 +205,7 @@ export const ProductionStatsCard: React.FC = () => {
       <ErrorCard
         title="Production Statistics"
         icon={<Icons.milk className="h-5 w-5 text-purple-800" />}
-        gradient="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200"
+        gradient="bg-gradient-to-br from-purple-100 to-purple-200 border-purple-300"
         error="Failed to load production data"
       />
     );
@@ -216,7 +216,7 @@ export const ProductionStatsCard: React.FC = () => {
       <NoDataCard
         title="Production Statistics"
         icon={<Icons.milk className="h-5 w-5 text-purple-800" />}
-        gradient="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200"
+        gradient="bg-gradient-to-br from-purple-100 to-purple-200 border-purple-300"
         message="No production records found. Start recording milk production!"
       />
     );
@@ -228,7 +228,7 @@ export const ProductionStatsCard: React.FC = () => {
     <StatCard
       title="Production Statistics"
       icon={<Icons.milk className="h-5 w-5 text-purple-800" />}
-      gradient="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200"
+      gradient="bg-gradient-to-br from-purple-100 to-purple-200 border-purple-300"
     >
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
@@ -295,7 +295,7 @@ export const TreatmentStatsCard: React.FC = () => {
       <LoadingCard
         title="Health & Treatments"
         icon={<Icons.heartPulse className="h-5 w-5 text-red-800" />}
-        gradient="bg-gradient-to-br from-red-50 to-red-100 border-red-200"
+        gradient="bg-gradient-to-br from-red-100 to-red-200 border-red-300"
       />
     );
   }
@@ -305,7 +305,7 @@ export const TreatmentStatsCard: React.FC = () => {
       <ErrorCard
         title="Health & Treatments"
         icon={<Icons.heartPulse className="h-5 w-5 text-red-800" />}
-        gradient="bg-gradient-to-br from-red-50 to-red-100 border-red-200"
+        gradient="bg-gradient-to-br from-red-100 to-red-200 border-red-300"
         error="Failed to load treatment data"
       />
     );
@@ -316,7 +316,7 @@ export const TreatmentStatsCard: React.FC = () => {
       <NoDataCard
         title="Health & Treatments"
         icon={<Icons.heartPulse className="h-5 w-5 text-red-800" />}
-        gradient="bg-gradient-to-br from-red-50 to-red-100 border-red-200"
+        gradient="bg-gradient-to-br from-red-100 to-red-200 border-red-300"
         message="No treatment records found. Great! Your animals are healthy!"
       />
     );
@@ -328,7 +328,7 @@ export const TreatmentStatsCard: React.FC = () => {
     <StatCard
       title="Health & Treatments"
       icon={<Icons.heartPulse className="h-5 w-5 text-red-800" />}
-      gradient="bg-gradient-to-br from-red-50 to-red-100 border-red-200"
+      gradient="bg-gradient-to-br from-red-100 to-red-200 border-red-300"
     >
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
