@@ -8,7 +8,7 @@ import {
   AuthError,
   ApiErrorResponse,
 } from "@/lib/types";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/toast";
 
 export const useLoginMutation = () => {
   const queryClient = useQueryClient();

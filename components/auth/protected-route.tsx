@@ -4,6 +4,7 @@ import React, { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ProtectedRouteProps, RoleGuardProps } from "@/lib/types";
+import { RingLoader } from "react-spinners";
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
@@ -42,8 +43,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="mb-4 flex justify-center">
+            <RingLoader color="#2d5523" size={60} />
+          </div>
+          <p className="text-[#4a6b3d] text-lg">Loading...</p>
         </div>
       </div>
     );

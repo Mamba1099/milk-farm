@@ -1,8 +1,13 @@
 "use client";
 
-import { useToast as useToastOriginal } from "@/hooks/use-toast";
+import { useToastContext } from "./toast-provider";
 
-export const useToast = useToastOriginal;
+export const useToast = () => {
+  const context = useToastContext();
+  return {
+    toast: context.toast,
+  };
+};
 
 export interface Toast {
   id: string;

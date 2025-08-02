@@ -9,7 +9,7 @@ import {
   ApiErrorResponse,
 } from "@/lib/types";
 import { uploadImage } from "@/supabase/storage/client";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/toast";
 
 export const useRegisterMutation = () => {
   const queryClient = useQueryClient();
