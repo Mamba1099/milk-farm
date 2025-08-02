@@ -29,6 +29,8 @@ import {
   Heart,
   Database,
   AlertCircle,
+  AlertTriangle,
+  Info,
   X,
 } from "lucide-react";
 
@@ -64,5 +66,7 @@ export const Icons = {
   heart: Heart,
   database: Database,
   alertCircle: AlertCircle,
+  alertTriangle: AlertTriangle,
+  info: Info,
   x: X,
 };
