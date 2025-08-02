@@ -3,6 +3,7 @@ import "./globals.css";
 import { QueryProvider } from "@/lib/query-provider";
 import { AuthProvider } from "@/lib/auth-context";
 import { AuthErrorBoundary } from "@/components/auth/auth-error-boundary";
+import { ToastProvider } from "@/components/ui/toast-provider";
 
 export const metadata: Metadata = {
   title: "Milk Farm",
@@ -18,9 +19,13 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <AuthErrorBoundary>
-          <QueryProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </QueryProvider>
+          <ToastProvider>
+            <QueryProvider>
+              <AuthProvider>
+                {children}
+              </AuthProvider>
+            </QueryProvider>
+          </ToastProvider>
         </AuthErrorBoundary>
       </body>
     </html>
