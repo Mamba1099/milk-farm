@@ -3,13 +3,7 @@
 import React, { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-
-interface ProtectedRouteProps {
-  children: ReactNode;
-  requiredRoles?: string | string[];
-  fallbackPath?: string;
-  showLoading?: boolean;
-}
+import { ProtectedRouteProps, RoleGuardProps } from "@/lib/types";
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
@@ -22,15 +16,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   useEffect(() => {
     if (!isLoading) {
-      // If not authenticated, redirect to login
       if (!isAuthenticated) {
         router.push(fallbackPath);
         return;
       }
 
-      // If roles are required and user doesn't have them, redirect
       if (requiredRoles && !hasRole(requiredRoles)) {
-        // Redirect to dashboard for all users
         router.push("/dashboard");
         return;
       }
@@ -45,7 +36,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     user?.role,
   ]);
 
-  // Show loading state
   if (isLoading) {
     if (!showLoading) return null;
 
@@ -59,21 +49,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // If not authenticated, don't render children (redirect will happen)
   if (!isAuthenticated) {
     return null;
   }
 
-  // If roles are required and user doesn't have them, don't render children
   if (requiredRoles && !hasRole(requiredRoles)) {
     return null;
   }
 
-  // Render children if all checks pass
   return <>{children}</>;
 };
 
-// Higher-order component for protecting pages
 export function withAuth<T extends object>(
   Component: React.ComponentType<T>,
   options?: {
@@ -97,13 +83,6 @@ export function withAuth<T extends object>(
   })`;
 
   return AuthenticatedComponent;
-}
-
-// Role-based access control component
-interface RoleGuardProps {
-  children: ReactNode;
-  requiredRoles: string | string[];
-  fallback?: ReactNode;
 }
 
 export const RoleGuard: React.FC<RoleGuardProps> = ({

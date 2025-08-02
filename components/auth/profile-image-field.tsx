@@ -2,11 +2,7 @@
 
 import Image from "next/image";
 import { Icons } from "@/components/icons";
-
-interface ProfileImageFieldProps {
-  onImageChange: (file: File | null) => void;
-  imagePreview: string | null;
-}
+import { ProfileImageFieldProps } from "@/lib/types";
 
 export const ProfileImageField = ({
   onImageChange,

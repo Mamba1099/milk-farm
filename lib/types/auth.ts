@@ -96,3 +96,31 @@ export interface LoginError {
 }
 
 export type AuthError = ApiErrorResponse | ApiError;
+
+export interface ProtectedRouteProps {
+  children: ReactNode;
+  requiredRoles?: string | string[];
+  fallbackPath?: string;
+  showLoading?: boolean;
+}
+
+export interface RoleGuardProps {
+  children: ReactNode;
+  requiredRoles: string | string[];
+  fallback?: ReactNode;
+}
+
+export interface AuthErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+  isAuthError: boolean;
+}
+
+export interface AuthErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+export interface ProfileImageFieldProps {
+  onImageChange: (file: File | null) => void;
+  imagePreview: string | null;
+}

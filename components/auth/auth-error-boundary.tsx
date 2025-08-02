@@ -4,16 +4,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
-
-interface AuthErrorBoundaryState {
-  hasError: boolean;
-  error?: Error;
-  isAuthError: boolean;
-}
-
-interface AuthErrorBoundaryProps {
-  children: React.ReactNode;
-}
+import { AuthErrorBoundaryProps, AuthErrorBoundaryState } from "@/lib/types";
 
 export class AuthErrorBoundary extends React.Component<
   AuthErrorBoundaryProps,
@@ -25,7 +16,6 @@ export class AuthErrorBoundary extends React.Component<
   }
 
   static getDerivedStateFromError(error: Error): AuthErrorBoundaryState {
-    // Check if it's an authentication error
     const isAuthError =
       error.message.includes("401") ||
       error.message.includes("403") ||
@@ -43,12 +33,10 @@ export class AuthErrorBoundary extends React.Component<
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("Auth Error Boundary caught an error:", error, errorInfo);
 
-    // If it's an auth error, clear tokens and redirect
     if (this.state.isAuthError) {
       localStorage.removeItem("token");
       document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
-      // Dispatch custom event for auth context
       window.dispatchEvent(
         new CustomEvent("tokenExpired", {
           detail: { message: "Authentication error. Please log in again." },
@@ -78,14 +66,13 @@ export class AuthErrorBoundary extends React.Component<
   }
 }
 
-// Auth error fallback component
 const AuthErrorFallback: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 text-red-500">
-            <Icons.alertTriangle className="h-full w-full" />
+            <Icons.alertCircle className="h-full w-full" />
           </div>
           <CardTitle className="text-red-700">Session Expired</CardTitle>
         </CardHeader>
@@ -101,7 +88,6 @@ const AuthErrorFallback: React.FC = () => {
   );
 };
 
-// General error fallback component
 const GeneralErrorFallback: React.FC<{ onRetry: () => void }> = ({
   onRetry,
 }) => {
