@@ -4,6 +4,7 @@ import { motion, type Variants } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
 import { useDashboardStats } from "@/hooks";
+import { ClockLoader } from "react-spinners";
 const fadeInUp: Variants = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.4, 0.0, 0.2, 1] } },
@@ -43,17 +44,12 @@ const LoadingCard: React.FC<{
   gradient: string;
 }> = ({ title, icon, gradient }) => (
   <StatCard title={title} icon={icon} gradient={gradient}>
-    <div className="space-y-3 animate-pulse">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="text-center p-3 bg-white/60 rounded-lg">
-          <div className="h-8 bg-gray-300 rounded mb-2"></div>
-          <div className="h-3 bg-gray-200 rounded"></div>
-        </div>
-        <div className="text-center p-3 bg-white/60 rounded-lg">
-          <div className="h-8 bg-gray-300 rounded mb-2"></div>
-          <div className="h-3 bg-gray-200 rounded"></div>
-        </div>
-      </div>
+    <div className="flex items-center justify-center py-12">
+      <ClockLoader 
+        color="#2d5523" 
+        size={60} 
+        speedMultiplier={0.8}
+      />
     </div>
   </StatCard>
 );
