@@ -21,7 +21,12 @@ export const useCurrentUser = () => {
       } catch (error) {
         if (error && typeof error === "object" && "response" in error) {
           const axiosError = error as { response?: { status?: number } };
+          
           if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+            }
             return null;
           }
         }
@@ -37,12 +42,13 @@ export const useCurrentUser = () => {
           return false;
         }
       }
-      return failureCount < 2;
+      return failureCount < 1;
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
+    refetchInterval: false,
   });
 };
 
@@ -76,14 +82,30 @@ export const useLogoutMutation = () => {
       return response.data;
     },
     onSuccess: () => {
+      // Clear React Query cache
       queryClient.removeQueries({ queryKey: ["user"] });
       queryClient.clear();
+      
+      // Clear any local storage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Clear any other auth-related items
+      }
+      
       console.log("Logout successful");
     },
     onError: (error) => {
       console.error("Logout failed:", error);
+      
+      // Still clear everything even if logout API fails
       queryClient.removeQueries({ queryKey: ["user"] });
       queryClient.clear();
+      
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     },
   });
 };

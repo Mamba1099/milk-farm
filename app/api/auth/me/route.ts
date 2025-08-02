@@ -43,7 +43,15 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return createSecureErrorResponse("User not found", 404, request);
+      const response = createSecureErrorResponse("User not found", 404, request);
+      response.cookies.set("session", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 0,
+        path: "/",
+      });
+      return response;
     }
 
     return createSecureResponse(
@@ -62,10 +70,20 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error("Auth verification error:", error);
-    return createSecureErrorResponse(
+    const response = createSecureErrorResponse(
       "Invalid or expired token",
       401,
       request
     );
+    
+    response.cookies.set("session", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 0,
+      path: "/",
+    });
+    
+    return response;
   }
 }

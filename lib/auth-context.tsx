@@ -49,9 +49,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                               currentPath.startsWith("/reports");
 
       if (!isAuthenticated && isProtectedRoute) {
-        router.push("/login");
+        router.replace("/login");
       } else if (isAuthenticated && isAuthPage) {
-        router.push("/dashboard");
+        router.replace("/dashboard");
       }
     }
   }, [isAuthenticated, isLoading, router]);
