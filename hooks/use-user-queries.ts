@@ -43,7 +43,6 @@ export const useCurrentUser = () => {
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
-    initialData: null,
   });
 };
 
