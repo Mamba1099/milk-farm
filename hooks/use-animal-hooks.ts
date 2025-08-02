@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { handleApiError } from "@/lib/error-handler";
+import { useToast } from "@/hooks";
+import { uploadImage } from "@/supabase/storage/client";
 import type {
   CreateAnimalInput,
   UpdateAnimalInput,
@@ -9,7 +12,6 @@ import type {
   CreateProductionInput,
 } from "@/lib/validators/animal";
 
-// Animal queries
 export function useAnimals(query?: Partial<AnimalQuery>) {
   return useQuery({
     queryKey: ["animals", query],
@@ -41,7 +43,6 @@ export function useAnimal(id: string) {
   });
 }
 
-// Animal mutations
 export function useCreateAnimal() {
   const queryClient = useQueryClient();
 
@@ -72,16 +73,93 @@ export function useCreateAnimal() {
       }
     },
     onSuccess: () => {
-      // Invalidate all animal-related queries
       queryClient.invalidateQueries({ queryKey: ["animals"] });
       queryClient.invalidateQueries({ queryKey: ["available-parents"] });
       queryClient.invalidateQueries({
         queryKey: ["available-production-animals"],
       });
-      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      // Invalidate reports
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}
+
+export function useCreateAnimalWithNavigation() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: CreateAnimalInput) => {
+      try {
+        let imageUrl = null;
+        
+        // Handle Supabase image upload
+        if (data.image && data.image instanceof File) {
+          const uploadResult = await uploadImage({
+            file: data.image,
+            bucket: "farm-house",
+            folder: "animals"
+          });
+          
+          if (uploadResult.error) {
+            throw new Error(uploadResult.error);
+          }
+          
+          imageUrl = uploadResult.imageUrl;
+        }
+
+        const formData = new FormData();
+
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            if (key === "image") {
+              // Skip the file, we'll use the uploaded URL
+              return;
+            } else if (key === "birthDate" && value instanceof Date) {
+              formData.append(key, value.toISOString());
+            } else {
+              formData.append(key, value.toString());
+            }
+          }
+        });
+
+        // Add the image URL if available
+        if (imageUrl) {
+          formData.append("imageUrl", imageUrl);
+        }
+
+        const response = await apiClient.post("/animals", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        return response.data;
+      } catch (error) {
+        const apiError = handleApiError(error);
+        throw new Error(apiError.message);
+      }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["animals"] });
+      queryClient.invalidateQueries({ queryKey: ["available-parents"] });
+      queryClient.invalidateQueries({
+        queryKey: ["available-production-animals"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+
+      toast({
+        type: "success",
+        title: "Success",
+        description: `Animal ${data.tagNumber} added successfully`,
+      });
+      router.push("/animals");
+    },
+    onError: (error: Error) => {
+      toast({
+        type: "error",
+        title: "Error",
+        description: error.message || "Failed to add animal",
+      });
     },
   });
 }
@@ -120,16 +198,13 @@ export function useUpdateAnimal() {
       }
     },
     onSuccess: (data) => {
-      // Invalidate all animal-related queries
       queryClient.invalidateQueries({ queryKey: ["animals"] });
       queryClient.invalidateQueries({ queryKey: ["animal", data.id] });
       queryClient.invalidateQueries({ queryKey: ["available-parents"] });
       queryClient.invalidateQueries({
         queryKey: ["available-production-animals"],
       });
-      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      // Invalidate reports
       queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
@@ -137,6 +212,7 @@ export function useUpdateAnimal() {
 
 export function useDeleteAnimal() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -149,25 +225,33 @@ export function useDeleteAnimal() {
       }
     },
     onSuccess: () => {
-      // Invalidate all animal-related queries
       queryClient.invalidateQueries({ queryKey: ["animals"] });
       queryClient.invalidateQueries({ queryKey: ["available-parents"] });
       queryClient.invalidateQueries({
         queryKey: ["available-production-animals"],
       });
-      // Invalidate treatments and production records
       queryClient.invalidateQueries({ queryKey: ["treatments"] });
       queryClient.invalidateQueries({ queryKey: ["production"] });
       queryClient.invalidateQueries({ queryKey: ["servings"] });
-      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      // Invalidate reports
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+
+      toast({
+        type: "success",
+        title: "Success",
+        description: "Animal deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        type: "error",
+        title: "Error",
+        description: error.message || "Failed to delete animal",
+      });
     },
   });
 }
 
-// Treatment queries and mutations
 export function useTreatments(animalId?: string) {
   return useQuery({
     queryKey: ["treatments", animalId],
@@ -188,20 +272,15 @@ export function useCreateTreatment() {
       return response.data;
     },
     onSuccess: (data) => {
-      // Invalidate treatment queries
       queryClient.invalidateQueries({ queryKey: ["treatments"] });
-      // Invalidate animal queries to update health status
       queryClient.invalidateQueries({ queryKey: ["animal", data.animalId] });
       queryClient.invalidateQueries({ queryKey: ["animals"] });
-      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      // Invalidate reports
       queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 }
 
-// Production queries and mutations
 export function useProduction(animalId?: string, date?: string) {
   return useQuery({
     queryKey: ["production", animalId, date],
@@ -225,22 +304,16 @@ export function useCreateProduction() {
       return response.data;
     },
     onSuccess: (data) => {
-      // Invalidate production queries
       queryClient.invalidateQueries({ queryKey: ["production"] });
-      // Invalidate sales queries (production affects available sales)
       queryClient.invalidateQueries({ queryKey: ["sales"] });
-      // Invalidate animal queries
       queryClient.invalidateQueries({ queryKey: ["animal", data.animalId] });
       queryClient.invalidateQueries({ queryKey: ["animals"] });
-      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      // Invalidate reports
       queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 }
 
-// Helper queries
 export function useAvailableParents(gender?: "MALE" | "FEMALE") {
   return useQuery({
     queryKey: ["available-parents", gender],
