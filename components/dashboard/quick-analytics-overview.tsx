@@ -3,6 +3,7 @@
 import { motion, type Variants } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
+import { ClockLoader } from "react-spinners";
 import { useDashboardStats } from "@/hooks";
 
 const fadeInUp: Variants = {
@@ -47,7 +48,11 @@ export function QuickAnalyticsOverview() {
           <CardContent>
             {production.isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <ClockLoader 
+                  color="#2563eb" 
+                  size={50} 
+                  speedMultiplier={0.8}
+                />
               </div>
             ) : production.isError ? (
               <div className="text-center py-8">
@@ -130,7 +135,11 @@ export function QuickAnalyticsOverview() {
           <CardContent>
             {animals.isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                <ClockLoader 
+                  color="#16a34a" 
+                  size={50} 
+                  speedMultiplier={0.8}
+                />
               </div>
             ) : animals.isError ? (
               <div className="text-center py-8">

@@ -3,6 +3,7 @@
 import { motion, type Variants } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
+import { ClockLoader } from "react-spinners";
 import { useAuth } from "@/lib/auth-context";
 import { useDashboardStats } from "@/hooks";
 
@@ -36,7 +37,11 @@ export function EmployeeOverviewCard() {
         <CardContent>
           {users.isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+              <ClockLoader 
+                color="#ea580c" 
+                size={50} 
+                speedMultiplier={0.8}
+              />
             </div>
           ) : users.isError ? (
             <div className="text-center py-8">
