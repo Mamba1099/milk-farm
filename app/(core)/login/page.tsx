@@ -1,6 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,9 +12,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Icons } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
-import { useToast } from "@/hooks/use-toast";
-import { LoginError } from "@/lib/types";
+import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
+import { FullPageLoader } from "@/components/ui/full-page-loader";
+import { RingLoader } from "react-spinners";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -23,15 +23,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const router = useRouter();
-  const { login, isAuthenticated, user } = useAuth();
+  const { login } = useAuth();
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      router.push("/dashboard");
-    }
-  }, [isAuthenticated, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,46 +41,8 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login({ email, password });
-      toast({
-        type: "success",
-        title: "Login Successful",
-        description: "Welcome back!",
-      });
     } catch (error) {
-      console.error("Login error:", error);
-      
-      if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as any;
-        const loginError = axiosError.response?.data as LoginError;
-
-        if (loginError?.details && Array.isArray(loginError.details)) {
-          loginError.details.forEach((detail) => {
-            toast({
-              type: "error",
-              title: `Validation Error: ${detail.field}`,
-              description: detail.message,
-            });
-          });
-        } else if (loginError?.error) {
-          toast({
-            type: "error",
-            title: "Login Failed",
-            description: loginError.error,
-          });
-        } else {
-          toast({
-            type: "error",
-            title: "Login Failed",
-            description: "Invalid credentials. Please try again.",
-          });
-        }
-      } else {
-        toast({
-          type: "error",
-          title: "Unexpected Error",
-          description: "An unexpected error occurred. Please try again.",
-        });
-      }
+      console.error("Login failed:", error);
     } finally {
       setIsLoading(false);
     }
@@ -110,6 +65,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-[#f7f5f2] to-[#e8f5e9] flex items-center justify-center p-4">
+      <FullPageLoader 
+        isVisible={isLoading} 
+        message="Signing you in..." 
+      />
       <motion.div
         initial="initial"
         animate="animate"
@@ -189,7 +148,7 @@ export default function LoginPage() {
               >
                 {isLoading ? (
                   <>
-                    <Icons.spinner className="mr-3 h-5 w-5 animate-spin" />
+                    <RingLoader color="#ffffff" size={20} className="mr-3" />
                     Signing in...
                   </>
                 ) : (

@@ -14,10 +14,11 @@ import { Icons } from "@/components/icons";
 import Link from "next/link";
 import { useRegisterMutation, useFarmManagerExists } from "@/hooks";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/toast";
 import { ProfileImageField } from "@/components/auth/profile-image-field";
-import { LoadingOverlay } from "@/components/ui/loading-overlay";
+import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { Role } from "@/lib/types";
+import { RingLoader } from "react-spinners";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -89,7 +90,7 @@ export default function SignUpPage() {
       await registerMutation.mutateAsync(registrationData);
       router.push("/login");
     } catch (error) {
-      console.error("Unexpected registration error:", error);
+      return null
     } finally {
       setIsRegistering(false);
     }
@@ -125,7 +126,7 @@ export default function SignUpPage() {
 
   return (
     <>
-      <LoadingOverlay 
+      <FullPageLoader 
         isVisible={isRegistering} 
         message="Creating your account and setting up your profile..." 
       />
@@ -312,7 +313,7 @@ export default function SignUpPage() {
               >
                 {isRegistering ? (
                   <>
-                    <Icons.spinner className="mr-3 h-5 w-5 animate-spin" />
+                    <RingLoader color="#ffffff" size={20} className="mr-3" />
                     Creating account...
                   </>
                 ) : (
