@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     };
 
     const sessionToken = jwt.sign(payload, JWT_SECRET as string, {
-      expiresIn: "7d",
+      expiresIn: "30m", // 30 minutes to match cookie expiration
     });
 
     await prisma.user.update({
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60,
+      maxAge: 30 * 60, // 30 minutes in seconds
       path: "/",
     });
 
