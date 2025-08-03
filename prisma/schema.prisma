@@ -78,8 +78,8 @@ model Animal {
   gender               Gender
   birthDate            DateTime
   expectedMaturityDate DateTime?
-  motherId             String?
-  fatherId             String?
+  motherName           String?
+  fatherName           String?
   healthStatus         HealthStatus @default(HEALTHY)
   weight               Float?
   image                String?
@@ -88,11 +88,6 @@ model Animal {
   isReadyForProduction Boolean      @default(false)
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
-
-  mother        Animal?  @relation("MotherChildren", fields: [motherId], references: [id])
-  father        Animal?  @relation("FatherChildren", fields: [fatherId], references: [id])
-  motherOf      Animal[] @relation("MotherChildren")
-  fatherOf      Animal[] @relation("FatherChildren")
 
   treatments        Treatment[]
   disposals         Disposal[]

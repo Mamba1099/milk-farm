@@ -59,10 +59,6 @@ export async function GET(request: NextRequest) {
     const animals = await prisma.animal.findMany({
       where,
       include: {
-        mother: { select: { id: true, tagNumber: true, name: true } },
-        father: { select: { id: true, tagNumber: true, name: true } },
-        motherOf: { select: { id: true, tagNumber: true, name: true } },
-        fatherOf: { select: { id: true, tagNumber: true, name: true } },
         treatments: {
           orderBy: { createdAt: "desc" },
           take: 3,
@@ -85,6 +81,14 @@ export async function GET(request: NextRequest) {
     });
 
     const total = await prisma.animal.count({ where });
+
+    // Debug: Check if parent names are included
+    console.log("Animals list sample:", animals.slice(0, 1).map(animal => ({
+      id: animal.id,
+      tagNumber: animal.tagNumber,
+      motherName: animal.motherName,
+      fatherName: animal.fatherName,
+    })));
 
     return createSecureResponse({
       animals,
@@ -134,43 +138,19 @@ export async function POST(request: NextRequest) {
     }
 
     let imageUrl = null;
-    if (imageFile && imageFile.size > 0) {
+    
+    // Check if image URL was already uploaded (from Supabase upload)
+    if (data.imageUrl) {
+      imageUrl = data.imageUrl as string;
+      delete data.imageUrl; // Remove from data object
+    } 
+    // Otherwise, handle file upload (legacy support)
+    else if (imageFile && imageFile.size > 0) {
       const uploadResult = await uploadAnimalImage(imageFile);
       if (uploadResult.error) {
         return createSecureErrorResponse(uploadResult.error, 500, request);
       }
       imageUrl = uploadResult.imageUrl;
-    }
-
-    const findAnimalByNameOrTag = async (nameOrTag: string) => {
-      return await prisma.animal.findFirst({
-        where: {
-          OR: [
-            { name: { equals: nameOrTag, mode: "insensitive" } },
-            { tagNumber: nameOrTag },
-          ],
-        },
-        select: { id: true, name: true, tagNumber: true },
-      });
-    };
-
-    let motherId: string | undefined = undefined;
-    let fatherId: string | undefined = undefined;
-
-    if (data.motherName) {
-      const mother = await findAnimalByNameOrTag(data.motherName as string);
-      if (mother) {
-        motherId = mother.id;
-      }
-      delete data.motherName;
-    }
-
-    if (data.fatherName) {
-      const father = await findAnimalByNameOrTag(data.fatherName as string);
-      if (father) {
-        fatherId = father.id;
-      }
-      delete data.fatherName;
     }
 
     const validatedData = CreateAnimalSchema.parse(data);
@@ -181,14 +161,6 @@ export async function POST(request: NextRequest) {
 
     if (imageUrl) {
       createData.image = imageUrl;
-    }
-
-    if (motherId) {
-      createData.motherId = motherId;
-    }
-
-    if (fatherId) {
-      createData.fatherId = fatherId;
     }
 
     const birthDate = new Date(validatedData.birthDate);
@@ -238,10 +210,6 @@ export async function POST(request: NextRequest) {
         expectedMaturityDate,
         isMatured,
         isReadyForProduction,
-      },
-      include: {
-        mother: { select: { id: true, tagNumber: true, name: true } },
-        father: { select: { id: true, tagNumber: true, name: true } },
       },
     });
 

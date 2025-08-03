@@ -10,10 +10,8 @@ export interface Animal {
   weight?: number | null;
   healthStatus: "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED";
   image?: string | null;
-  motherId?: string | null;
-  fatherId?: string | null;
-  mother?: { id: string; tagNumber: string; name?: string | null } | null;
-  father?: { id: string; tagNumber: string; name?: string | null } | null;
+  motherName?: string | null;
+  fatherName?: string | null;
   isMatured?: boolean;
   isReadyForProduction?: boolean;
   notes?: string | null;
@@ -49,4 +47,23 @@ export interface AnimalFiltersProps {
 export interface AnimalAddFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+}
+
+export interface AnimalEditDialogProps {
+  animal: Animal;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export interface AnimalEditFormInput {
+  tagNumber: string;
+  name: string;
+  type: "COW" | "BULL" | "CALF";
+  gender: "MALE" | "FEMALE";
+  birthDate: string;
+  expectedMaturityDate?: string;
+  weight?: string;
+  healthStatus: "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED";
+  motherName?: string;
+  fatherName?: string;
 }

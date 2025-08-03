@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
 import { UpdateAnimalSchema } from "@/lib/validators/animal";
 import { uploadAnimalImage, deleteAnimalImage } from "@/lib/animal-storage";
@@ -29,26 +30,6 @@ export async function GET(
     const animal = await prisma.animal.findUnique({
       where: { id },
       include: {
-        mother: { select: { id: true, tagNumber: true, name: true } },
-        father: { select: { id: true, tagNumber: true, name: true } },
-        motherOf: {
-          select: {
-            id: true,
-            tagNumber: true,
-            name: true,
-            type: true,
-            birthDate: true,
-          },
-        },
-        fatherOf: {
-          select: {
-            id: true,
-            tagNumber: true,
-            name: true,
-            type: true,
-            birthDate: true,
-          },
-        },
         treatments: {
           orderBy: { createdAt: "desc" },
           include: { treatedBy: { select: { username: true } } },
@@ -110,18 +91,28 @@ export async function PUT(
     const data = Object.fromEntries(formData.entries());
 
     let imageUrl = existingAnimal.image;
-    const imageFile = formData.get("image") as File;
-    if (imageFile && imageFile.size > 0) {
-      const uploadResult = await uploadAnimalImage(imageFile);
-      if (uploadResult.error) {
-        return createSecureErrorResponse(uploadResult.error, 500, request);
-      }
-      
+  
+    if (data.imageUrl) {
       if (existingAnimal.image) {
         await deleteAnimalImage(existingAnimal.image);
       }
-      
-      imageUrl = uploadResult.imageUrl;
+      imageUrl = data.imageUrl as string;
+      delete data.imageUrl;
+    } 
+    else {
+      const imageFile = formData.get("image") as File;
+      if (imageFile && imageFile.size > 0) {
+        const uploadResult = await uploadAnimalImage(imageFile);
+        if (uploadResult.error) {
+          return createSecureErrorResponse(uploadResult.error, 500, request);
+        }
+        
+        if (existingAnimal.image) {
+          await deleteAnimalImage(existingAnimal.image);
+        }
+        
+        imageUrl = uploadResult.imageUrl;
+      }
     }
 
     const animalData = {
@@ -129,8 +120,6 @@ export async function PUT(
       ...data,
       image: imageUrl,
       weight: data.weight ? parseFloat(data.weight as string) : undefined,
-      motherId: data.motherId === "" || data.motherId === undefined ? null : (data.motherId as string),
-      fatherId: data.fatherId === "" || data.fatherId === undefined ? null : (data.fatherId as string),
     };
 
     const validatedData = UpdateAnimalSchema.parse(animalData);
@@ -190,7 +179,7 @@ export async function PUT(
       }
     }
 
-    const { id: _id, fatherName, motherName, ...updateData } = validatedData;
+    const { id: _id, ...updateData } = validatedData;
 
     const cleanUpdateData: any = {
       ...updateData,
@@ -209,8 +198,6 @@ export async function PUT(
       where: { id },
       data: cleanUpdateData,
       include: {
-        mother: { select: { id: true, tagNumber: true, name: true } },
-        father: { select: { id: true, tagNumber: true, name: true } },
         treatments: {
           orderBy: { createdAt: "desc" },
           take: 5,
@@ -231,7 +218,31 @@ export async function PUT(
 
     return createSecureResponse(updatedAnimal, {}, request);
   } catch (error) {
-    return createSecureErrorResponse("Failed to update animal", 500, request);
+    console.error("Animal update error:", error);
+    
+    // Check if it's a Zod validation error
+    if (error instanceof ZodError) {
+      return createSecureErrorResponse(
+        `Validation error: ${error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ')}`,
+        400,
+        request
+      );
+    }
+    
+    // Check if it's a Prisma error
+    if (error instanceof Error && error.message.includes('Prisma')) {
+      return createSecureErrorResponse(
+        `Database error: ${error.message}`,
+        500,
+        request
+      );
+    }
+    
+    return createSecureErrorResponse(
+      `Failed to update animal: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      500,
+      request
+    );
   }
 }
 

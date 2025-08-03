@@ -45,47 +45,6 @@ export function useAnimal(id: string) {
 
 export function useCreateAnimal() {
   const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: CreateAnimalInput) => {
-      try {
-        const formData = new FormData();
-
-        Object.entries(data).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            if (key === "image" && value instanceof File) {
-              formData.append(key, value);
-            } else if (key === "birthDate" && value instanceof Date) {
-              formData.append(key, value.toISOString());
-            } else {
-              formData.append(key, value.toString());
-            }
-          }
-        });
-
-        const response = await apiClient.post("/animals", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        return response.data;
-      } catch (error) {
-        const apiError = handleApiError(error);
-        throw new Error(apiError.message);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["animals"] });
-      queryClient.invalidateQueries({ queryKey: ["available-parents"] });
-      queryClient.invalidateQueries({
-        queryKey: ["available-production-animals"],
-      });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-    },
-  });
-}
-
-export function useCreateAnimalWithNavigation() {
-  const queryClient = useQueryClient();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -93,8 +52,6 @@ export function useCreateAnimalWithNavigation() {
     mutationFn: async (data: CreateAnimalInput) => {
       try {
         let imageUrl = null;
-        
-        // Handle Supabase image upload
         if (data.image && data.image instanceof File) {
           const uploadResult = await uploadImage({
             file: data.image,
@@ -114,7 +71,6 @@ export function useCreateAnimalWithNavigation() {
         Object.entries(data).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
             if (key === "image") {
-              // Skip the file, we'll use the uploaded URL
               return;
             } else if (key === "birthDate" && value instanceof Date) {
               formData.append(key, value.toISOString());
@@ -124,7 +80,6 @@ export function useCreateAnimalWithNavigation() {
           }
         });
 
-        // Add the image URL if available
         if (imageUrl) {
           formData.append("imageUrl", imageUrl);
         }
@@ -146,7 +101,6 @@ export function useCreateAnimalWithNavigation() {
       });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
-
       toast({
         type: "success",
         title: "Success",
@@ -166,16 +120,28 @@ export function useCreateAnimalWithNavigation() {
 
 export function useUpdateAnimal() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (data: UpdateAnimalInput) => {
       try {
+        let imageUrl = null;
+        if (data.image && data.image instanceof File) {
+          const uploadResult = await uploadImage({
+            file: data.image,
+            bucket: "farm-house",
+            folder: "animals"
+          });
+          if (uploadResult.error) {
+            throw new Error(uploadResult.error);
+          }
+          imageUrl = uploadResult.imageUrl;
+        }
         const formData = new FormData();
-
         Object.entries(data).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
-            if (key === "image" && value instanceof File) {
-              formData.append(key, value);
+            if (key === "image") {
+              return;
             } else if (key === "birthDate" && value instanceof Date) {
               formData.append(key, value.toISOString());
             } else {
@@ -183,7 +149,9 @@ export function useUpdateAnimal() {
             }
           }
         });
-
+        if (imageUrl) {
+          formData.append("imageUrl", imageUrl);
+        }
         const response = await apiClient.put(
           `/animals/${data.id}`,
           formData,
@@ -206,6 +174,18 @@ export function useUpdateAnimal() {
       });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast({
+        type: "success",
+        title: "Success",
+        description: `Animal ${data.tagNumber} updated successfully`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        type: "error",
+        title: "Error",
+        description: error.message || "Failed to update animal",
+      });
     },
   });
 }

@@ -9,20 +9,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { RingLoader } from "react-spinners";
-import { useCreateAnimalWithNavigation } from "@/hooks";
+import { useCreateAnimal } from "@/hooks/use-animal-hooks";
 import { useToast } from "@/hooks/use-toast";
 import { CreateAnimalSchema, CreateAnimalInput } from "@/lib/validators/animal";
 import { AnimalAddFormProps } from "@/lib/types/animal";
 
-type AnimalFormInput = Omit<CreateAnimalInput, 'birthDate' | 'expectedMaturityDate' | 'image'> & {
+type AnimalFormInput = Omit<CreateAnimalInput, 'birthDate' | 'expectedMaturityDate' | 'image' | 'weight'> & {
   birthDate: string;
   expectedMaturityDate?: string;
+  weight?: string;
 };
 
 export function AnimalAddForm({ onSuccess, onCancel }: AnimalAddFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
-  const createAnimalMutation = useCreateAnimalWithNavigation();
+  const createAnimalMutation = useCreateAnimal();
   const { toast } = useToast();
 
   const {
@@ -84,10 +85,9 @@ export function AnimalAddForm({ onSuccess, onCancel }: AnimalAddFormProps) {
     try {
       const validatedData = CreateAnimalSchema.parse({
         ...data,
-        birthDate: new Date(data.birthDate),
-        expectedMaturityDate: data.expectedMaturityDate 
-          ? new Date(data.expectedMaturityDate) 
-          : undefined,
+        birthDate: data.birthDate,
+        expectedMaturityDate: data.expectedMaturityDate || undefined,
+        weight: data.weight ? parseFloat(data.weight as string) : undefined,
       });
 
       const submitData: CreateAnimalInput = {
@@ -102,18 +102,28 @@ export function AnimalAddForm({ onSuccess, onCancel }: AnimalAddFormProps) {
       setImagePreview("");
       onSuccess?.();
     } catch (error: any) {
+      console.error("Animal creation error:", error);
+      
       if (error.errors) {
+        // Zod validation errors
         const firstError = error.errors[0];
         toast({
           type: "error",
           title: "Validation Error",
           description: firstError.message,
         });
+      } else if (error.message) {
+        // API or mutation errors
+        toast({
+          type: "error",
+          title: "Error",
+          description: error.message,
+        });
       } else {
         toast({
           type: "error",
           title: "Error", 
-          description: "Please check your input",
+          description: "Failed to add animal. Please check your input and try again.",
         });
       }
     }
@@ -214,6 +224,32 @@ export function AnimalAddForm({ onSuccess, onCancel }: AnimalAddFormProps) {
                   When this animal is expected to mature and be ready for
                   production
                 </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Weight (kg)
+                </label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  {...register("weight", {
+                    validate: (value) => {
+                      if (value && value.trim() !== "") {
+                        const numValue = parseFloat(value);
+                        if (isNaN(numValue) || numValue < 0) {
+                          return "Weight must be a positive number";
+                        }
+                      }
+                      return true;
+                    }
+                  })}
+                  placeholder="Enter weight in kg"
+                  className={errors.weight ? "border-red-500" : ""}
+                />
+                {errors.weight && (
+                  <p className="text-red-500 text-xs mt-1">{errors.weight.message}</p>
+                )}
               </div>
               <div></div>
               <div>

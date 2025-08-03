@@ -1,37 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
-import { X, Loader2 } from "lucide-react";
+import { X, Upload } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useUpdateAnimal, useAvailableParents } from "@/hooks";
+import { RingLoader } from "react-spinners";
+import { useUpdateAnimal, useAnimal } from "@/hooks";
 import { useToast } from "@/hooks";
-import Image from "next/image";
-
-interface Animal {
-  id: string;
-  tagNumber: string;
-  name?: string | null;
-  type: "COW" | "BULL" | "CALF";
-  gender: "MALE" | "FEMALE";
-  birthDate: string;
-  expectedMaturityDate?: string | null;
-  weight?: number | null;
-  healthStatus: "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED";
-  image?: string | null;
-  motherId?: string | null;
-  fatherId?: string | null;
-  mother?: { id: string; tagNumber: string; name?: string | null } | null;
-  father?: { id: string; tagNumber: string; name?: string | null } | null;
-}
-
-interface AnimalEditDialogProps {
-  animal: Animal;
-  isOpen: boolean;
-  onClose: () => void;
-}
+import { UpdateAnimalSchema, UpdateAnimalInput } from "@/lib/validators/animal";
+import { Animal, AnimalEditDialogProps, AnimalEditFormInput } from "@/lib/types/animal";
 
 export function AnimalsEditDialog({
   animal,
@@ -40,93 +21,80 @@ export function AnimalsEditDialog({
 }: AnimalEditDialogProps) {
   const { toast } = useToast();
   const updateAnimalMutation = useUpdateAnimal();
-  const { data: availableMothers } = useAvailableParents("FEMALE");
-  const { data: availableFathers } = useAvailableParents("MALE");
+  const { data: freshAnimalData, isLoading: isFetchingAnimal } = useAnimal(animal.id);
+  const currentAnimal = freshAnimalData || animal;
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
 
-  const [formData, setFormData] = useState({
-    tagNumber: animal.tagNumber,
-    name: animal.name || "",
-    type: animal.type,
-    gender: animal.gender,
-    birthDate: new Date(animal.birthDate).toISOString().split("T")[0],
-    expectedMaturityDate: animal.expectedMaturityDate
-      ? (() => {
-          try {
-            return new Date(animal.expectedMaturityDate)
-              .toISOString()
-              .split("T")[0];
-          } catch (error) {
-            console.error(
-              "Error parsing expectedMaturityDate:",
-              animal.expectedMaturityDate,
-              error
-            );
-            return "";
-          }
-        })()
-      : "",
-    weight: animal.weight?.toString() || "",
-    healthStatus: animal.healthStatus,
-    motherId: animal.motherId || "",
-    fatherId: animal.fatherId || "",
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+    setValue,
+    watch,
+  } = useForm<AnimalEditFormInput>({
+    defaultValues: {
+      tagNumber: "",
+      name: "",
+      type: "COW",
+      gender: "FEMALE",
+      birthDate: "",
+      expectedMaturityDate: "",
+      weight: "",
+      healthStatus: "HEALTHY",
+      motherName: "",
+      fatherName: "",
+    },
   });
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-
   useEffect(() => {
-    if (animal) {
-      setFormData({
-        tagNumber: animal.tagNumber,
-        name: animal.name || "",
-        type: animal.type,
-        gender: animal.gender,
-        birthDate: new Date(animal.birthDate).toISOString().split("T")[0],
-        expectedMaturityDate: animal.expectedMaturityDate
+    if (currentAnimal && isOpen) {
+      reset({
+        tagNumber: currentAnimal.tagNumber,
+        name: currentAnimal.name || "",
+        type: currentAnimal.type,
+        gender: currentAnimal.gender,
+        birthDate: new Date(currentAnimal.birthDate).toISOString().split("T")[0],
+        expectedMaturityDate: currentAnimal.expectedMaturityDate
           ? (() => {
               try {
-                return new Date(animal.expectedMaturityDate)
+                return new Date(currentAnimal.expectedMaturityDate)
                   .toISOString()
                   .split("T")[0];
               } catch (error) {
-                console.error(
-                  "Error parsing expectedMaturityDate:",
-                  animal.expectedMaturityDate,
-                  error
-                );
+                console.error("Error parsing expectedMaturityDate:", error);
                 return "";
               }
             })()
           : "",
-        weight: animal.weight?.toString() || "",
-        healthStatus: animal.healthStatus,
-        motherId: animal.motherId || "",
-        fatherId: animal.fatherId || "",
+        weight: currentAnimal.weight?.toString() || "",
+        healthStatus: currentAnimal.healthStatus,
+        motherName: currentAnimal.motherName || "",
+        fatherName: currentAnimal.fatherName || "",
       });
-      setImagePreview(null);
       setImageFile(null);
+      setImagePreview("");
     }
-  }, [animal]);
+  }, [currentAnimal, isOpen, reset]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         toast({
+          type: "error",
           title: "Error",
           description: "Image must be less than 5MB",
-          type: "error",
         });
         return;
       }
 
-      // Validate file type
       if (!file.type.startsWith("image/")) {
         toast({
+          type: "error",
           title: "Error",
           description: "Please select a valid image file",
-          type: "error",
         });
         return;
       }
@@ -140,40 +108,53 @@ export function AnimalsEditDialog({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview("");
+  };
 
+  const onSubmit = async (data: AnimalEditFormInput) => {
     try {
-      const updateData = {
-        id: animal.id,
-        ...formData,
-        weight: formData.weight ? parseFloat(formData.weight) : undefined,
-        birthDate: new Date(formData.birthDate),
-        expectedMaturityDate: formData.expectedMaturityDate
-          ? new Date(formData.expectedMaturityDate)
-          : undefined,
+      const validatedData = UpdateAnimalSchema.parse({
+        id: currentAnimal.id,
+        ...data,
+        birthDate: data.birthDate,
+        expectedMaturityDate: data.expectedMaturityDate || undefined,
+        weight: data.weight ? parseFloat(data.weight) : undefined,
+        motherName: data.motherName || undefined,
+        fatherName: data.fatherName || undefined,
+      });
+
+      const submitData: UpdateAnimalInput = {
+        ...validatedData,
         image: imageFile,
-        motherId: formData.motherId || undefined,
-        fatherId: formData.fatherId || undefined,
       };
 
-      await updateAnimalMutation.mutateAsync(updateData);
-
-      toast({
-        title: "Success",
-        description: "Animal updated successfully",
-        type: "success",
-      });
-
+      await updateAnimalMutation.mutateAsync(submitData);
       onClose();
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to update animal";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        type: "error",
-      });
+    } catch (error: any) {
+      console.error("Animal update error:", error);
+      
+      if (error.errors) {
+        const firstError = error.errors[0];
+        toast({
+          type: "error",
+          title: "Validation Error",
+          description: firstError.message,
+        });
+      } else if (error.message) {
+        toast({
+          type: "error",
+          title: "Error",
+          description: error.message,
+        });
+      } else {
+        toast({
+          type: "error",
+          title: "Error", 
+          description: "Failed to update animal. Please check your input and try again.",
+        });
+      }
     }
   };
 
@@ -202,40 +183,51 @@ export function AnimalsEditDialog({
             </Button>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Animal Image
                 </label>
-                <div className="flex items-center space-x-4">
-                  <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-gray-100">
-                    {imagePreview ? (
+                <div className="space-y-4">
+                  {(imagePreview || currentAnimal?.image) && (
+                    <motion.div 
+                      className="relative w-full max-w-xs mx-auto sm:mx-0"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
                       <Image
-                        src={imagePreview}
-                        alt="Preview"
-                        fill
-                        className="object-cover"
+                        src={imagePreview || currentAnimal?.image!}
+                        alt="Animal preview"
+                        width={300}
+                        height={200}
+                        className="rounded-lg object-cover w-full h-48"
                       />
-                    ) : animal.image ? (
-                      <Image
-                        src={animal.image}
-                        alt="Current"
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center">
-                        <span className="text-gray-400 text-xs">No image</span>
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-                  />
+                      {imagePreview && (
+                        <button
+                          type="button"
+                          onClick={clearImage}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </motion.div>
+                  )}
+                  <label className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 text-sm sm:text-base transition-colors">
+                    <Upload size={18} className="mr-2" />
+                    {imagePreview || currentAnimal?.image ? "Change Photo" : "Upload Photo"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-xs text-gray-500">
+                    Maximum file size: 5MB. Supported formats: JPG, PNG, GIF, WebP
+                  </p>
                 </div>
               </div>
 
@@ -246,22 +238,21 @@ export function AnimalsEditDialog({
                     Tag Number *
                   </label>
                   <Input
-                    value={formData.tagNumber}
-                    onChange={(e) =>
-                      setFormData({ ...formData, tagNumber: e.target.value })
-                    }
-                    required
+                    {...register("tagNumber", { required: "Tag number is required" })}
+                    placeholder="Enter tag number"
+                    className={errors.tagNumber ? "border-red-500" : ""}
                   />
+                  {errors.tagNumber && (
+                    <p className="text-red-500 text-xs mt-1">{errors.tagNumber.message}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Name
                   </label>
                   <Input
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
+                    {...register("name")}
+                    placeholder="Enter animal name"
                   />
                 </div>
               </div>
@@ -272,39 +263,35 @@ export function AnimalsEditDialog({
                     Type *
                   </label>
                   <select
-                    value={formData.type}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        type: e.target.value as "COW" | "BULL" | "CALF",
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
+                    {...register("type", { required: "Type is required" })}
+                    className={`w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      errors.type ? "border-red-500" : ""
+                    }`}
                   >
                     <option value="COW">Cow</option>
                     <option value="BULL">Bull</option>
                     <option value="CALF">Calf</option>
                   </select>
+                  {errors.type && (
+                    <p className="text-red-500 text-xs mt-1">{errors.type.message}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Gender *
                   </label>
                   <select
-                    value={formData.gender}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        gender: e.target.value as "MALE" | "FEMALE",
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
+                    {...register("gender", { required: "Gender is required" })}
+                    className={`w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      errors.gender ? "border-red-500" : ""
+                    }`}
                   >
-                    <option value="MALE">Male</option>
                     <option value="FEMALE">Female</option>
+                    <option value="MALE">Male</option>
                   </select>
+                  {errors.gender && (
+                    <p className="text-red-500 text-xs mt-1">{errors.gender.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -315,12 +302,12 @@ export function AnimalsEditDialog({
                   </label>
                   <Input
                     type="date"
-                    value={formData.birthDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, birthDate: e.target.value })
-                    }
-                    required
+                    {...register("birthDate", { required: "Birth date is required" })}
+                    className={errors.birthDate ? "border-red-500" : ""}
                   />
+                  {errors.birthDate && (
+                    <p className="text-red-500 text-xs mt-1">{errors.birthDate.message}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -328,18 +315,15 @@ export function AnimalsEditDialog({
                   </label>
                   <Input
                     type="date"
-                    value={formData.expectedMaturityDate}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        expectedMaturityDate: e.target.value,
-                      })
-                    }
+                    {...register("expectedMaturityDate")}
+                    className={errors.expectedMaturityDate ? "border-red-500" : ""}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    When this animal is expected to mature and be ready for
-                    production
+                    When this animal is expected to mature and be ready for production
                   </p>
+                  {errors.expectedMaturityDate && (
+                    <p className="text-red-500 text-xs mt-1">{errors.expectedMaturityDate.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -352,94 +336,67 @@ export function AnimalsEditDialog({
                     type="number"
                     step="0.1"
                     min="0"
-                    value={formData.weight}
-                    onChange={(e) =>
-                      setFormData({ ...formData, weight: e.target.value })
-                    }
+                    {...register("weight", {
+                      validate: (value) => {
+                        if (value && (isNaN(parseFloat(value)) || parseFloat(value) < 0)) {
+                          return "Weight must be a positive number";
+                        }
+                        return true;
+                      }
+                    })}
+                    placeholder="Enter weight"
+                    className={errors.weight ? "border-red-500" : ""}
                   />
+                  {errors.weight && (
+                    <p className="text-red-500 text-xs mt-1">{errors.weight.message}</p>
+                  )}
                 </div>
-                <div></div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Health Status *
-                </label>
-                <select
-                  value={formData.healthStatus}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      healthStatus: e.target.value as
-                        | "HEALTHY"
-                        | "SICK"
-                        | "RECOVERING"
-                        | "QUARANTINED",
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                >
-                  <option value="HEALTHY">Healthy</option>
-                  <option value="SICK">Sick</option>
-                  <option value="RECOVERING">Recovering</option>
-                  <option value="QUARANTINED">Quarantined</option>
-                </select>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Health Status *
+                  </label>
+                  <select
+                    {...register("healthStatus", { required: "Health status is required" })}
+                    className={`w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      errors.healthStatus ? "border-red-500" : ""
+                    }`}
+                  >
+                    <option value="HEALTHY">Healthy</option>
+                    <option value="SICK">Sick</option>
+                    <option value="RECOVERING">Recovering</option>
+                    <option value="QUARANTINED">Quarantined</option>
+                  </select>
+                  {errors.healthStatus && (
+                    <p className="text-red-500 text-xs mt-1">{errors.healthStatus.message}</p>
+                  )}
+                </div>
               </div>
 
               {/* Parent Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mother
+                    Mother (Name or Tag Number)
                   </label>
-                  <select
-                    value={formData.motherId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, motherId: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Select Mother</option>
-                    {availableMothers?.map(
-                      (mother: {
-                        id: string;
-                        tagNumber: string;
-                        name?: string | null;
-                      }) => (
-                        <option key={mother.id} value={mother.id}>
-                          {mother.name || `Animal ${mother.tagNumber}`} (
-                          {mother.tagNumber})
-                        </option>
-                      )
-                    )}
-                  </select>
+                  <Input
+                    {...register("motherName")}
+                    placeholder="Enter mother's name or tag number"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the mother's name or tag number if known
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Father
+                    Father (Name or Tag Number)
                   </label>
-                  <select
-                    value={formData.fatherId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, fatherId: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Select Father</option>
-                    {availableFathers?.map(
-                      (father: {
-                        id: string;
-                        tagNumber: string;
-                        name?: string | null;
-                      }) => (
-                        <option key={father.id} value={father.id}>
-                          {father.name || `Animal ${father.tagNumber}`} (
-                          {father.tagNumber})
-                        </option>
-                      )
-                    )}
-                  </select>
+                  <Input
+                    {...register("fatherName")}
+                    placeholder="Enter father's name or tag number"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the father's name or tag number if known
+                  </p>
                 </div>
               </div>
 
@@ -449,18 +406,23 @@ export function AnimalsEditDialog({
                   type="button"
                   variant="outline"
                   onClick={onClose}
-                  disabled={updateAnimalMutation.isPending}
+                  disabled={isSubmitting || updateAnimalMutation.isPending}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  disabled={updateAnimalMutation.isPending}
-                  className="bg-green-600 hover:bg-green-700"
+                  disabled={isSubmitting || updateAnimalMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700 text-white"
                 >
-                  {updateAnimalMutation.isPending ? (
+                  {isSubmitting || updateAnimalMutation.isPending ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <RingLoader
+                        size={20}
+                        color="#ffffff"
+                        speedMultiplier={0.8}
+                        className="mr-2"
+                      />
                       Updating...
                     </>
                   ) : (
