@@ -105,7 +105,6 @@ export function AnimalAddForm({ onSuccess, onCancel }: AnimalAddFormProps) {
       console.error("Animal creation error:", error);
       
       if (error.errors) {
-        // Zod validation errors
         const firstError = error.errors[0];
         toast({
           type: "error",
@@ -113,7 +112,6 @@ export function AnimalAddForm({ onSuccess, onCancel }: AnimalAddFormProps) {
           description: firstError.message,
         });
       } else if (error.message) {
-        // API or mutation errors
         toast({
           type: "error",
           title: "Error",

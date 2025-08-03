@@ -82,14 +82,6 @@ export async function GET(request: NextRequest) {
 
     const total = await prisma.animal.count({ where });
 
-    // Debug: Check if parent names are included
-    console.log("Animals list sample:", animals.slice(0, 1).map(animal => ({
-      id: animal.id,
-      tagNumber: animal.tagNumber,
-      motherName: animal.motherName,
-      fatherName: animal.fatherName,
-    })));
-
     return createSecureResponse({
       animals,
       pagination: {
@@ -137,14 +129,18 @@ export async function POST(request: NextRequest) {
       data = body;
     }
 
+    // Convert string values to appropriate types for form data
+    if (data.weight && typeof data.weight === 'string') {
+      const weightNum = parseFloat(data.weight as string);
+      data.weight = isNaN(weightNum) ? undefined : weightNum;
+    }
+
     let imageUrl = null;
-    
-    // Check if image URL was already uploaded (from Supabase upload)
+  
     if (data.imageUrl) {
       imageUrl = data.imageUrl as string;
-      delete data.imageUrl; // Remove from data object
+      delete data.imageUrl;
     } 
-    // Otherwise, handle file upload (legacy support)
     else if (imageFile && imageFile.size > 0) {
       const uploadResult = await uploadAnimalImage(imageFile);
       if (uploadResult.error) {
