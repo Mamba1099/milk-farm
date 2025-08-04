@@ -5,33 +5,9 @@ import { X, Heart, Activity, Calendar, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getHealthStatusColor, getAnimalTypeColor } from "@/lib/utils";
+import { calculateAge, formatDate, calculateDaysRemaining } from "@/lib/date-utils";
+import { AnimalDetailsDialogProps } from "@/lib/types/animal";
 import Image from "next/image";
-
-interface Animal {
-  id: string;
-  tagNumber: string;
-  name?: string | null;
-  type: "COW" | "BULL" | "CALF";
-  gender: "MALE" | "FEMALE";
-  birthDate: string;
-  expectedMaturityDate?: string | null;
-  weight?: number | null;
-  healthStatus: "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED";
-  image?: string | null;
-  isMatured: boolean;
-  isReadyForProduction: boolean;
-  notes?: string | null;
-  mother?: { id: string; tagNumber: string; name?: string | null } | null;
-  father?: { id: string; tagNumber: string; name?: string | null } | null;
-  treatments?: unknown[];
-  productionRecords?: unknown[];
-}
-
-interface AnimalDetailsDialogProps {
-  animal: Animal;
-  isOpen: boolean;
-  onClose: () => void;
-}
 
 export function AnimalDetailsDialog({
   animal,
@@ -40,10 +16,7 @@ export function AnimalDetailsDialog({
 }: AnimalDetailsDialogProps) {
   if (!isOpen) return null;
 
-  const age = Math.floor(
-    (new Date().getTime() - new Date(animal.birthDate).getTime()) /
-      (1000 * 60 * 60 * 24 * 365)
-  );
+  const age = calculateAge(animal.birthDate);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -207,7 +180,7 @@ export function AnimalDetailsDialog({
                       <label className="block text-sm font-medium text-gray-700">
                         Age
                       </label>
-                      <p className="text-lg">{age} years old</p>
+                      <p className="text-lg">{age}</p>
                     </div>
                   </div>
                   {animal.weight && (
@@ -313,14 +286,7 @@ export function AnimalDetailsDialog({
                         Birth Date
                       </label>
                       <p className="font-semibold">
-                        {new Date(animal.birthDate).toLocaleDateString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          }
-                        )}
+                        {formatDate(animal.birthDate)}
                       </p>
                     </div>
                   </div>
@@ -334,24 +300,17 @@ export function AnimalDetailsDialog({
                           Expected Maturity Date
                         </label>
                         <p className="font-semibold">
-                          {new Date(
-                            animal.expectedMaturityDate
-                          ).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
+                          {formatDate(animal.expectedMaturityDate)}
                         </p>
                         <p className="text-xs text-green-600">
                           {new Date(animal.expectedMaturityDate) <= new Date()
                             ? "Maturity date has passed"
-                            : `${Math.ceil(
-                                (new Date(
-                                  animal.expectedMaturityDate
-                                ).getTime() -
-                                  new Date().getTime()) /
-                                  (1000 * 60 * 60 * 24)
-                              )} days remaining`}
+                            : (() => {
+                                const daysRemaining = calculateDaysRemaining(animal.expectedMaturityDate);
+                                return daysRemaining === 1 
+                                  ? "1 day remaining" 
+                                  : `${daysRemaining} days remaining`;
+                              })()}
                         </p>
                       </div>
                     </div>
