@@ -9,6 +9,7 @@ import {
   ApiErrorResponse,
 } from "@/lib/types";
 import { useToast } from "@/components/ui/toast";
+import { sessionManager } from "@/lib/session-manager";
 
 export const useLoginMutation = () => {
   const queryClient = useQueryClient();
@@ -26,13 +27,20 @@ export const useLoginMutation = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
 
+      // Set session info in session manager if available
+      if (data.session) {
+        sessionManager.setSessionInfo({
+          startTime: data.session.startTime,
+          endTime: data.session.endTime,
+          duration: data.session.duration,
+        });
+      }
+
       toast({
         type: "success",
         title: "Login Successful",
         description: `Welcome back, ${data.user.username}!`,
       });
-
-      console.log("Login successful:", data.message);
     },
     onError: (error) => {
       console.error("Login failed:", error);
