@@ -38,6 +38,11 @@ export interface LoginResponse {
     image: string | null;
     image_url: string | null;
   };
+  session?: {
+    startTime: string;
+    endTime: string;
+    duration: number;
+  };
 }
 
 export interface RegisterInput {
@@ -123,4 +128,8 @@ export interface AuthErrorBoundaryProps {
 export interface ProfileImageFieldProps {
   onImageChange: (file: File | null) => void;
   imagePreview: string | null;
+}
+
+export interface SessionCheckResponse {
+  user: User;
 }

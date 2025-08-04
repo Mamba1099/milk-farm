@@ -4,7 +4,9 @@ import React, { createContext, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentUser, useLogoutMutation } from "@/hooks/use-user-queries";
 import { useLoginMutation } from "@/hooks/use-login";
+import { useSessionCheck } from "@/hooks/use-session-check";
 import { LoginInput, AuthContextType, AuthProviderProps } from "@/lib/types";
+import { sessionManager } from "@/lib/session-manager";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -28,6 +30,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   
   const loginMutation = useLoginMutation();
   const logoutMutation = useLogoutMutation();
+  const sessionCheckMutation = useSessionCheck();
 
   const isLoading = userLoading;
   const isAuthenticated = !!user && !userError;
@@ -36,6 +39,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const canEdit = isFarmManager;
   const canView = isAuthenticated;
+
+  // Set up session check mutation
+  useEffect(() => {
+    sessionManager.setSessionCheckMutation(sessionCheckMutation);
+  }, [sessionCheckMutation]);
+
+  // Session management
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Start session checking when user is authenticated
+      sessionManager.startSessionCheck(() => {
+        console.log("Session expired, logging out...");
+        handleSessionExpired();
+      });
+    } else {
+      // Stop session checking when not authenticated
+      sessionManager.stopSessionCheck();
+    }
+
+    return () => {
+      sessionManager.stopSessionCheck();
+    };
+  }, [isAuthenticated]);
+
+  const handleSessionExpired = async () => {
+    try {
+      sessionManager.clearSession();
+      await logoutMutation.mutateAsync();
+      router.push("/login");
+    } catch (error) {
+      console.error("Error during session expiration logout:", error);
+      // Force redirect even if logout fails
+      router.push("/login");
+    }
+  };
 
   useEffect(() => {
     if (!isLoading) {
