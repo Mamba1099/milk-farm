@@ -48,16 +48,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const sessionDuration = 30 * 60 * 1000;
+    const sessionStartTime = new Date();
+    const sessionEndTime = new Date(sessionStartTime.getTime() + sessionDuration);
+
     const payload = {
       sub: user.id,
       username: user.username,
       email: user.email,
       role: user.role,
       image: user.image,
+      sessionStartTime: sessionStartTime.toISOString(),
+      sessionEndTime: sessionEndTime.toISOString(),
+      sessionDuration: sessionDuration,
     };
 
     const sessionToken = jwt.sign(payload, JWT_SECRET as string, {
-      expiresIn: "30m", // 30 minutes to match cookie expiration
+      expiresIn: "30m",
     });
 
     await prisma.user.update({
@@ -76,6 +83,11 @@ export async function POST(request: NextRequest) {
           image: user.image,
           createdAt: user.createdAt.toISOString(),
         },
+        session: {
+          startTime: sessionStartTime.toISOString(),
+          endTime: sessionEndTime.toISOString(),
+          duration: sessionDuration,
+        },
       },
       { status: 200 },
       request
@@ -85,7 +97,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 30 * 60, // 30 minutes in seconds
+      maxAge: 30 * 60,
       path: "/",
     });
 

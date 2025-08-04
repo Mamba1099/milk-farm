@@ -22,12 +22,59 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // First, decode the token to check session timing (without verification)
+    let decodedToken;
+    try {
+      decodedToken = jwt.decode(sessionToken) as {
+        sub: string;
+        username: string;
+        email: string;
+        role: string;
+        image: string | null;
+        sessionStartTime?: string;
+        sessionEndTime?: string;
+        sessionDuration?: number;
+      };
+    } catch (decodeError) {
+      const response = createSecureErrorResponse("Invalid token format", 401, request);
+      response.cookies.set("session", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 0,
+        path: "/",
+      });
+      return response;
+    }
+
+    // Check if session has expired based on stored end time
+    if (decodedToken?.sessionEndTime) {
+      const sessionEndTime = new Date(decodedToken.sessionEndTime);
+      const currentTime = new Date();
+      
+      if (currentTime >= sessionEndTime) {
+        const response = createSecureErrorResponse("Session expired", 401, request);
+        response.cookies.set("session", "", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 0,
+          path: "/",
+        });
+        return response;
+      }
+    }
+
+    // Now verify the JWT token
     const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as {
       sub: string;
       username: string;
       email: string;
       role: string;
       image: string | null;
+      sessionStartTime?: string;
+      sessionEndTime?: string;
+      sessionDuration?: number;
     };
 
     const user = await prisma.user.findUnique({
@@ -63,6 +110,14 @@ export async function GET(request: NextRequest) {
           role: user.role,
           image: user.image,
           createdAt: user.createdAt.toISOString(),
+        },
+        session: {
+          startTime: decoded.sessionStartTime,
+          endTime: decoded.sessionEndTime,
+          duration: decoded.sessionDuration,
+          timeRemaining: decoded.sessionEndTime ? 
+            Math.max(0, Math.floor((new Date(decoded.sessionEndTime).getTime() - new Date().getTime()) / 1000)) : 
+            null,
         },
       },
       { status: 200 },
