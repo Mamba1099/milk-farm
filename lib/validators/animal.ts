@@ -33,8 +33,8 @@ export const CreateAnimalSchema = z.object({
   birthDate: z.string().transform((str) => new Date(str)),
   expectedMaturityDate: z
     .string()
-    .transform((str) => new Date(str))
-    .optional(),
+    .optional()
+    .transform((str) => str && str.trim() !== "" ? new Date(str) : undefined),
   motherName: z.string().optional(),
   fatherName: z.string().optional(),
   healthStatus: HealthStatusSchema.default("HEALTHY"),
