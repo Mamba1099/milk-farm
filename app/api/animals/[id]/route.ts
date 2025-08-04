@@ -142,18 +142,26 @@ export async function PUT(
     const ageInMonths = (today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
 
     let expectedMaturityDate: Date;
-    const animalType = validatedData.type || existingAnimal.type;
-    
-    if (animalType === "COW") {
-      expectedMaturityDate = new Date(birthDate.getTime() + 24 * 30.44 * 24 * 60 * 60 * 1000);
-    } else if (animalType === "BULL") {
-      expectedMaturityDate = new Date(birthDate.getTime() + 18 * 30.44 * 24 * 60 * 60 * 1000);
+    if (validatedData.expectedMaturityDate) {
+      expectedMaturityDate = new Date(validatedData.expectedMaturityDate);
+    } else if (existingAnimal.expectedMaturityDate) {
+      expectedMaturityDate = existingAnimal.expectedMaturityDate;
     } else {
-      expectedMaturityDate = new Date(birthDate.getTime() + 12 * 30.44 * 24 * 60 * 60 * 1000);
+      const animalType = validatedData.type || existingAnimal.type;
+      
+      if (animalType === "COW") {
+        expectedMaturityDate = new Date(birthDate.getTime() + 24 * 30.44 * 24 * 60 * 60 * 1000);
+      } else if (animalType === "BULL") {
+        expectedMaturityDate = new Date(birthDate.getTime() + 18 * 30.44 * 24 * 60 * 60 * 1000);
+      } else {
+        expectedMaturityDate = new Date(birthDate.getTime() + 12 * 30.44 * 24 * 60 * 60 * 1000);
+      }
     }
 
     let isMatured = false;
     let isReadyForProduction = false;
+    
+    const animalType = validatedData.type || existingAnimal.type;
 
     if (animalType === "COW") {
       isMatured = ageInMonths >= 24;
@@ -169,6 +177,7 @@ export async function PUT(
       }
     }
 
+    // Also check against the expected maturity date
     if (expectedMaturityDate <= today) {
       isMatured = true;
       if (animalType === "COW" && (validatedData.gender || existingAnimal.gender) === "FEMALE") {

@@ -163,13 +163,20 @@ export async function POST(request: NextRequest) {
     const today = new Date();
     const ageInMonths = (today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
 
+    // Only auto-calculate expectedMaturityDate if not provided by user
     let expectedMaturityDate: Date;
-    if (validatedData.type === "COW") {
-      expectedMaturityDate = new Date(birthDate.getTime() + 24 * 30.44 * 24 * 60 * 60 * 1000);
-    } else if (validatedData.type === "BULL") {
-      expectedMaturityDate = new Date(birthDate.getTime() + 18 * 30.44 * 24 * 60 * 60 * 1000);
+    if (validatedData.expectedMaturityDate) {
+      // Use the date provided by the user
+      expectedMaturityDate = new Date(validatedData.expectedMaturityDate);
     } else {
-      expectedMaturityDate = new Date(birthDate.getTime() + 12 * 30.44 * 24 * 60 * 60 * 1000);
+      // Auto-calculate only if no date provided
+      if (validatedData.type === "COW") {
+        expectedMaturityDate = new Date(birthDate.getTime() + 24 * 30.44 * 24 * 60 * 60 * 1000);
+      } else if (validatedData.type === "BULL") {
+        expectedMaturityDate = new Date(birthDate.getTime() + 18 * 30.44 * 24 * 60 * 60 * 1000);
+      } else {
+        expectedMaturityDate = new Date(birthDate.getTime() + 12 * 30.44 * 24 * 60 * 60 * 1000);
+      }
     }
 
     let isMatured = false;
