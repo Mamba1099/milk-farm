@@ -11,7 +11,7 @@ import { AnimalsEditDialog } from "@/components/animals/animal-edit-dialog";
 import { AnimalDetailsDialog } from "@/components/animals/animal-details-dialog";
 import { AnimalCard } from "@/components/animals/animal-card";
 import { AnimalFilters } from "@/components/animals/animal-filters";
-import { Animal, AnimalFilters as AnimalFiltersType, AnimalWithDetails } from "@/lib/types/animal";
+import {  AnimalFilters as AnimalFiltersType, AnimalWithDetails, AnimalWithParents } from "@/lib/types/animal";
 
 // Animation variants
 const fadeInUp = {
@@ -45,7 +45,7 @@ export default function AnimalsPage() {
     selectedGender: "",
     selectedHealth: "",
   });
-  const [editingAnimal, setEditingAnimal] = useState<Animal | null>(null);
+  const [editingAnimal, setEditingAnimal] = useState<AnimalWithParents | null>(null);
   const [viewingAnimal, setViewingAnimal] = useState<AnimalWithDetails | null>(null);
 
   const {
@@ -73,18 +73,21 @@ export default function AnimalsPage() {
     }
   };
 
-  const handleViewAnimal = (animal: Animal) => {
+  const handleViewAnimal = (animal: AnimalWithParents) => {
     setViewingAnimal({
       ...animal,
-      isMatured: (animal as any).isMatured ?? false,
-      isReadyForProduction: (animal as any).isReadyForProduction ?? false,
-      notes: (animal as any).notes,
-      treatments: (animal as any).treatments,
-      productionRecords: (animal as any).productionRecords,
+      isMatured: animal.isMatured ?? false,
+      isReadyForProduction: animal.isReadyForProduction ?? false,
+      notes: animal.notes,
+      treatments: animal.treatments,
+      productionRecords: animal.productionRecords,
+      disposals: animal.disposals,
+      servings: animal.servings,
+      salesRecords: animal.salesRecords,
     });
   };
 
-  const handleEditAnimal = (animal: Animal) => {
+  const handleEditAnimal = (animal: AnimalWithParents) => {
     setEditingAnimal(animal);
   };
 
@@ -164,7 +167,7 @@ export default function AnimalsPage() {
               animate="animate"
             >
               {animalsData.animals.map((animalData: any) => {
-                const animal: Animal = {
+                const animal: AnimalWithParents = {
                   id: animalData.id,
                   tagNumber: animalData.tagNumber,
                   name: animalData.name,
@@ -175,8 +178,6 @@ export default function AnimalsPage() {
                   weight: animalData.weight,
                   healthStatus: animalData.healthStatus,
                   image: animalData.image,
-                  motherId: animalData.mother?.id,
-                  fatherId: animalData.father?.id,
                   mother: animalData.mother,
                   father: animalData.father,
                   isMatured: animalData.isMatured,
@@ -184,6 +185,9 @@ export default function AnimalsPage() {
                   notes: animalData.notes,
                   treatments: animalData.treatments,
                   productionRecords: animalData.productionRecords,
+                  disposals: animalData.disposals,
+                  servings: animalData.servings,
+                  salesRecords: animalData.salesRecords,
                 };
 
                 return (

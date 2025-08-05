@@ -114,9 +114,10 @@ export interface Sales {
   updatedAt: string | Date;
 }
 
-export interface AnimalWithDetails extends Animal {
+export interface AnimalWithDetails extends AnimalWithRelations {
   isMatured: boolean;
   isReadyForProduction: boolean;
+  notes?: string | null;
 }
 
 export interface AnimalFilters {
@@ -127,7 +128,7 @@ export interface AnimalFilters {
 }
 
 export interface AnimalCardProps {
-  animal: AnimalWithParents; // Use type that supports nested parent objects for UI components
+  animal: AnimalWithParents
   onView: (animal: AnimalWithParents) => void;
   onEdit?: (animal: AnimalWithParents) => void;
   onDelete?: (animalId: string) => void;
@@ -151,7 +152,7 @@ export interface AnimalEditDialogProps {
 }
 
 export interface AnimalDetailsDialogProps {
-  animal: AnimalWithParents; // Use type that supports nested parent objects for UI
+  animal: AnimalWithParents;
   isOpen: boolean;
   onClose: () => void;
 }
