@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { X, Syringe, Calendar, FileText, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RingLoader } from "react-spinners";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import {
   CreateTreatmentSchema,
   CreateTreatmentInput,
 } from "@/lib/validators/animal";
+import { TreatmentFormData } from "@/lib/types/animal";
 import { useToast } from "@/hooks/use-toast";
 
 interface TreatmentFormProps {
@@ -49,8 +51,7 @@ export function TreatmentForm({
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<CreateTreatmentInput>({
-    resolver: zodResolver(CreateTreatmentSchema),
+  } = useForm<TreatmentFormData>({
     defaultValues: {
       animalId: animalId || "",
       disease: "",
@@ -59,37 +60,32 @@ export function TreatmentForm({
       treatment: "",
       cost: 0,
       treatedAt: new Date().toISOString().split("T")[0],
+      treatedBy: "",
       notes: "",
     },
   });
 
-  const onSubmit = async (data: CreateTreatmentInput) => {
+  const onSubmit = async (data: TreatmentFormData) => {
     if (isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      await createTreatmentMutation.mutateAsync(data);
-      toast({
-        type: "success",
-        title: "Success",
-        description: "Treatment record created successfully",
-      });
+      // Transform the form data to match the API expected format
+      const treatmentData: CreateTreatmentInput = {
+        ...data,
+        treatedAt: new Date(data.treatedAt), // Convert string to Date
+      };
+      
+      // Validate using zod schema
+      const validatedData = CreateTreatmentSchema.parse(treatmentData);
+      
+      await createTreatmentMutation.mutateAsync(validatedData);
       reset();
       onSuccess?.();
       onClose();
     } catch (error) {
+      // Error is already handled in the hook
       console.error("Treatment creation error:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : (error as { response?: { data?: { error?: string } } })?.response
-              ?.data?.error || "Failed to create treatment record";
-
-      toast({
-        type: "error",
-        title: "Error",
-        description: errorMessage,
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -98,6 +94,18 @@ export function TreatmentForm({
   const handleClose = () => {
     reset();
     onClose();
+  };
+
+  // Handle form validation errors
+  const handleFormError = (errors: any) => {
+    const errorMessages = Object.values(errors).map((error: any) => error?.message).filter(Boolean);
+    if (errorMessages.length > 0) {
+      toast({
+        type: "error",
+        title: "Validation Error",
+        description: errorMessages[0] || "Please check your input and try again",
+      });
+    }
   };
 
   return (
@@ -110,7 +118,7 @@ export function TreatmentForm({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Animal Selection */}
             <div className="space-y-2">
@@ -122,7 +130,7 @@ export function TreatmentForm({
               </label>
               <select
                 id="animalId"
-                {...register("animalId")}
+                {...register("animalId", { required: "Please select an animal" })}
                 className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.animalId ? "border-red-500" : ""
                 }`}
@@ -159,7 +167,7 @@ export function TreatmentForm({
               <Input
                 id="disease"
                 placeholder="Enter disease or condition"
-                {...register("disease")}
+                {...register("disease", { required: "Disease is required" })}
                 className={errors.disease ? "border-red-500" : ""}
               />
               {errors.disease && (
@@ -222,7 +230,7 @@ export function TreatmentForm({
               <Input
                 id="treatedAt"
                 type="date"
-                {...register("treatedAt")}
+                {...register("treatedAt", { required: "Treatment date is required" })}
                 className={errors.treatedAt ? "border-red-500" : ""}
               />
               {errors.treatedAt && (
@@ -247,11 +255,33 @@ export function TreatmentForm({
                 step="0.01"
                 min="0"
                 placeholder="0.00"
-                {...register("cost", { valueAsNumber: true })}
+                {...register("cost", { 
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Cost must be positive" }
+                })}
                 className={errors.cost ? "border-red-500" : ""}
               />
               {errors.cost && (
                 <p className="text-sm text-red-600">{errors.cost.message}</p>
+              )}
+            </div>
+
+            {/* Treated By */}
+            <div className="space-y-2">
+              <label
+                htmlFor="treatedBy"
+                className="text-sm font-medium text-gray-700"
+              >
+                Treated By (Veterinarian)
+              </label>
+              <Input
+                id="treatedBy"
+                placeholder="Enter veterinarian name"
+                {...register("treatedBy")}
+                className={errors.treatedBy ? "border-red-500" : ""}
+              />
+              {errors.treatedBy && (
+                <p className="text-sm text-red-600">{errors.treatedBy.message}</p>
               )}
             </div>
           </div>
@@ -269,7 +299,7 @@ export function TreatmentForm({
               id="treatment"
               rows={3}
               placeholder="Describe the treatment administered..."
-              {...register("treatment")}
+              {...register("treatment", { required: "Treatment details are required" })}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
                 errors.treatment ? "border-red-500" : "border-gray-300"
               }`}
@@ -320,7 +350,7 @@ export function TreatmentForm({
             >
               {isSubmitting ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <RingLoader color="#ffffff" size={16} />
                   Creating...
                 </>
               ) : (

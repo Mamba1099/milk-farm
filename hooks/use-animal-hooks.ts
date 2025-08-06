@@ -245,11 +245,17 @@ export function useTreatments(animalId?: string) {
 
 export function useCreateTreatment() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (data: CreateTreatmentInput) => {
-      const response = await apiClient.post("/treatments", data);
-      return response.data;
+      try {
+        const response = await apiClient.post("/treatments", data);
+        return response.data;
+      } catch (error) {
+        const apiError = handleApiError(error);
+        throw new Error(apiError.message);
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["treatments"] });
@@ -257,6 +263,19 @@ export function useCreateTreatment() {
       queryClient.invalidateQueries({ queryKey: ["animals"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+      
+      toast({
+        type: "success",
+        title: "Success",
+        description: "Treatment record created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        type: "error",
+        title: "Error",
+        description: error.message || "Failed to create treatment record",
+      });
     },
   });
 }

@@ -134,7 +134,7 @@ export async function getTreatmentsReport(startDate: Date, endDate: Date) {
             healthStatus: true,
           },
         },
-        treatedBy: {
+        recordedBy: {
           select: {
             id: true,
             username: true,
@@ -148,7 +148,7 @@ export async function getTreatmentsReport(startDate: Date, endDate: Date) {
 
     const summary = {
       totalTreatments: treatments.length,
-      uniqueAnimalsLreated: new Set(treatments.map(t => t.animalId)).size,
+      uniqueAnimalsTreated: new Set(treatments.map(t => t.animalId)).size,
       treatmentsByAnimalType: {
         COW: treatments.filter(t => t.animal.type === 'COW').length,
         BULL: treatments.filter(t => t.animal.type === 'BULL').length,

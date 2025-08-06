@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -26,10 +27,9 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/lib/auth-context";
 import { useTreatments } from "@/hooks/use-animal-hooks";
-import { TreatmentForm } from "@/components/animals/treatment-form";
+import { TreatmentWithDetails } from "@/lib/types/animal";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
-// Animation variants
 const fadeInUp = {
   initial: {
     opacity: 0,
@@ -40,7 +40,7 @@ const fadeInUp = {
     y: 0,
     transition: {
       duration: 0.6,
-      ease: "easeOut",
+      ease: [0.25, 0.1, 0.25, 1] as any,
     },
   },
 };
@@ -58,24 +58,12 @@ export default function TreatmentsPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [treatmentType, setTreatmentType] = useState("");
-  const [showTreatmentForm, setShowTreatmentForm] = useState(false);
 
-  const { data: treatmentsData, isLoading, refetch } = useTreatments();
+  const { data: treatmentsData, isLoading } = useTreatments();
   const treatments = treatmentsData?.treatments || [];
 
-  // Filter treatments based on search term and type
   const filteredTreatments = treatments.filter(
-    (treatment: {
-      id: string;
-      animalId: string;
-      animal?: { tagNumber: string; name?: string };
-      disease: string;
-      treatment: string;
-      medicine: string;
-      cost: number;
-      treatedAt: string;
-      treatedBy: { username: string };
-    }) => {
+    (treatment: TreatmentWithDetails) => {
       const matchesSearch =
         !searchTerm ||
         treatment.animal?.tagNumber
@@ -92,10 +80,6 @@ export default function TreatmentsPage() {
     }
   );
 
-  const handleTreatmentSuccess = () => {
-    refetch();
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 sm:p-6">
       <motion.div
@@ -104,7 +88,6 @@ export default function TreatmentsPage() {
         animate="animate"
         variants={staggerContainer}
       >
-        {/* Header */}
         <motion.div
           className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 sm:mb-8"
           variants={fadeInUp}
@@ -126,17 +109,15 @@ export default function TreatmentsPage() {
             </p>
           </div>
           {user?.role === "FARM_MANAGER" && (
-            <Button
-              onClick={() => setShowTreatmentForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 w-full sm:w-auto text-sm sm:text-base"
-            >
-              <Plus size={18} className="sm:w-5 sm:h-5" />
-              Add Treatment
-            </Button>
+            <Link href="/animals/treatments/add">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 w-full sm:w-auto text-sm sm:text-base">
+                <Plus size={18} className="sm:w-5 sm:h-5" />
+                Add Treatment
+              </Button>
+            </Link>
           )}
         </motion.div>
 
-        {/* Search and Filters */}
         <motion.div
           className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-6"
           variants={fadeInUp}
@@ -183,7 +164,6 @@ export default function TreatmentsPage() {
           </div>
         </motion.div>
 
-        {/* Treatments List */}
         <motion.div className="space-y-4" variants={fadeInUp}>
           {isLoading ? (
             <Card className="p-6">
@@ -205,12 +185,11 @@ export default function TreatmentsPage() {
                   Start tracking animal health by adding treatment records
                 </p>
                 {user?.role === "FARM_MANAGER" && (
-                  <Button
-                    onClick={() => setShowTreatmentForm(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base"
-                  >
-                    Add First Treatment
-                  </Button>
+                  <Link href="/animals/treatments/add">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base">
+                      Add First Treatment
+                    </Button>
+                  </Link>
                 )}
               </div>
             </Card>
@@ -224,12 +203,12 @@ export default function TreatmentsPage() {
                       <TableHead>Disease</TableHead>
                       <TableHead>Treatment</TableHead>
                       <TableHead>Date</TableHead>
-                      <TableHead>Treated By</TableHead>
+                      <TableHead>Veterinarian</TableHead>
                       <TableHead>Cost</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredTreatments.map((treatment) => (
+                    {filteredTreatments.map((treatment: TreatmentWithDetails) => (
                       <TableRow key={treatment.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -254,7 +233,7 @@ export default function TreatmentsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {treatment.treatedBy?.username || "-"}
+                          {treatment.treatedBy || "-"}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm font-medium">
@@ -270,13 +249,6 @@ export default function TreatmentsPage() {
             </Card>
           )}
         </motion.div>
-
-        {/* Treatment Form Modal */}
-        <TreatmentForm
-          isOpen={showTreatmentForm}
-          onClose={() => setShowTreatmentForm(false)}
-          onSuccess={handleTreatmentSuccess}
-        />
       </motion.div>
     </div>
   );
