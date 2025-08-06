@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         treatments: {
           orderBy: { createdAt: "desc" },
           take: 3,
-          include: { treatedBy: { select: { username: true } } },
+          include: { recordedBy: { select: { username: true } } },
         },
         servings: {
           orderBy: { createdAt: "desc" },

@@ -32,7 +32,7 @@ export async function GET(
       include: {
         treatments: {
           orderBy: { createdAt: "desc" },
-          include: { treatedBy: { select: { username: true } } },
+          include: { recordedBy: { select: { username: true } } },
         },
         servings: {
           orderBy: { createdAt: "desc" },
@@ -210,7 +210,7 @@ export async function PUT(
         treatments: {
           orderBy: { createdAt: "desc" },
           take: 5,
-          include: { treatedBy: { select: { username: true } } },
+          include: { recordedBy: { select: { username: true } } },
         },
         servings: {
           orderBy: { createdAt: "desc" },

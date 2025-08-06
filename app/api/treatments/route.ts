@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
             tagNumber: true,
           },
         },
-        treatedBy: {
+        recordedBy: {
           select: {
             id: true,
             username: true,
@@ -112,12 +112,13 @@ export async function POST(request: NextRequest) {
           treatment: validatedData.treatment,
           cost: validatedData.cost,
           treatedAt: validatedData.treatedAt,
+          treatedBy: validatedData.treatedBy,
           notes: validatedData.notes,
           treatedById: user.id,
         },
         include: {
           animal: { select: { id: true, tagNumber: true, name: true } },
-          treatedBy: { select: { id: true, username: true } },
+          recordedBy: { select: { id: true, username: true } },
         },
       });
 
