@@ -27,7 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/lib/auth-context";
-import { useTreatments } from "@/hooks/use-animal-hooks";
+import { useTreatments, useTreatmentDiseases } from "@/hooks/use-animal-hooks";
 import { TreatmentWithDetails } from "@/lib/types/animal";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
@@ -61,7 +61,9 @@ export default function TreatmentsPage() {
   const [treatmentType, setTreatmentType] = useState("");
 
   const { data: treatmentsData, isLoading } = useTreatments();
+  const { data: diseasesData, isLoading: isLoadingDiseases } = useTreatmentDiseases();
   const treatments = treatmentsData?.treatments || [];
+  const diseases = diseasesData?.diseases || [];
 
   const filteredTreatments = treatments.filter(
     (treatment: TreatmentWithDetails) => {
@@ -140,16 +142,14 @@ export default function TreatmentsPage() {
               value={treatmentType}
               onChange={(e) => setTreatmentType(e.target.value)}
               className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isLoadingDiseases}
             >
               <option value="">All Diseases</option>
-              <option value="mastitis">Mastitis</option>
-              <option value="fever">Fever</option>
-              <option value="diarrhea">Diarrhea</option>
-              <option value="respiratory">Respiratory Issues</option>
-              <option value="hoof">Hoof Problems</option>
-              <option value="vaccination">Vaccination</option>
-              <option value="deworming">Deworming</option>
-              <option value="injury">Injury</option>
+              {diseases.map((disease: string) => (
+                <option key={disease} value={disease.toLowerCase()}>
+                  {disease}
+                </option>
+              ))}
             </select>
             <Button
               variant="outline"

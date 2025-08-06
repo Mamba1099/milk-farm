@@ -17,9 +17,27 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const animalId = searchParams.get("animalId");
+    const getDiseases = searchParams.get("diseases") === "true";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
+
+    // If only diseases are requested
+    if (getDiseases) {
+      const diseases = await prisma.treatment.findMany({
+        select: {
+          disease: true,
+        },
+        distinct: ['disease'],
+        orderBy: {
+          disease: 'asc',
+        },
+      });
+
+      return createSecureResponse({
+        diseases: diseases.map(d => d.disease).filter(Boolean),
+      }, { status: 200 }, request);
+    }
 
     const where = animalId ? { animalId } : {};
 

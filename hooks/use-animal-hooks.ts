@@ -343,3 +343,13 @@ export function useAvailableProductionAnimals() {
     },
   });
 }
+
+export function useTreatmentDiseases() {
+  return useQuery({
+    queryKey: ["treatment-diseases"],
+    queryFn: async () => {
+      const response = await apiClient.get("/treatments?diseases=true");
+      return response.data;
+    },
+  });
+}
