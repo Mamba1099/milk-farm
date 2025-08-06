@@ -81,6 +81,7 @@ const BaseTreatmentSchema = z.object({
     ])
     .optional()
     .default(() => new Date()),
+  treatedBy: z.string().optional(),
   notes: z.string().optional(),
 });
 

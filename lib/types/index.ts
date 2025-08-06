@@ -4,7 +4,6 @@ export * from './dashboard';
 export * from './dashboard-components';
 export * from './drawer';
 
-// Animal types - explicitly exported to avoid conflicts with dashboard types
 export type { 
   Animal as DetailedAnimal,
   AnimalWithRelations,
@@ -17,6 +16,8 @@ export type {
   AnimalEditDialogProps,
   AnimalDetailsDialogProps,
   AnimalEditFormInput,
+  TreatmentFormData,
+  TreatmentWithDetails,
   Treatment as DetailedTreatment,
   Production as DetailedProduction,
   Disposal,

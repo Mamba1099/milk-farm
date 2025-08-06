@@ -1,6 +1,3 @@
-// Animal related types and interfaces
-
-// Base Animal type matching Prisma model
 export interface Animal {
   id: string;
   tagNumber: string;
@@ -21,7 +18,6 @@ export interface Animal {
   updatedAt?: string | Date;
 }
 
-// Extended Animal type with populated relations
 export interface AnimalWithRelations extends Animal {
   treatments?: Treatment[];
   productionRecords?: Production[];
@@ -30,13 +26,11 @@ export interface AnimalWithRelations extends Animal {
   salesRecords?: Sales[];
 }
 
-// For backward compatibility with existing components that expect nested parent objects
 export interface AnimalWithParents extends Omit<AnimalWithRelations, 'motherName' | 'fatherName'> {
   mother?: { id: string; tagNumber: string; name?: string | null } | null;
   father?: { id: string; tagNumber: string; name?: string | null } | null;
 }
 
-// Treatment type
 export interface Treatment {
   id: string;
   animalId: string;
@@ -46,13 +40,13 @@ export interface Treatment {
   treatment: string;
   cost: number;
   treatedById: string;
+  treatedBy?: string | null;
   treatedAt: string | Date;
   notes?: string | null;
   createdAt: string | Date;
   updatedAt: string | Date;
 }
 
-// Production type
 export interface Production {
   id: string;
   animalId: string;
@@ -70,7 +64,6 @@ export interface Production {
   updatedAt: string | Date;
 }
 
-// Disposal type
 export interface Disposal {
   id: string;
   animalId: string;
@@ -83,7 +76,6 @@ export interface Disposal {
   updatedAt: string | Date;
 }
 
-// Serving type
 export interface Serving {
   id: string;
   femaleId: string;
@@ -98,7 +90,6 @@ export interface Serving {
   updatedAt: string | Date;
 }
 
-// Sales type
 export interface Sales {
   id: string;
   animalId?: string | null;
@@ -168,4 +159,29 @@ export interface AnimalEditFormInput {
   healthStatus: "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED";
   motherName?: string;
   fatherName?: string;
+}
+
+export interface TreatmentFormData {
+  animalId: string;
+  disease: string;
+  treatment: string;
+  cost: number;
+  medicine?: string;
+  dosage?: string;
+  treatedAt: string;
+  treatedBy?: string;
+  notes?: string;
+}
+
+export interface TreatmentWithDetails {
+  id: string;
+  animalId: string;
+  animal?: { tagNumber: string; name?: string };
+  disease: string;
+  treatment: string;
+  medicine: string;
+  cost: number;
+  treatedAt: string;
+  treatedBy?: string;
+  recordedBy: { username: string };
 }
