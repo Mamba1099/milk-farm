@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { RingLoader } from "react-spinners";
 import {
   ArrowLeft,
   Plus,
@@ -168,7 +169,7 @@ export default function TreatmentsPage() {
           {isLoading ? (
             <Card className="p-6">
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <RingLoader color="#2563eb" size={40} className="mx-auto mb-4" />
                 <p className="text-gray-600">Loading treatments...</p>
               </div>
             </Card>
