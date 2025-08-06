@@ -107,13 +107,14 @@ model Treatment {
   treatment   String
   cost        Float
   treatedById String
+  treatedBy   String?
   treatedAt   DateTime @default(now())
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   animal    Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
-  treatedBy User   @relation(fields: [treatedById], references: [id])
+  recordedBy User   @relation(fields: [treatedById], references: [id])
 
   @@map("treatments")
 }
