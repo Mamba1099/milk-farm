@@ -6,7 +6,6 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimalAddForm } from "@/components/animals/animal-add-form";
 
-// Animation variants
 const fadeInUp = {
   initial: {
     opacity: 0,
@@ -17,7 +16,7 @@ const fadeInUp = {
     y: 0,
     transition: {
       duration: 0.6,
-      ease: "easeOut",
+      ease: [0.25, 0.1, 0.25, 1] as any,
     },
   },
 };
@@ -56,7 +55,7 @@ export default function AddAnimalPage() {
         >
           <Button
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => router.push("/animals")}
             className="flex items-center gap-2 text-sm sm:text-base"
           >
             <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
