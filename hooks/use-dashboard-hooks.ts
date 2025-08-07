@@ -168,9 +168,9 @@ export const useTreatmentStats = () => {
         const response = await apiClient.get(
           `/reports?type=treatments&startDate=${startDate}&endDate=${endDate}`
         );
-        const treatmentsReport = response.data.report;
+        const treatmentsReport = response.data;
 
-        if (!treatmentsReport || !treatmentsReport.details) {
+        if (!treatmentsReport || !treatmentsReport.data) {
           return {
             totalRecords: 0,
             thisMonth: 0,
@@ -180,7 +180,7 @@ export const useTreatmentStats = () => {
           };
         }
 
-        const treatments: Treatment[] = treatmentsReport.details;
+        const treatments: Treatment[] = treatmentsReport.data;
         const now = new Date();
         const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
