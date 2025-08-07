@@ -353,3 +353,15 @@ export function useTreatmentDiseases() {
     },
   });
 }
+
+export function useTreatmentStatistics() {
+  return useQuery({
+    queryKey: ["treatment-statistics"],
+    queryFn: async () => {
+      const response = await apiClient.get("/treatments/statistics");
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+}

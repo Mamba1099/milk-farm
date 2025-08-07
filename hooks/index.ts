@@ -17,6 +17,20 @@ export {
 } from "./use-dashboard-hooks";
 
 export { useToast, type Toast } from "./use-toast";
-export * from "./use-animal-hooks";
+export {
+  useAnimals,
+  useAnimal,
+  useCreateAnimal,
+  useUpdateAnimal,
+  useDeleteAnimal,
+  useTreatments,
+  useCreateTreatment,
+  useProduction,
+  useCreateProduction,
+  useAvailableParents,
+  useAvailableProductionAnimals,
+  useTreatmentDiseases,
+  useTreatmentStatistics,
+} from "./use-animal-hooks";
 export * from "./use-employee-hooks";
 export * from "./use-reports-hooks";

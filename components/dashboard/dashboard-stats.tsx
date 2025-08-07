@@ -345,6 +345,12 @@ export const TreatmentStatsCard: React.FC = () => {
             <div className="text-xs text-red-600">This Month</div>
           </div>
         </div>
+        <div className="text-center p-3 bg-white/60 rounded-lg">
+          <div className="text-2xl font-bold text-red-800">
+            ${(stats.totalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-xs text-red-600">Total Treatment Cost</div>
+        </div>
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-sm text-red-600">Pending Followups:</span>

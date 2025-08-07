@@ -27,9 +27,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/lib/auth-context";
-import { useTreatments, useTreatmentDiseases } from "@/hooks/use-animal-hooks";
+import { useTreatments, useTreatmentDiseases, useTreatmentStatistics } from "@/hooks/use-animal-hooks";
 import { TreatmentWithDetails } from "@/lib/types/animal";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { TreatmentStatsSummary } from "@/components/treatments/treatment-stats-summary";
 
 const fadeInUp = {
   initial: {
@@ -62,8 +63,11 @@ export default function TreatmentsPage() {
 
   const { data: treatmentsData, isLoading } = useTreatments();
   const { data: diseasesData, isLoading: isLoadingDiseases } = useTreatmentDiseases();
+  const { data: statisticsData, isLoading: isLoadingStats } = useTreatmentStatistics();
+  
   const treatments = treatmentsData?.treatments || [];
   const diseases = diseasesData?.diseases || [];
+  const statistics = statisticsData || null;
 
   const filteredTreatments = treatments.filter(
     (treatment: TreatmentWithDetails) => {
@@ -121,6 +125,21 @@ export default function TreatmentsPage() {
           )}
         </motion.div>
 
+        {/* Treatment Statistics Summary */}
+        <motion.div variants={fadeInUp}>
+          {isLoadingStats ? (
+            <Card className="p-6 mb-6">
+              <div className="text-center py-4">
+                <RingLoader color="#2563eb" size={30} className="mx-auto mb-2" />
+                <p className="text-gray-600 text-sm">Loading statistics...</p>
+              </div>
+            </Card>
+          ) : statistics && statistics.summary ? (
+            <TreatmentStatsSummary summary={statistics.summary} />
+          ) : null}
+        </motion.div>
+
+        {/* Filters */}
         <motion.div
           className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-6"
           variants={fadeInUp}
@@ -165,6 +184,7 @@ export default function TreatmentsPage() {
           </div>
         </motion.div>
 
+        {/* Treatment Table */}
         <motion.div className="space-y-4" variants={fadeInUp}>
           {isLoading ? (
             <Card className="p-6">
@@ -222,8 +242,8 @@ export default function TreatmentsPage() {
                         <TableCell>
                           <Badge variant="secondary">{treatment.disease}</Badge>
                         </TableCell>
-                        <TableCell className="max-w-xs">
-                          <div className="truncate" title={treatment.treatment}>
+                        <TableCell className="max-w-md">
+                          <div className="whitespace-normal break-words leading-relaxed">
                             {treatment.treatment}
                           </div>
                         </TableCell>
