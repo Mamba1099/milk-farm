@@ -1,0 +1,34 @@
+export interface Employee {
+  id: string;
+  username: string;
+  email: string;
+  role: "FARM_MANAGER" | "EMPLOYEE";
+  image?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEmployeeInput {
+  username: string;
+  email: string;
+  password: string;
+  role: "FARM_MANAGER" | "EMPLOYEE";
+}
+
+export interface UpdateEmployeeInput {
+  username?: string;
+  email?: string;
+  role?: "FARM_MANAGER" | "EMPLOYEE";
+  password?: string;
+  image?: File;
+}
+
+export interface EmployeesResponse {
+  users: Employee[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}

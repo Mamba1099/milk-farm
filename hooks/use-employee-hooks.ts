@@ -1,48 +1,19 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { handleApiError } from "@/lib/error-handler";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Employee, 
+  CreateEmployeeInput, 
+  UpdateEmployeeInput, 
+  EmployeesResponse 
+} from "@/lib/types/employee";
 
-// Types for employee management
-export interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: "FARM_MANAGER" | "EMPLOYEE";
-  image?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateUserInput {
-  username: string;
-  email: string;
-  password: string;
-  role: "FARM_MANAGER" | "EMPLOYEE";
-}
-
-export interface UpdateUserInput {
-  username?: string;
-  email?: string;
-  role?: "FARM_MANAGER" | "EMPLOYEE";
-  password?: string;
-  image?: File;
-}
-
-export interface UsersResponse {
-  users: User[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-// Hook to fetch all users
 export const useUsers = (page: number = 1, limit: number = 10) => {
-  return useQuery<UsersResponse, Error>({
+  return useQuery<EmployeesResponse, Error>({
     queryKey: ["users", page, limit],
     queryFn: async () => {
       const response = await apiClient.get(
@@ -51,32 +22,32 @@ export const useUsers = (page: number = 1, limit: number = 10) => {
       return response.data;
     },
     retry: 2,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 };
 
-// Hook to fetch a single user
 export const useUser = (id: string) => {
-  return useQuery<{ user: User }, Error>({
+  return useQuery<{ user: Employee }, Error>({
     queryKey: ["users", id],
     queryFn: async () => {
       const response = await apiClient.get(`/users/${id}`);
       return response.data;
     },
     retry: 2,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
     enabled: !!id,
   });
 };
 
-// Hook to create a new user
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const { toast } = useToast();
 
-  return useMutation<{ user: User }, Error, CreateUserInput>({
-    mutationFn: async (data: CreateUserInput) => {
+  return useMutation<{ user: Employee }, Error, CreateEmployeeInput>({
+    mutationFn: async (data: CreateEmployeeInput) => {
       try {
         const response = await apiClient.post("/users", data);
         return response.data;
@@ -85,32 +56,42 @@ export const useCreateUser = () => {
         throw new Error(apiError.message);
       }
     },
-    onSuccess: () => {
-      // Invalidate and refetch users list
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard", "users"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      // Invalidate reports
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+      
+      toast({
+        type: "success",
+        title: "Success",
+        description: `Employee ${data.user.username} created successfully`,
+      });
+      
+      router.push("/employees");
+    },
+    onError: (error: Error) => {
+      toast({
+        type: "error",
+        title: "Error",
+        description: error.message || "Failed to create employee",
+      });
     },
   });
 };
 
-// Hook to update a user
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation<
-    { user: User },
+    { user: Employee },
     Error,
-    { id: string; data: UpdateUserInput }
+    { id: string; data: UpdateEmployeeInput }
   >({
     mutationFn: async ({ id, data }) => {
       try {
-        // Check if we have a file to upload
         if (data.image) {
-          // Create FormData for file upload
           const formData = new FormData();
           if (data.username && data.username.trim() !== "") {
             formData.append("username", data.username);
@@ -133,7 +114,6 @@ export const useUpdateUser = () => {
           });
           return response.data;
         } else {
-          // Regular JSON update without file
           const response = await apiClient.put(`/users/${id}`, data);
           return response.data;
         }
@@ -142,20 +122,30 @@ export const useUpdateUser = () => {
         throw new Error(apiError.message);
       }
     },
-    onSuccess: (_, { id }) => {
-      // Invalidate and refetch users list
+    onSuccess: (data, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      // Invalidate specific user
       queryClient.invalidateQueries({ queryKey: ["users", id] });
-      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard", "users"] });
+      
+      toast({
+        type: "success",
+        title: "Success",
+        description: `Employee ${data.user.username} updated successfully`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        type: "error",
+        title: "Error",
+        description: error.message || "Failed to update employee",
+      });
     },
   });
 };
 
-// Hook to delete a user
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation<void, Error, string>({
     mutationFn: async (id: string) => {
@@ -167,10 +157,21 @@ export const useDeleteUser = () => {
       }
     },
     onSuccess: () => {
-      // Invalidate and refetch users list
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard", "users"] });
+      
+      toast({
+        type: "success",
+        title: "Success",
+        description: "Employee deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        type: "error",
+        title: "Error",
+        description: error.message || "Failed to delete employee",
+      });
     },
   });
 };

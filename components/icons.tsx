@@ -32,6 +32,8 @@ import {
   AlertTriangle,
   Info,
   X,
+  Plus,
+  Edit,
 } from "lucide-react";
 
 export const Icons = {
@@ -69,4 +71,6 @@ export const Icons = {
   alertTriangle: AlertTriangle,
   info: Info,
   x: X,
+  plus: Plus,
+  edit: Edit,
 };

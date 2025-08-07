@@ -1,37 +1,26 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { useCreateUser } from "@/hooks";
-import { CreateUserSchema, CreateUserInput } from "@/lib/validators/user";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RingLoader } from "react-spinners";
+import { useCreateUser } from "@/hooks/use-employee-hooks";
+import { CreateEmployeeInput } from "@/lib/types/employee";
+import { CreateUserSchema } from "@/lib/validators/user";
 
-interface EmployeeCreateFormProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess?: () => void;
-}
-
-export function EmployeeCreateForm({
-  isOpen,
-  onClose,
-  onSuccess,
-}: EmployeeCreateFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+export default function EmployeeCreateForm() {
   const createUserMutation = useCreateUser();
 
   const {
     register,
     handleSubmit,
-    reset,
+    setValue,
+    watch,
     formState: { errors },
-  } = useForm<CreateUserInput>({
+  } = useForm<CreateEmployeeInput>({
     resolver: zodResolver(CreateUserSchema),
     defaultValues: {
       username: "",
@@ -41,127 +30,107 @@ export function EmployeeCreateForm({
     },
   });
 
-  const onSubmit = async (data: CreateUserInput) => {
-    if (isSubmitting) return;
-
-    setIsSubmitting(true);
-    try {
-      await createUserMutation.mutateAsync(data);
-      toast({
-        title: "Success",
-        description: "Employee created successfully",
-      });
-      reset();
-      onSuccess?.();
-      onClose();
-    } catch (error) {
-      console.error("Employee creation error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create employee";
-
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const onSubmit = (data: CreateEmployeeInput) => {
+    createUserMutation.mutate(data);
   };
 
-  const handleClose = () => {
-    reset();
-    onClose();
-  };
-
-  if (!isOpen) return null;
+  const isLoading = createUserMutation.isPending;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Add New Employee</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Input
-                {...register("username")}
-                placeholder="Username"
-                className={errors.username ? "border-red-500" : ""}
-              />
-              {errors.username && (
-                <p className="text-sm text-red-600 mt-1">
-                  {errors.username.message}
-                </p>
-              )}
-            </div>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="username">Username</Label>
+          <Input
+            id="username"
+            {...register("username")}
+            placeholder="Enter username"
+            className={errors.username ? "border-red-500" : ""}
+            disabled={isLoading}
+          />
+          {errors.username && (
+            <p className="text-sm text-red-600">
+              {errors.username.message}
+            </p>
+          )}
+        </div>
 
-            <div>
-              <Input
-                {...register("email")}
-                type="email"
-                placeholder="Email"
-                className={errors.email ? "border-red-500" : ""}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-600 mt-1">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            {...register("email")}
+            placeholder="Enter email address"
+            className={errors.email ? "border-red-500" : ""}
+            disabled={isLoading}
+          />
+          {errors.email && (
+            <p className="text-sm text-red-600">
+              {errors.email.message}
+            </p>
+          )}
+        </div>
+      </div>
 
-            <div>
-              <Input
-                {...register("password")}
-                type="password"
-                placeholder="Password (min. 8 characters)"
-                className={errors.password ? "border-red-500" : ""}
-              />
-              {errors.password && (
-                <p className="text-sm text-red-600 mt-1">
-                  {errors.password.message}
-                </p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                Must contain uppercase, lowercase, and number
-              </p>
-            </div>
+      <div className="space-y-2">
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
+          type="password"
+          {...register("password")}
+          placeholder="Enter password (min. 8 characters)"
+          className={errors.password ? "border-red-500" : ""}
+          disabled={isLoading}
+        />
+        {errors.password && (
+          <p className="text-sm text-red-600">
+            {errors.password.message}
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Must contain uppercase, lowercase, and number
+        </p>
+      </div>
 
-            <select
-              {...register("role")}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="EMPLOYEE">Employee</option>
-              <option value="FARM_MANAGER">Farm Manager</option>
-            </select>
+      <div className="space-y-2">
+        <Label htmlFor="role">Role</Label>
+        <Select 
+          value={watch("role")} 
+          onValueChange={(value: "EMPLOYEE" | "FARM_MANAGER") => setValue("role", value)}
+          disabled={isLoading}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="EMPLOYEE">Employee</SelectItem>
+            <SelectItem value="FARM_MANAGER">Farm Manager</SelectItem>
+          </SelectContent>
+        </Select>
+        {errors.role && (
+          <p className="text-sm text-red-600">
+            {errors.role.message}
+          </p>
+        )}
+      </div>
 
-            <div className="flex gap-2">
-              <Button type="submit" disabled={isSubmitting} className="flex-1">
-                {isSubmitting ? (
-                  <>
-                    <motion.div
-                      className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
-                      animate={{ rotate: 360 }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                    />
-                    Creating...
-                  </>
-                ) : (
-                  "Create Employee"
-                )}
-              </Button>
-              <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
+      <div className="flex gap-4 pt-4">
+        <Button 
+          type="submit" 
+          disabled={isLoading}
+          className="flex-1"
+        >
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <RingLoader size={16} color="white" />
+              Creating Employee...
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          ) : (
+            "Create Employee"
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }
