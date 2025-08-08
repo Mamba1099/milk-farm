@@ -83,7 +83,7 @@ export function UserTable({
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">All Users</CardTitle>
+          <CardTitle className="text-xl">Team Members</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
