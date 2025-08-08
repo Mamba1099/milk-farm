@@ -55,7 +55,7 @@ export const navigationItems: NavigationItem[] = [
     ],
   },
   {
-    name: "Employees",
+    name: "Account Management",
     href: "/employees",
     icon: Icons.users,
     roles: ["FARM_MANAGER"],
