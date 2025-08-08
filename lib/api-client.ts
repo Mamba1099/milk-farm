@@ -58,6 +58,15 @@ apiClient.interceptors.response.use(
     }
 
     if (status === 401) {
+      // Don't trigger global session expiry for auth/me calls (session checks)
+      // These are handled specifically by the session manager
+      if (originalRequest.url?.includes("/auth/me")) {
+        console.log("Session check failed (/auth/me), letting session manager handle it");
+        return Promise.reject(error);
+      }
+      
+      console.log("401 error on non-session-check endpoint:", originalRequest.url);
+      
       if (!sessionExpiryNotified) {
         sessionExpiryNotified = true;
         console.error("Session expired");

@@ -80,11 +80,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const currentPath = window.location.pathname;
       const isAuthPage = ["/login", "/signup"].includes(currentPath);
       const isProtectedRoute = currentPath.startsWith("/dashboard") || 
-                              currentPath.startsWith("/admin") ||
                               currentPath.startsWith("/animals") ||
                               currentPath.startsWith("/production") ||
                               currentPath.startsWith("/employees") ||
-                              currentPath.startsWith("/reports");
+                              currentPath.startsWith("/reports") ||
+                              currentPath.startsWith("/analytics") ||
+                              currentPath.startsWith("/settings");
 
       if (!isAuthenticated && isProtectedRoute) {
         router.replace("/login");
