@@ -12,7 +12,9 @@ export interface CreateEmployeeInput {
   username: string;
   email: string;
   password: string;
+  confirmPassword: string;
   role: "FARM_MANAGER" | "EMPLOYEE";
+  image?: File | string | null;
 }
 
 export interface UpdateEmployeeInput {

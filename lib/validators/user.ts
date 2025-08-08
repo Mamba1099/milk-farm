@@ -17,10 +17,27 @@ export const CreateUserSchema = z.object({
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
       "Password must contain at least one uppercase letter, one lowercase letter, and one number"
     ),
+  confirmPassword: z.string().min(1, "Please confirm your password").optional(),
   role: z.enum(["FARM_MANAGER", "EMPLOYEE"]),
   image: z
     .union([
-      z.instanceof(File),
+      z.instanceof(File).refine(
+        (file) => file.size <= 5 * 1024 * 1024,
+        "Image must be less than 5MB"
+      ).refine(
+        (file) =>
+          [
+            "image/jpeg",
+            "image/jpg",
+            "image/png", 
+            "image/gif",
+            "image/webp",
+            "image/bmp",
+            "image/tiff",
+            "image/svg+xml",
+          ].includes(file.type),
+        "Image must be a valid image file (JPEG, JPG, PNG, GIF, WebP, BMP, TIFF, SVG)"
+      ),
       z.string().url(),
       z.string().regex(/^\/uploads\//, "Must be a valid file path or URL"),
       z.null(),
@@ -28,6 +45,14 @@ export const CreateUserSchema = z.object({
     ])
     .optional()
     .nullable(),
+}).refine((data) => {
+  if (data.confirmPassword && data.password !== data.confirmPassword) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
 export const UpdateUserSchema = z.object({

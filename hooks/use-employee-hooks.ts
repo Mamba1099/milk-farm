@@ -11,6 +11,7 @@ import {
   UpdateEmployeeInput, 
   EmployeesResponse 
 } from "@/lib/types/employee";
+import { RegisterInput } from "@/lib/validators/auth";
 
 export const useUsers = (page: number = 1, limit: number = 10) => {
   return useQuery<EmployeesResponse, Error>({
@@ -19,6 +20,19 @@ export const useUsers = (page: number = 1, limit: number = 10) => {
       const response = await apiClient.get(
         `/users?page=${page}&limit=${limit}`
       );
+      return response.data;
+    },
+    retry: 2,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+};
+
+export const useUserStats = () => {
+  return useQuery({
+    queryKey: ["users", "stats"],
+    queryFn: async () => {
+      const response = await apiClient.get("/users?stats=true");
       return response.data;
     },
     retry: 2,
@@ -46,10 +60,78 @@ export const useCreateUser = () => {
   const router = useRouter();
   const { toast } = useToast();
 
-  return useMutation<{ user: Employee }, Error, CreateEmployeeInput>({
-    mutationFn: async (data: CreateEmployeeInput) => {
+  return useMutation<{ user: Employee }, Error, RegisterInput>({
+    mutationFn: async (data: RegisterInput) => {
       try {
-        const response = await apiClient.post("/users", data);
+        let response;
+        
+        // If there's an image, use FormData
+        if (data.image) {
+          const formData = new FormData();
+          formData.append("username", data.username);
+          formData.append("email", data.email);
+          formData.append("password", data.password);
+          formData.append("role", data.role);
+          formData.append("image", data.image);
+          
+          response = await apiClient.post("/users", formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+        } else {
+          // If no image, send as JSON (exclude confirmPassword and image)
+          const { confirmPassword, image, ...submitData } = data;
+          response = await apiClient.post("/users", submitData);
+        }
+        
+        return response.data;
+      } catch (error) {
+        const apiError = handleApiError(error);
+        throw new Error(apiError.message);
+      }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      
+      toast({
+        type: "success",
+        title: "Success",
+        description: `Employee ${data.user.username} created successfully`,
+      });
+      
+      router.push("/employees");
+    },
+    onError: (error: Error) => {
+      toast({
+        type: "error",
+        title: "Error",
+        description: error.message || "Failed to create employee",
+      });
+    },
+  });
+};
+
+
+export const useCreateEmployeeByFarmManager = () => {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  return useMutation<{ user: Employee }, Error, FormData>({
+    mutationFn: async (formData: FormData) => {
+      try {
+        // Ensure role is set to EMPLOYEE
+        formData.set("role", "EMPLOYEE");
+        
+        const response = await apiClient.post("/register", formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
         return response.data;
       } catch (error) {
         const apiError = handleApiError(error);

@@ -7,11 +7,12 @@ import { getPublicImageUrl } from "@/supabase/storage/client";
 import bcrypt from "bcryptjs";
 
 export async function GET(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
+  }
+
   try {
-    const securityError = validateSecurity(request);
-    if (securityError) {
-      return securityError;
-    }
     const user = await getUserFromSession(request);
     if (!user) {
       return createSecureErrorResponse("Authentication required", 401, request);
@@ -25,15 +26,13 @@ export async function GET(request: NextRequest) {
     const statsOnly = url.searchParams.get("stats") === "true";
 
     if (statsOnly) {
-      const [totalUsers, farmManagers, employees] = await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({
-          where: { role: "FARM_MANAGER" },
-        }),
-        prisma.user.count({
-          where: { role: "EMPLOYEE" },
-        }),
-      ]);
+      const totalUsers = await prisma.user.count();
+      const farmManagers = await prisma.user.count({
+        where: { role: "FARM_MANAGER" },
+      });
+      const employees = await prisma.user.count({
+        where: { role: "EMPLOYEE" },
+      });
 
       const userStats = {
         totalUsers,
@@ -52,23 +51,22 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(url.searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
 
-    const [users, totalCount] = await Promise.all([
-      prisma.user.findMany({
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          role: true,
-          image: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        skip,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.user.count(),
-    ]);
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        image: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    });
+
+    const totalCount = await prisma.user.count();
 
     const usersWithImageUrls = users.map(user => ({
       ...user,
@@ -93,11 +91,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
+  }
+
   try {
-    const securityError = validateSecurity(request);
-    if (securityError) {
-      return securityError;
-    }
     const user = await getUserFromSession(request);
     if (!user) {
       return createSecureErrorResponse("Authentication required", 401, request);
@@ -243,11 +242,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
+  }
+
   try {
-    const securityError = validateSecurity(request);
-    if (securityError) {
-      return securityError;
-    }
     return createSecureResponse({
       message: "Users endpoint is working",
       timestamp: new Date().toISOString(),
