@@ -102,7 +102,7 @@ export const useCreateUser = () => {
         description: `Employee ${data.user.username} created successfully`,
       });
       
-      router.push("/employees");
+      router.push("/accounts");
     },
     onError: (error: Error) => {
       toast({
@@ -149,7 +149,7 @@ export const useCreateEmployeeByFarmManager = () => {
         description: `Employee ${data.user.username} created successfully`,
       });
       
-      router.push("/employees");
+      router.push("/accounts");
     },
     onError: (error: Error) => {
       toast({
