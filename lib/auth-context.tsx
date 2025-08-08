@@ -99,7 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const isProtectedRoute = currentPath.startsWith("/dashboard") || 
                               currentPath.startsWith("/animals") ||
                               currentPath.startsWith("/production") ||
-                              currentPath.startsWith("/employees") ||
+                              currentPath.startsWith("/accounts") ||
                               currentPath.startsWith("/reports") ||
                               currentPath.startsWith("/analytics") ||
                               currentPath.startsWith("/settings");
