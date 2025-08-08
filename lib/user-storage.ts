@@ -1,6 +1,6 @@
 import { uploadImage, deleteImage } from "@/supabase/storage/client";
 
-export async function uploadUserImage(file: File): Promise<{ imageUrl: string; error: string }> {
+export async function uploadUserImage(file: File): Promise<{ imageUrl: string; imagePath: string; error: string }> {
   return await uploadImage({
     file,
     bucket: "farm-house",
