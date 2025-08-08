@@ -4,14 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useCreateAnimal, useUpdateAnimal, useAvailableParents } from "@/hooks";
 import { useToast } from "@/hooks";
-import type { CreateAnimalInput } from "@/lib/validators/animal";
-
-interface AnimalFormDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  animal?: unknown;
-  onSuccess: () => void;
-}
+import { AnimalFormDialogProps, Animal } from "@/lib/types/animal";
+import type { CreateAnimalInput, UpdateAnimalInput } from "@/lib/validators/animal";
 
 export function AnimalFormDialog({
   open,
@@ -20,20 +14,7 @@ export function AnimalFormDialog({
   onSuccess,
 }: AnimalFormDialogProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState<Partial<CreateAnimalInput>>({
-    tagNumber: animal?.tagNumber || "",
-    name: animal?.name || "",
-    type: animal?.type || "CALF",
-    gender: animal?.gender || "FEMALE",
-    birthDate: animal?.birthDate ? new Date(animal.birthDate) : new Date(),
-    expectedMaturityDate: animal?.expectedMaturityDate
-      ? new Date(animal.expectedMaturityDate)
-      : undefined,
-    healthStatus: animal?.healthStatus || "HEALTHY",
-    weight: animal?.weight || undefined,
-    motherId: animal?.motherId || undefined,
-    fatherId: animal?.fatherId || undefined,
-    notes: animal?.notes || "",
+  const [formData, setFormData] = useState<Partial<CreateAnimalInput & { motherId?: string; fatherId?: string }>>({
   });
 
   const createMutation = useCreateAnimal();
@@ -49,11 +30,19 @@ export function AnimalFormDialog({
         await updateMutation.mutateAsync({
           ...formData,
           id: animal.id,
-        } as unknown);
-        toast({ title: "Success", description: "Animal updated successfully" });
+        } as UpdateAnimalInput);
+        toast({ 
+          title: "Success", 
+          description: "Animal updated successfully",
+          type: "success" 
+        });
       } else {
         await createMutation.mutateAsync(formData as CreateAnimalInput);
-        toast({ title: "Success", description: "Animal created successfully" });
+        toast({ 
+          title: "Success", 
+          description: "Animal created successfully",
+          type: "success" 
+        });
       }
       onSuccess();
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -61,7 +50,7 @@ export function AnimalFormDialog({
       toast({
         title: "Error",
         description: "Failed to save animal",
-        variant: "destructive",
+        type: "error",
       });
     }
   };
@@ -109,7 +98,7 @@ export function AnimalFormDialog({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      type: e.target.value as unknown,
+                      type: e.target.value as "COW" | "BULL" | "CALF",
                     })
                   }
                   className="w-full p-2 border border-gray-300 rounded-md"
@@ -129,7 +118,7 @@ export function AnimalFormDialog({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      gender: e.target.value as unknown,
+                      gender: e.target.value as "MALE" | "FEMALE",
                     })
                   }
                   className="w-full p-2 border border-gray-300 rounded-md"
@@ -148,7 +137,7 @@ export function AnimalFormDialog({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      healthStatus: e.target.value as unknown,
+                      healthStatus: e.target.value as "HEALTHY" | "SICK" | "RECOVERING" | "QUARANTINED",
                     })
                   }
                   className="w-full p-2 border border-gray-300 rounded-md"
@@ -247,7 +236,7 @@ export function AnimalFormDialog({
                   className="w-full p-2 border border-gray-300 rounded-md"
                 >
                   <option value="">Select Mother</option>
-                  {mothers?.map((mother: unknown) => (
+                  {mothers?.map((mother: Animal) => (
                     <option key={mother.id} value={mother.id}>
                       {mother.name || mother.tagNumber}
                     </option>
@@ -267,7 +256,7 @@ export function AnimalFormDialog({
                   className="w-full p-2 border border-gray-300 rounded-md"
                 >
                   <option value="">Select Father</option>
-                  {fathers?.map((father: unknown) => (
+                  {fathers?.map((father: Animal) => (
                     <option key={father.id} value={father.id}>
                       {father.name || father.tagNumber}
                     </option>
