@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// User/Employee validation schemas
 export const CreateUserSchema = z.object({
   username: z
     .string()
