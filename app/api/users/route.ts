@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
       if (uploadResult.error) {
         return createSecureErrorResponse(uploadResult.error, 500, request);
       }
-      imageUrl = uploadResult.imageUrl;
+      imageUrl = uploadResult.imagePath; // Use imagePath instead of imageUrl
     }
 
     const hashedPassword = await bcrypt.hash(password as string, 12);
