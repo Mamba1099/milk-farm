@@ -185,3 +185,11 @@ export interface TreatmentWithDetails {
   treatedBy?: string;
   recordedBy: { username: string };
 }
+
+// Component Props Interfaces
+export interface AnimalFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  animal?: Animal | null;
+  onSuccess: () => void;
+}

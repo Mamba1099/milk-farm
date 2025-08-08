@@ -4,6 +4,8 @@ export * from './dashboard';
 export * from './dashboard-components';
 export * from './drawer';
 export * from './employee';
+export * from './employee-components';
+export * from './user-table';
 
 export type { 
   Animal as DetailedAnimal,

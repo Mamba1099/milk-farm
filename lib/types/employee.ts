@@ -4,6 +4,7 @@ export interface Employee {
   email: string;
   role: "FARM_MANAGER" | "EMPLOYEE";
   image?: string | null;
+  image_url?: string | null;
   createdAt: string;
   updatedAt: string;
 }

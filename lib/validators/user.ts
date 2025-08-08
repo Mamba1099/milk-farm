@@ -68,9 +68,12 @@ export const UpdateUserSchema = z.object({
   email: z.string().email("Please enter a valid email address").optional(),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters long")
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+    .refine(
+      (val) => val === "" || val.length >= 8,
+      "Password must be at least 8 characters long"
+    )
+    .refine(
+      (val) => val === "" || /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(val),
       "Password must contain at least one uppercase letter, one lowercase letter, and one number"
     )
     .optional(),
