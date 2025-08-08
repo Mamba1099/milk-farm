@@ -25,6 +25,8 @@ import {
   Search,
   Trash2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   HeartPulse,
   Heart,
   Database,
@@ -34,6 +36,9 @@ import {
   X,
   Plus,
   Edit,
+  Calendar,
+  Clock,
+  Crown,
 } from "lucide-react";
 
 export const Icons = {
@@ -64,6 +69,11 @@ export const Icons = {
   search: Search,
   trash: Trash2,
   chevronDown: ChevronDown,
+  chevronLeft: ChevronLeft,
+  chevronRight: ChevronRight,
+  calendar: Calendar,
+  clock: Clock,
+  crown: Crown,
   heartPulse: HeartPulse,
   heart: Heart,
   database: Database,
