@@ -28,7 +28,7 @@ export const uploadImage = async ({ file, bucket, folder }: UploadProps) => {
     });
   } catch (error) {
     console.error(error);
-    return { imageUrl: "", error: "Image compression failed" };
+    return { imageUrl: "", imagePath: "", error: "Image compression failed" };
   }
 
   const storage = getStorage();
@@ -36,15 +36,16 @@ export const uploadImage = async ({ file, bucket, folder }: UploadProps) => {
   const { data, error } = await storage.from(bucket).upload(path, file);
 
   if (error) {
-    return { imageUrl: "", error: "Image upload failed" };
+    return { imageUrl: "", imagePath: "", error: "Image upload failed" };
   }
-
 
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${data?.path}`;
+  const imagePath = data?.path || "";
+  
   console.log("Image uploaded successfully:", imageUrl);
 
-  return { imageUrl, error: "" };
+  return { imageUrl, imagePath, error: "" };
 };
 
 export const deleteImage = async (imageUrl: string) => {

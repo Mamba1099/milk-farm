@@ -8,8 +8,8 @@ import {
   AuthError,
   ApiErrorResponse,
 } from "@/lib/types";
-import { uploadImage } from "@/supabase/storage/client";
 import { useToast } from "@/components/ui/toast";
+import { uploadImage } from "@/supabase/storage/client";
 
 export const useRegisterMutation = () => {
   const queryClient = useQueryClient();
@@ -17,53 +17,62 @@ export const useRegisterMutation = () => {
 
   return useMutation<RegisterResponse, AuthError, RegisterInput>({
     mutationFn: async (data: RegisterInput) => {
-      let imageUrl: string | null = null;
-      
-      if (data.image && data.image instanceof File) {
-        console.log("Uploading user image to Supabase...");
-        const uploadResult = await uploadImage({
-          file: data.image,
-          bucket: "farm-house",
-          folder: "users",
-        });
-
-        if (uploadResult.error) {
-          console.error("Upload failed:", uploadResult.error);
-          toast({
-            type: "error",
-            title: "Upload Failed",
-            description: "Failed to upload profile image. Please try again.",
-          });
-          throw new Error("Failed to upload profile image");
-        }
-
-        imageUrl = uploadResult.imageUrl;
-        console.log("User image uploaded successfully:", imageUrl);
-
-        const urlParts = imageUrl.split("/farm-house/");
-        imageUrl = urlParts[1] || imageUrl;
-      }
-      const payload = {
-        username: data.username,
-        email: data.email,
-        password: data.password,
-        confirmPassword: data.confirmPassword,
-        role: data.role,
-        image: imageUrl,
-      };
-
-      console.log("Registering user with payload:", {
-        ...payload,
+      console.log("Registering user with data:", {
+        ...data,
         password: "[HIDDEN]",
         confirmPassword: "[HIDDEN]",
+        image: data.image ? "File provided" : "No file",
       });
 
-      const response = await apiClient.post<RegisterResponse>(
-        API_ENDPOINTS.auth.register,
-        payload
-      );
+      try {
+        let imageUrl = null;
+        
+        // Upload image first if provided (same pattern as animals)
+        if (data.image && data.image instanceof File) {
+          console.log("Uploading image to Supabase...");
+          const uploadResult = await uploadImage({
+            file: data.image,
+            bucket: "farm-house",
+            folder: "users"
+          });
+          
+          if (uploadResult.error) {
+            throw new Error(uploadResult.error);
+          }
+          
+          imageUrl = uploadResult.imagePath; // Store the path, not the full URL
+          console.log("Image uploaded successfully, path:", imageUrl);
+        }
 
-      return response.data;
+        // Prepare form data with imageUrl instead of file
+        const formData = new FormData();
+        formData.append("username", data.username);
+        formData.append("email", data.email);
+        formData.append("password", data.password);
+        formData.append("confirmPassword", data.confirmPassword);
+        formData.append("role", data.role);
+        
+        if (imageUrl) {
+          formData.append("imagePath", imageUrl);
+        }
+
+        console.log("Sending registration data to API");
+
+        const response = await apiClient.post<RegisterResponse>(
+          API_ENDPOINTS.auth.register,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+
+        return response.data;
+      } catch (error: any) {
+        console.error("Registration process error:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
