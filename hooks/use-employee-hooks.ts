@@ -7,7 +7,6 @@ import { handleApiError } from "@/lib/error-handler";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Employee, 
-  CreateEmployeeInput, 
   UpdateEmployeeInput, 
   EmployeesResponse 
 } from "@/lib/types/employee";
