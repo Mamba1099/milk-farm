@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCurrentUser, useLogoutMutation } from "@/hooks/use-user-queries";
 import { useLoginMutation } from "@/hooks/use-login";
 import { useSessionCheck } from "@/hooks/use-session-check";
+import { useToast } from "@/hooks/use-toast";
 import { LoginInput, AuthContextType, AuthProviderProps } from "@/lib/types";
 import { sessionManager } from "@/lib/session-manager";
 
@@ -20,6 +21,8 @@ export const useAuth = (): AuthContextType => {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const { toast } = useToast();
 
   const {
     data: user,
@@ -45,6 +48,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sessionManager.setSessionCheckMutation(sessionCheckMutation);
   }, [sessionCheckMutation]);
 
+  // Set up toast function for session expiry notifications
+  useEffect(() => {
+    sessionManager.setToastFunction(toast);
+  }, [toast]);
+
   // Session management
   useEffect(() => {
     if (isAuthenticated) {
@@ -64,6 +72,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [isAuthenticated]);
 
   const handleSessionExpired = async () => {
+    if (isLoggingOut) {
+      console.log("Logout already in progress, skipping...");
+      return;
+    }
+    
+    setIsLoggingOut(true);
     try {
       sessionManager.clearSession();
       await logoutMutation.mutateAsync();
@@ -72,11 +86,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error("Error during session expiration logout:", error);
       // Force redirect even if logout fails
       router.push("/login");
+    } finally {
+      // Reset the flag after a delay
+      setTimeout(() => setIsLoggingOut(false), 2000);
     }
   };
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && !isLoggingOut) {
       const currentPath = window.location.pathname;
       const isAuthPage = ["/login", "/signup"].includes(currentPath);
       const isProtectedRoute = currentPath.startsWith("/dashboard") || 
@@ -88,12 +105,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                               currentPath.startsWith("/settings");
 
       if (!isAuthenticated && isProtectedRoute) {
+        console.log("Redirecting to login - not authenticated on protected route");
         router.replace("/login");
       } else if (isAuthenticated && isAuthPage) {
+        console.log("Redirecting to dashboard - authenticated on auth page");
         router.replace("/dashboard");
       }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, isLoggingOut, router]);
 
   const hasRole = (roles: string | string[]): boolean => {
     if (!user) return false;
@@ -116,13 +135,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async () => {
+    if (isLoggingOut) {
+      console.log("Logout already in progress, skipping manual logout...");
+      return;
+    }
+    
+    setIsLoggingOut(true);
     try {
       await logoutMutation.mutateAsync();
+      router.push("/login");
     } catch (error) {
       console.error("Logout error:", error);
-    } finally {
-      await refetchUser();
       router.push("/login");
+    } finally {
+      // Reset the flag after a delay
+      setTimeout(() => setIsLoggingOut(false), 2000);
     }
   };
 
