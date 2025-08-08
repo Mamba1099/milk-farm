@@ -9,7 +9,6 @@ import {
   createSecureErrorResponse,
 } from "@/lib/security";
 import { getPublicImageUrl } from "@/supabase/storage/client";
-import { uploadUserImage } from "@/lib/user-storage";
 
 export async function POST(request: NextRequest) {
   const securityError = validateSecurity(request);
@@ -20,17 +19,15 @@ export async function POST(request: NextRequest) {
   try {
     const contentType = request.headers.get("content-type") || "";
     let data: Record<string, unknown> = {};
-    let imageFile: File | null = null;
 
     if (contentType.includes("multipart/form-data")) {
+      console.log("Processing multipart/form-data request");
       const formData = await request.formData();
       data = Object.fromEntries(formData.entries());
-      imageFile = formData.get("image") as File;
-
-      if (data.image) {
-        delete data.image;
-      }
+      
+      console.log("Form data keys:", Array.from(formData.keys()));
     } else {
+      console.log("Processing JSON request");
       const body = await request.json();
       data = body;
     }
@@ -81,12 +78,13 @@ export async function POST(request: NextRequest) {
     const prismaRole = finalRole.toUpperCase() as "FARM_MANAGER" | "EMPLOYEE";
 
     let imageUrl = null;
-    if (imageFile && imageFile.size > 0) {
-      const uploadResult = await uploadUserImage(imageFile);
-      if (uploadResult.error) {
-        return createSecureErrorResponse(uploadResult.error, 500, request);
-      }
-      imageUrl = uploadResult.imageUrl;
+    
+    // Check if imagePath was provided from client-side upload
+    if (data.imagePath && typeof data.imagePath === 'string') {
+      imageUrl = data.imagePath;
+      console.log("Using imagePath from client:", imageUrl);
+    } else {
+      console.log("No imagePath provided");
     }
 
     const user = await prisma.user.create({
