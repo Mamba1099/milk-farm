@@ -63,7 +63,7 @@ export function useCreateAnimal() {
             throw new Error(uploadResult.error);
           }
           
-          imageUrl = uploadResult.imageUrl;
+          imageUrl = uploadResult.imagePath;
         }
 
         const formData = new FormData();
@@ -81,7 +81,7 @@ export function useCreateAnimal() {
         });
 
         if (imageUrl) {
-          formData.append("imageUrl", imageUrl);
+          formData.append("imagePath", imageUrl);
         }
 
         const response = await apiClient.post("/animals", formData, {
@@ -135,7 +135,7 @@ export function useUpdateAnimal() {
           if (uploadResult.error) {
             throw new Error(uploadResult.error);
           }
-          imageUrl = uploadResult.imageUrl;
+          imageUrl = uploadResult.imagePath; // Store the path, not the full URL
         }
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
@@ -150,7 +150,7 @@ export function useUpdateAnimal() {
           }
         });
         if (imageUrl) {
-          formData.append("imageUrl", imageUrl);
+          formData.append("imagePath", imageUrl);
         }
         const response = await apiClient.put(
           `/animals/${data.id}`,
