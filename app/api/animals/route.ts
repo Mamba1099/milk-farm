@@ -129,7 +129,6 @@ export async function POST(request: NextRequest) {
       data = body;
     }
 
-    // Convert string values to appropriate types for form data
     if (data.weight && typeof data.weight === 'string') {
       const weightNum = parseFloat(data.weight as string);
       data.weight = isNaN(weightNum) ? undefined : weightNum;
@@ -137,16 +136,16 @@ export async function POST(request: NextRequest) {
 
     let imageUrl = null;
   
-    if (data.imageUrl) {
-      imageUrl = data.imageUrl as string;
-      delete data.imageUrl;
+    if (data.imagePath) {
+      imageUrl = data.imagePath as string;
+      delete data.imagePath;
     } 
     else if (imageFile && imageFile.size > 0) {
       const uploadResult = await uploadAnimalImage(imageFile);
       if (uploadResult.error) {
         return createSecureErrorResponse(uploadResult.error, 500, request);
       }
-      imageUrl = uploadResult.imageUrl;
+      imageUrl = uploadResult.imagePath;
     }
 
     const validatedData = CreateAnimalSchema.parse(data);

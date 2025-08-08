@@ -111,7 +111,7 @@ export async function PUT(
           await deleteAnimalImage(existingAnimal.image);
         }
         
-        imageUrl = uploadResult.imageUrl;
+        imageUrl = uploadResult.imagePath; // Use imagePath instead of imageUrl
       }
     }
 
