@@ -54,11 +54,10 @@ enum OvaType {
   NORMAL
 }
 
-enum MilkAllocation {
-  CALF
-  POSHO
-  SALES
-  CARRY_OVER
+
+enum PaymentMethod {
+  CASH
+  MPESA
 }
 
 model User {
@@ -74,7 +73,8 @@ model User {
   treatments        Treatment[]
   disposals         Disposal[]
   servings          Serving[]
-  productionRecords Production[]
+  morningProductions MorningProduction[]
+  eveningProductions EveningProduction[]
   salesRecords      Sales[]
 
   @@map("users")
@@ -102,8 +102,8 @@ model Animal {
   treatments        Treatment[]
   disposals         Disposal[]
   servings          Serving[]
-  productionRecords Production[]
-  salesRecords      Sales[]
+  morningProductions MorningProduction[]
+  eveningProductions EveningProduction[]
 
   @@map("animals")
 }
@@ -167,17 +167,13 @@ model Serving {
   @@map("servings")
 }
 
-model Production {
+model MorningProduction {
   id              String    @id @default(cuid())
   animalId        String
   date            DateTime  @default(now())
-  morningQuantity Float     @default(0)
-  eveningQuantity Float     @default(0)
-  totalQuantity   Float     
-  calfQuantity    Float     @default(0)
-  poshoQuantity   Float     @default(0)
-  availableForSales Float   @default(0)
-  carryOverQuantity Float   @default(0)
+  quantity_am     Float     @default(0)
+  calf_quantity_fed_am Float @default(0)
+  balance_am      Float     @default(0)
   recordedById    String
   notes           String?
   createdAt       DateTime  @default(now())
@@ -187,24 +183,57 @@ model Production {
   recordedBy User   @relation(fields: [recordedById], references: [id])
 
   @@unique([animalId, date])
-  @@map("production")
+  @@map("morning_production")
 }
+
+model EveningProduction {
+  id              String    @id @default(cuid())
+  animalId        String
+  date            DateTime  @default(now())
+  quantity_pm     Float     @default(0)
+  calf_quantity_fed_pm Float @default(0)
+  balance_pm      Float     @default(0)
+  recordedById    String
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  animal     Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  recordedBy User   @relation(fields: [recordedById], references: [id])
+
+  @@unique([animalId, date])
+  @@map("evening_production")
+}
+
+model ProductionSummary {
+  id                String    @id @default(cuid())
+  date              DateTime?  @default(now())
+  total_morning     Float?
+  balance_morning   Float?
+  balance_yesterday Float?
+  total_evening     Float?
+  balance_evening   Float?
+  posho_deduction_am   Float?
+  posho_deduction_pm   Float?
+  createdAt         DateTime?  @default(now())
+  updatedAt         DateTime?  @updatedAt
+
+  @@unique([date])
+  @@map("production_summary")
+}
+
 
 model Sales {
   id            String   @id @default(cuid())
-  animalId      String?
-  date          DateTime @default(now())
   timeRecorded  DateTime @default(now())
   quantity      Float
-  pricePerLiter Float
   totalAmount   Float
-  soldById      String
   customerName  String?
-  notes         String?
+  payment_method PaymentMethod
+  soldById      String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  animal Animal? @relation(fields: [animalId], references: [id], onDelete: SetNull)
   soldBy User    @relation(fields: [soldById], references: [id])
 
   @@map("sales")
