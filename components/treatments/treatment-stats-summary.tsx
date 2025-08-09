@@ -9,113 +9,89 @@ import type { TreatmentStatsSummaryProps } from "@/lib/types/animal";
 
 export const TreatmentStatsSummary: React.FC<TreatmentStatsSummaryProps> = ({ summary }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+    <div className="flex flex-row flex-wrap gap-4 mb-8">
       {/* Total Treatments */}
-      <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white flex flex-col justify-between h-full">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center">
-            <Activity className="h-4 w-4 mr-2" />
-            Total Treatments
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col justify-end h-full">
-          <div className="mt-auto text-4xl font-extrabold tracking-tight drop-shadow text-white">{summary.totalTreatments}</div>
-        </CardContent>
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-cyan-200 to-cyan-400">
+        <div className="flex items-center justify-between p-6">
+          <div>
+            <p className="text-gray-800 text-xs sm:text-sm mb-3">Total Treatments</p>
+            <p className="text-3xl font-bold text-cyan-900 mb-2">{summary.totalTreatments}</p>
+          </div>
+          <div className="p-3 bg-cyan-700 rounded-full shadow">
+            <Activity className="h-6 w-6 text-cyan-100" />
+          </div>
+        </div>
       </Card>
-
       {/* Total Cost */}
-      <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white flex flex-col justify-between h-full">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center">
-            <DollarSign className="h-4 w-4 mr-2" />
-            Total Treatment Cost
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col justify-end h-full">
-          <div className="mt-auto text-4xl font-extrabold tracking-tight drop-shadow text-white">{formatCurrency(summary.totalCost)}</div>
-        </CardContent>
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-teal-200 to-teal-400">
+        <div className="flex items-center justify-between p-6">
+          <div>
+            <p className="text-gray-800 text-xs sm:text-sm mb-3">Total Treatment Cost</p>
+            <p className="text-2xl font-bold text-teal-900 mb-2">{formatCurrency(summary.totalCost)}</p>
+          </div>
+          <div className="p-3 bg-teal-700 rounded-full shadow">
+            <DollarSign className="h-6 w-6 text-teal-100" />
+          </div>
+        </div>
       </Card>
-
       {/* Average Cost */}
-      <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white flex flex-col justify-between h-full">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center">
-            <Target className="h-4 w-4 mr-2" />
-            Average Cost per Treatment
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col justify-end h-full">
-          <div className="mt-auto text-4xl font-extrabold tracking-tight drop-shadow text-white">{formatCurrency(summary.averageCostPerTreatment)}</div>
-        </CardContent>
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-purple-200 to-purple-400">
+        <div className="flex items-center justify-between p-6">
+          <div>
+            <p className="text-gray-800 text-xs sm:text-sm mb-3">Average Cost per Treatment</p>
+            <p className="text-2xl font-bold text-purple-900 mb-2">{formatCurrency(summary.averageCostPerTreatment)}</p>
+          </div>
+          <div className="p-3 bg-purple-700 rounded-full shadow">
+            <Target className="h-6 w-6 text-purple-100" />
+          </div>
+        </div>
       </Card>
-
       {/* Most Common Disease */}
-      <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white flex flex-col justify-between h-full">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Most Common Disease
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col justify-end h-full">
-          {summary.mostCommonDisease ? (
-            <>
-              <div className="text-lg font-bold mb-1 text-white">
-                {summary.mostCommonDisease.disease}
-              </div>
-              <Badge variant="secondary" className="text-xs">
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-orange-200 to-orange-400">
+        <div className="flex items-center justify-between p-6">
+          <div>
+            <p className="text-gray-800 text-xs sm:text-sm mb-3">Most Common Disease</p>
+            <p className="text-lg font-bold mb-1 text-orange-900">{summary.mostCommonDisease ? summary.mostCommonDisease.disease : "No data"}</p>
+            {summary.mostCommonDisease && (
+              <Badge variant="secondary" className="text-xs bg-orange-300 text-orange-900">
                 {summary.mostCommonDisease.count} treatments
               </Badge>
-            </>
-          ) : (
-            <div className="text-lg font-bold text-white">No data</div>
-          )}
-        </CardContent>
+            )}
+          </div>
+          <div className="p-3 bg-orange-700 rounded-full shadow">
+            <TrendingUp className="h-6 w-6 text-orange-100" />
+          </div>
+        </div>
       </Card>
-
       {/* Most Expensive Disease */}
-      <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white flex flex-col justify-between h-full">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center">
-            <TrendingDown className="h-4 w-4 mr-2" />
-            Most Expensive Disease
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col justify-end h-full">
-          {summary.mostExpensiveDisease ? (
-            <>
-              <div className="text-lg font-bold mb-1 text-white">
-                {summary.mostExpensiveDisease.disease}
-              </div>
-              <Badge variant="secondary" className="text-xs">
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-red-200 to-red-400">
+        <div className="flex items-center justify-between p-6">
+          <div>
+            <p className="text-gray-800 text-xs sm:text-sm mb-3">Most Expensive Disease</p>
+            <p className="text-lg font-bold mb-1 text-red-900">{summary.mostExpensiveDisease ? summary.mostExpensiveDisease.disease : "No data"}</p>
+            {summary.mostExpensiveDisease && (
+              <Badge variant="secondary" className="text-xs bg-red-300 text-red-900">
                 {formatCurrency(summary.mostExpensiveDisease.totalCost)}
               </Badge>
-            </>
-          ) : (
-            <div className="text-lg font-bold text-white">No data</div>
-          )}
-        </CardContent>
+            )}
+          </div>
+          <div className="p-3 bg-red-700 rounded-full shadow">
+            <TrendingDown className="h-6 w-6 text-red-100" />
+          </div>
+        </div>
       </Card>
-
       {/* Health Impact Indicator */}
-      <Card className="bg-gradient-to-r from-cyan-500 to-cyan-700 text-white flex flex-col justify-between h-full">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center">
-            <Zap className="h-4 w-4 mr-2" />
-            Health Impact
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col justify-end h-full">
-          <div className="mt-auto text-2xl font-extrabold tracking-tight drop-shadow text-white">
-            {summary.totalTreatments > 0 ? "Active Monitoring" : "Excellent"}
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-yellow-200 to-yellow-400">
+        <div className="flex items-center justify-between p-6">
+          <div>
+            <p className="text-gray-800 text-xs sm:text-sm mb-3">Health Impact</p>
+            <p className="text-xl font-extrabold tracking-tight drop-shadow text-yellow-900 mb-2">{summary.totalTreatments > 0 ? "Active Monitoring" : "Excellent"}</p>
+            <div className="text-xs text-yellow-900 mt-1">{summary.totalTreatments === 0 ? "No treatments needed" : `${summary.totalTreatments} treatments recorded`}</div>
           </div>
-          <div className="text-xs text-white mt-1">
-            {summary.totalTreatments === 0 
-              ? "No treatments needed"
-              : `${summary.totalTreatments} treatments recorded`
-            }
+          <div className="p-3 bg-yellow-700 rounded-full shadow">
+            <Zap className="h-6 w-6 text-yellow-100" />
           </div>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );
