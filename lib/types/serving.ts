@@ -84,3 +84,10 @@ export interface ServingEditDialogProps {
   onClose: () => void;
   open: boolean;
 }
+
+export interface ServingRecordsTableProps {
+  servings: ServingRecord[];
+  showAddButton?: boolean;
+  title?: string;
+  onEdit?: (serving: ServingRecord) => void;
+}
