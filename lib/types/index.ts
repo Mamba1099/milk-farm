@@ -6,6 +6,7 @@ export * from './drawer';
 export * from './employee';
 export * from './employee-components';
 export * from './user-table';
+export * from './serving';
 
 export type { 
   Animal as DetailedAnimal,

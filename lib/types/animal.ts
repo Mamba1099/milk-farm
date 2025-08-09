@@ -186,10 +186,25 @@ export interface TreatmentWithDetails {
   recordedBy: { username: string };
 }
 
-// Component Props Interfaces
 export interface AnimalFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   animal?: Animal | null;
   onSuccess: () => void;
+}
+
+export interface TreatmentStatsSummaryProps {
+  summary: {
+  totalTreatments: number;
+  totalCost: number;
+  averageCostPerTreatment: number;
+  mostCommonDisease: {
+    disease: string;
+    count: number;
+  } | null;
+  mostExpensiveDisease: {
+    disease: string;
+    totalCost: number;
+  } | null;
+};
 }
