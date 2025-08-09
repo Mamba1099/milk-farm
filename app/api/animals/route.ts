@@ -69,11 +69,6 @@ export async function GET(request: NextRequest) {
           take: 3,
           include: { recordedBy: { select: { username: true } } },
         },
-        productionRecords: {
-          orderBy: { date: "desc" },
-          take: 7,
-          include: { recordedBy: { select: { username: true } } },
-        },
       },
       skip,
       take: validatedQuery.limit,
@@ -162,13 +157,10 @@ export async function POST(request: NextRequest) {
     const today = new Date();
     const ageInMonths = (today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
 
-    // Only auto-calculate expectedMaturityDate if not provided by user
     let expectedMaturityDate: Date;
     if (validatedData.expectedMaturityDate) {
-      // Use the date provided by the user
       expectedMaturityDate = new Date(validatedData.expectedMaturityDate);
     } else {
-      // Auto-calculate only if no date provided
       if (validatedData.type === "COW") {
         expectedMaturityDate = new Date(birthDate.getTime() + 24 * 30.44 * 24 * 60 * 60 * 1000);
       } else if (validatedData.type === "BULL") {

@@ -34,14 +34,10 @@ export async function GET(
           orderBy: { createdAt: "desc" },
           include: { recordedBy: { select: { username: true } } },
         },
-        servings: {
-          orderBy: { createdAt: "desc" },
-          include: { servedBy: { select: { username: true } } },
-        },
-        productionRecords: {
-          orderBy: { date: "desc" },
-          include: { recordedBy: { select: { username: true } } },
-        },
+          servings: {
+            orderBy: { createdAt: "desc" },
+            include: { recordedBy: { select: { username: true } } },
+          },
         disposals: {
           include: { disposedBy: { select: { username: true } } },
         },
@@ -111,7 +107,7 @@ export async function PUT(
           await deleteAnimalImage(existingAnimal.image);
         }
         
-        imageUrl = uploadResult.imagePath; // Use imagePath instead of imageUrl
+        imageUrl = uploadResult.imagePath;
       }
     }
 
@@ -177,7 +173,6 @@ export async function PUT(
       }
     }
 
-    // Also check against the expected maturity date
     if (expectedMaturityDate <= today) {
       isMatured = true;
       if (animalType === "COW" && (validatedData.gender || existingAnimal.gender) === "FEMALE") {
@@ -215,12 +210,7 @@ export async function PUT(
         servings: {
           orderBy: { createdAt: "desc" },
           take: 5,
-          include: { servedBy: { select: { username: true } } },
-        },
-        productionRecords: {
-          orderBy: { date: "desc" },
-          take: 10,
-          include: { recordedBy: { select: { username: true } } },
+            include: { recordedBy: { select: { username: true } } },
         },
       },
     });
@@ -228,8 +218,6 @@ export async function PUT(
     return createSecureResponse(updatedAnimal, {}, request);
   } catch (error) {
     console.error("Animal update error:", error);
-    
-    // Check if it's a Zod validation error
     if (error instanceof ZodError) {
       return createSecureErrorResponse(
         `Validation error: ${error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ')}`,
@@ -238,7 +226,6 @@ export async function PUT(
       );
     }
     
-    // Check if it's a Prisma error
     if (error instanceof Error && error.message.includes('Prisma')) {
       return createSecureErrorResponse(
         `Database error: ${error.message}`,
