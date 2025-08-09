@@ -7,7 +7,6 @@ export default function AddProductionPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to main production page
     router.replace("/production");
   }, [router]);
 
