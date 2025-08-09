@@ -1,319 +1,246 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, Calendar, FileText } from "lucide-react";
+import { RingLoader } from "react-spinners";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useCreateServing } from "@/hooks/use-serving-hooks";
 import { useAnimals } from "@/hooks/use-animal-hooks";
-import {
-  useCreateServing,
-  useUpdateServing,
-  ServingRecord,
-} from "@/hooks/use-production-hooks";
-import { useToast } from "@/hooks/use-toast";
-import {
-  CreateServingSchema,
-  CreateServingInput,
-} from "@/lib/validators/animal";
+import type { CreateServingData } from "@/lib/types/serving";
 
 interface ServingFormProps {
-  isOpen: boolean;
-  onClose: () => void;
+  onCancel?: () => void;
+  onClose?: () => void;
   onSuccess?: () => void;
-  serving?: ServingRecord | null;
 }
 
-export function ServingForm({
-  isOpen,
-  onClose,
-  onSuccess,
-  serving,
-}: ServingFormProps) {
-  const { toast } = useToast();
-  const createServingMutation = useCreateServing();
-  const updateServingMutation = useUpdateServing();
-  const isEditing = !!serving;
-
-  // Fetch all animals for the dropdown
-  const { data: animalsData } = useAnimals({
-    page: 1,
-    limit: 1000, // Get all animals
-  });
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors },
-  } = useForm<CreateServingInput>({
-    resolver: zodResolver(CreateServingSchema),
-    defaultValues: {
-      femaleId: serving?.femaleId || "",
-      servedAt:
-        serving?.servedAt?.split("T")[0] ||
-        new Date().toISOString().split("T")[0],
-      outcome: serving?.outcome || "PENDING",
-      pregnancyDate: serving?.pregnancyDate?.split("T")[0] || "",
-      actualBirthDate: serving?.actualBirthDate?.split("T")[0] || "",
-      notes: serving?.notes || "",
+const containerVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
     },
+  },
+};
+
+export function ServingForm({ onCancel, onClose, onSuccess }: ServingFormProps): React.ReactElement {
+  const [formData, setFormData] = useState<CreateServingData>({
+    femaleId: "",
+    bullName: "",
+    servingType: "AI",
+    ovaType: "NORMAL", 
+    dateServed: new Date().toISOString().split('T')[0],
+    servedBy: "",
+    notes: "",
   });
 
-  const watchedOutcome = watch("outcome");
+  const createServing = useCreateServing();
+  const { data: animals } = useAnimals();
 
-  const onSubmit = async (data: CreateServingInput) => {
+  const femaleAnimals = animals?.animals?.filter(
+    (animal: any) => animal.gender === "FEMALE" && animal.type === "COW"
+  ) || [];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const selectedDate = formData.dateServed;
+    const now = new Date();
+    const [year, month, day] = selectedDate.split('-');
+    const isoDateTime = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds()
+    ).toISOString();
+    
+    if (!formData.femaleId) {
+      alert("Please select a female animal");
+      return;
+    }
+    if (formData.servingType === "BULL" && !formData.bullName) {
+      alert("Please enter the bull name");
+      return;
+    }
+    if (!formData.servedBy) {
+      alert("Please enter who served the animal");
+      return;
+    }
+
+    const submitData = {
+      ...formData,
+      dateServed: isoDateTime,
+    };
+
     try {
-      const servingData = {
-        ...data,
-        servedAt: new Date(data.servedAt),
-        pregnancyDate: data.pregnancyDate
-          ? new Date(data.pregnancyDate)
-          : undefined,
-        actualBirthDate: data.actualBirthDate
-          ? new Date(data.actualBirthDate)
-          : undefined,
-      };
-
-      if (isEditing && serving) {
-        await updateServingMutation.mutateAsync({
-          id: serving.id,
-          ...servingData,
-        });
-        toast({
-          title: "Success",
-          description: "Serving record updated successfully",
-        });
-      } else {
-        await createServingMutation.mutateAsync(servingData);
-        toast({
-          title: "Success",
-          description: "Serving record created successfully",
-        });
-      }
-
-      reset();
-      onSuccess?.();
-      onClose();
+      await createServing.mutateAsync(submitData);
+      if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Serving operation error:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : `Failed to ${isEditing ? "update" : "create"} serving record`;
-
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      console.error("Error creating serving record:", error);
     }
   };
 
-  const handleClose = () => {
-    reset();
-    onClose();
+  const handleInputChange = (field: keyof CreateServingData, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  // Filter animals by gender
-  const femaleAnimals =
-    animalsData?.animals?.filter(
-      (animal: { gender: string }) => animal.gender === "FEMALE"
-    ) || [];
-
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-pink-600" />
-            {isEditing ? "Edit Serving Record" : "Add Serving Record"}
-          </DialogTitle>
-        </DialogHeader>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="w-full max-w-2xl mx-auto"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Female Animal Selection */}
+        <div className="space-y-2">
+          <Label htmlFor="femaleId">Female Animal *</Label>
+          <Select
+            value={formData.femaleId}
+            onValueChange={(value) => handleInputChange("femaleId", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select female animal to be served" />
+            </SelectTrigger>
+            <SelectContent>
+              {femaleAnimals.map((animal: any) => (
+                <SelectItem key={animal.id} value={animal.id}>
+                  {animal.name || "Unnamed"} - #{animal.tagNumber}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Female Animal Selection */}
-            <div className="space-y-2">
-              <label
-                htmlFor="femaleId"
-                className="text-sm font-medium text-gray-700"
-              >
-                Female Animal *
-              </label>
-              <select
-                id="femaleId"
-                {...register("femaleId")}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
-                  errors.femaleId ? "border-red-500" : ""
-                }`}
-              >
-                <option value="">Select a female animal</option>
-                {femaleAnimals.map(
-                  (animal: {
-                    id: string;
-                    name?: string;
-                    tagNumber: string;
-                  }) => (
-                    <option key={animal.id} value={animal.id}>
-                      {animal.name || `Animal ${animal.tagNumber}`} -{" "}
-                      {animal.tagNumber}
-                    </option>
-                  )
-                )}
-              </select>
-              {errors.femaleId && (
-                <p className="text-sm text-red-600">
-                  {errors.femaleId.message}
-                </p>
-              )}
-            </div>
-            {/* Serving Date */}
-            <div className="space-y-2">
-              <label
-                htmlFor="servedAt"
-                className="text-sm font-medium text-gray-700 flex items-center gap-1"
-              >
-                <Calendar className="h-4 w-4" />
-                Serving Date *
-              </label>
-              <Input
-                id="servedAt"
-                type="date"
-                {...register("servedAt")}
-                className={errors.servedAt ? "border-red-500" : ""}
-              />
-              {errors.servedAt && (
-                <p className="text-sm text-red-600">
-                  {errors.servedAt.message}
-                </p>
-              )}
-            </div>
+        {/* Serving Type */}
+        <div className="space-y-2">
+          <Label htmlFor="servingType">Serving Type *</Label>
+          <Select
+            value={formData.servingType}
+            onValueChange={(value) => handleInputChange("servingType", value as "BULL" | "AI")}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select serving type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="AI">Artificial Insemination (AI)</SelectItem>
+              <SelectItem value="BULL">Natural Service (Bull)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-            {/* Outcome */}
-            <div className="space-y-2">
-              <label
-                htmlFor="outcome"
-                className="text-sm font-medium text-gray-700"
-              >
-                Outcome
-              </label>
-              <select
-                id="outcome"
-                {...register("outcome")}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-              >
-                <option value="PENDING">Pending</option>
-                <option value="SUCCESSFUL">Successful</option>
-                <option value="FAILED">Failed</option>
-              </select>
-            </div>
-
-            {/* Pregnancy Date - Show only if outcome is SUCCESSFUL */}
-            {watchedOutcome === "SUCCESSFUL" && (
-              <div className="space-y-2">
-                <label
-                  htmlFor="pregnancyDate"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Expected Pregnancy Date
-                </label>
-                <Input
-                  id="pregnancyDate"
-                  type="date"
-                  {...register("pregnancyDate")}
-                />
-              </div>
-            )}
-
-            {/* Actual Birth Date - Show only if outcome is SUCCESSFUL */}
-            {watchedOutcome === "SUCCESSFUL" && (
-              <div className="space-y-2">
-                <label
-                  htmlFor="actualBirthDate"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Actual Birth Date
-                </label>
-                <Input
-                  id="actualBirthDate"
-                  type="date"
-                  {...register("actualBirthDate")}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Notes */}
+        {/* Bull Name (only for BULL serving type) */}
+        {formData.servingType === "BULL" && (
           <div className="space-y-2">
-            <label
-              htmlFor="notes"
-              className="text-sm font-medium text-gray-700 flex items-center gap-1"
-            >
-              <FileText className="h-4 w-4" />
-              Notes
-            </label>
-            <textarea
-              id="notes"
-              rows={3}
-              placeholder="Add any additional notes about the serving..."
-              {...register("notes")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+            <Label htmlFor="bullName">Bull Name *</Label>
+            <Input
+              id="bullName"
+              type="text"
+              placeholder="Enter the name of the bull"
+              value={formData.bullName || ""}
+              onChange={(e) => handleInputChange("bullName", e.target.value)}
+              required
             />
           </div>
+        )}
 
-          {/* Form Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
+        {/* Ova Type */}
+        <div className="space-y-2">
+          <Label htmlFor="ovaType">Ova Type *</Label>
+          <Select
+            value={formData.ovaType}
+            onValueChange={(value) => handleInputChange("ovaType", value as "PREDETERMINED" | "NORMAL")}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select ova type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="NORMAL">Normal Ova</SelectItem>
+              <SelectItem value="PREDETERMINED">Predetermined</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Date Served */}
+        <div className="space-y-2">
+          <Label htmlFor="dateServed">Date Served *</Label>
+          <Input
+            id="dateServed"
+            type="date"
+            value={formData.dateServed}
+            onChange={(e) => handleInputChange("dateServed", e.target.value)}
+            required
+          />
+        </div>
+
+        {/* Served By */}
+        <div className="space-y-2">
+          <Label htmlFor="servedBy">Served By *</Label>
+          <Input
+            id="servedBy"
+            type="text"
+            placeholder="Name of veterinarian or person who performed the service"
+            value={formData.servedBy}
+            onChange={(e) => handleInputChange("servedBy", e.target.value)}
+            required
+          />
+        </div>
+
+        {/* Notes */}
+        <div className="space-y-2">
+          <Label htmlFor="notes">Notes</Label>
+          <textarea
+            id="notes"
+            placeholder="Additional notes about the serving..."
+            value={formData.notes}
+            onChange={(e) => handleInputChange("notes", e.target.value)}
+            rows={3}
+            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </div>
+
+        {/* Form Actions */}
+        <div className="flex justify-end space-x-4 pt-4">
+          {(onCancel || onClose) && (
             <Button
               type="button"
               variant="outline"
-              onClick={handleClose}
-              disabled={
-                createServingMutation.isPending ||
-                updateServingMutation.isPending
-              }
+              onClick={onCancel || onClose}
+              disabled={createServing.isPending}
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={
-                createServingMutation.isPending ||
-                updateServingMutation.isPending
-              }
-              className="bg-pink-600 hover:bg-pink-700"
-            >
-              {createServingMutation.isPending ||
-              updateServingMutation.isPending ? (
-                <>
-                  <motion.div
-                    className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      duration: 1,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                  />
-                  {isEditing ? "Updating..." : "Creating..."}
-                </>
-              ) : isEditing ? (
-                "Update Serving Record"
-              ) : (
-                "Create Serving Record"
-              )}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+          )}
+          <Button
+            type="submit"
+            disabled={createServing.isPending}
+            className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+          >
+            {createServing.isPending && (
+              <RingLoader size={16} color="white" />
+            )}
+            {createServing.isPending ? "Creating..." : "Create Serving Record"}
+          </Button>
+        </div>
+      </form>
+    </motion.div>
   );
 }
+
+export default ServingForm;
