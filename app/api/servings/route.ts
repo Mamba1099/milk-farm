@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
     if (securityError) {
       return securityError;
     }
+    
     const user = await getUserFromSession(request);
     if (!user || !["FARM_MANAGER", "EMPLOYEE"].includes(user.role)) {
       return createSecureErrorResponse("Unauthorized", 401, request);
@@ -17,9 +18,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       femaleId,
-      servedAt,
+      bullName,
+      servingType,
+      ovaType = "NORMAL",
+      dateServed,
+      servedBy,
       outcome = "PENDING",
-      pregnancyDate,
       actualBirthDate,
       notes,
     } = body;
@@ -28,8 +32,16 @@ export async function POST(request: NextRequest) {
       return createSecureErrorResponse("Female animal ID is required", 400, request);
     }
 
-    if (!servedAt) {
+    if (!dateServed) {
       return createSecureErrorResponse("Serving date is required", 400, request);
+    }
+
+    if (!servingType) {
+      return createSecureErrorResponse("Serving type is required", 400, request);
+    }
+
+    if (!servedBy) {
+      return createSecureErrorResponse("Served by is required", 400, request);
     }
 
     const femaleAnimal = await prisma.animal.findUnique({
@@ -38,6 +50,26 @@ export async function POST(request: NextRequest) {
 
     if (!femaleAnimal) {
       return createSecureErrorResponse("Female animal not found", 404, request);
+    }
+
+    if (servingType === "BULL" && !bullName) {
+      return createSecureErrorResponse("Bull name is required for bull serving", 400, request);
+    }
+
+    if (!["BULL", "AI"].includes(servingType)) {
+      return createSecureErrorResponse(
+        "Invalid serving type. Must be BULL or AI",
+        400,
+        request
+      );
+    }
+
+    if (!["NORMAL", "PREDETERMINED"].includes(ovaType)) {
+      return createSecureErrorResponse(
+        "Invalid ova type. Must be NORMAL or PREDETERMINED",
+        400,
+        request
+      );
     }
 
     if (femaleAnimal.gender !== "FEMALE") {
@@ -55,11 +87,14 @@ export async function POST(request: NextRequest) {
     const serving = await prisma.serving.create({
       data: {
         femaleId,
-        servedAt: new Date(servedAt),
+        bullName: bullName || null,
+        servingType,
+        ovaType,
+        dateServed: new Date(dateServed),
+        servedBy,
         outcome,
-        pregnancyDate: pregnancyDate ? new Date(pregnancyDate) : null,
         actualBirthDate: actualBirthDate ? new Date(actualBirthDate) : null,
-        servedById: user.id,
+        recordedById: user.id,
         notes: notes || null,
       },
       include: {
@@ -70,7 +105,7 @@ export async function POST(request: NextRequest) {
             name: true,
           },
         },
-        servedBy: {
+        recordedBy: {
           select: {
             id: true,
             username: true,
@@ -152,14 +187,14 @@ export async function GET(request: NextRequest) {
               name: true,
             },
           },
-          servedBy: {
+          recordedBy: {
             select: {
               id: true,
               username: true,
             },
           },
         },
-        orderBy: { servedAt: "desc" },
+        orderBy: { dateServed: "desc" },
         skip,
         take: limit,
       }),
@@ -199,10 +234,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const {
       id,
-      femaleId,
-      servedAt,
-      outcome = "PENDING",
-      pregnancyDate,
+      outcome,
       actualBirthDate,
       notes,
     } = body;
@@ -219,20 +251,6 @@ export async function PUT(request: NextRequest) {
       return createSecureErrorResponse("Serving record not found", 404, request);
     }
 
-    if (femaleId && femaleId !== existingServing.femaleId) {
-      const femaleAnimal = await prisma.animal.findUnique({
-        where: { id: femaleId },
-      });
-
-      if (!femaleAnimal) {
-        return createSecureErrorResponse("Female animal not found", 404, request);
-      }
-
-      if (femaleAnimal.gender !== "FEMALE") {
-        return createSecureErrorResponse("Selected animal must be female", 400, request);
-      }
-    }
-
     if (outcome && !["SUCCESSFUL", "FAILED", "PENDING"].includes(outcome)) {
       return createSecureErrorResponse(
         "Invalid outcome. Must be SUCCESSFUL, FAILED, or PENDING",
@@ -244,10 +262,7 @@ export async function PUT(request: NextRequest) {
     const serving = await prisma.serving.update({
       where: { id },
       data: {
-        ...(femaleId && { femaleId }),
-        ...(servedAt && { servedAt: new Date(servedAt) }),
         ...(outcome && { outcome }),
-        pregnancyDate: pregnancyDate ? new Date(pregnancyDate) : null,
         actualBirthDate: actualBirthDate ? new Date(actualBirthDate) : null,
         notes: notes || null,
       },
@@ -259,7 +274,7 @@ export async function PUT(request: NextRequest) {
             name: true,
           },
         },
-        servedBy: {
+        recordedBy: {
           select: {
             id: true,
             username: true,
