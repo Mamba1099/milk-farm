@@ -153,82 +153,6 @@ export const useProductionStats = () => {
   });
 };
 
-export const useTreatmentStats = () => {
-  const { toast } = useToast();
-
-  return useQuery<DashboardStats["treatments"], Error>({
-    queryKey: ["dashboard", "treatments"],
-    queryFn: async () => {
-      try {
-        const endDate = new Date().toISOString();
-        const startDate = new Date(
-          Date.now() - 30 * 24 * 60 * 60 * 1000
-        ).toISOString();
-
-        const response = await apiClient.get(
-          `/reports?type=treatments&startDate=${startDate}&endDate=${endDate}`
-        );
-        const treatmentsReport = response.data;
-
-        if (!treatmentsReport || !treatmentsReport.data) {
-          return {
-            totalRecords: 0,
-            thisMonth: 0,
-            pendingFollowups: 0,
-            lastTreatmentDate: null,
-            totalCost: 0,
-          };
-        }
-
-        const treatments: Treatment[] = treatmentsReport.data;
-        const now = new Date();
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-        const thisMonthTreatments = treatments.filter(
-          (t: Treatment) => new Date(t.treatedAt) >= monthAgo
-        );
-
-        const totalCost = treatments.reduce(
-          (sum: number, t: Treatment) => sum + (t.cost || 0),
-          0
-        );
-
-        const pendingFollowups = Math.floor(thisMonthTreatments.length * 0.1);
-
-        const sortedTreatments = [...treatments].sort(
-          (a: Treatment, b: Treatment) =>
-            new Date(b.treatedAt).getTime() - new Date(a.treatedAt).getTime()
-        );
-        const lastTreatmentDate =
-          sortedTreatments.length > 0 ? sortedTreatments[0].treatedAt : null;
-
-        return {
-          totalRecords: treatments.length,
-          thisMonth: thisMonthTreatments.length,
-          pendingFollowups,
-          lastTreatmentDate,
-          totalCost,
-        };
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch treatment statistics",
-          type: "error",
-        });
-        return {
-          totalRecords: 0,
-          thisMonth: 0,
-          pendingFollowups: 0,
-          lastTreatmentDate: null,
-          totalCost: 0,
-        };
-      }
-    },
-    retry: 2,
-    staleTime: 1 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-  });
-};
 
 export const useUserStats = () => {
   const { toast } = useToast();
@@ -303,32 +227,27 @@ export const useSystemHealth = () => {
 export const useDashboardStats = () => {
   const animalStats = useAnimalStats();
   const productionStats = useProductionStats();
-  const treatmentStats = useTreatmentStats();
   const userStats = useUserStats();
   const systemHealth = useSystemHealth();
 
   return {
     animals: animalStats,
     production: productionStats,
-    treatments: treatmentStats,
     users: userStats,
     systemHealth: systemHealth,
     isLoading:
       animalStats.isLoading ||
       productionStats.isLoading ||
-      treatmentStats.isLoading ||
       userStats.isLoading ||
       systemHealth.isLoading,
     isError:
       animalStats.isError ||
       productionStats.isError ||
-      treatmentStats.isError ||
       userStats.isError ||
       systemHealth.isError,
     error:
       animalStats.error ||
       productionStats.error ||
-      treatmentStats.error ||
       userStats.error ||
       systemHealth.error,
   };

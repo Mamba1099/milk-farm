@@ -2,78 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { ProductionAnimal, ProductionRecord, SalesRecord, CreateProductionData, CreateSalesData } from "@/lib/types/production";
 
-// Types
-export interface ProductionAnimal {
-  id: string;
-  tagNumber: string;
-  name?: string;
-  type: "COW" | "BULL" | "CALF";
-  image?: string;
-  motherOf: Array<{
-    id: string;
-    tagNumber: string;
-    name?: string;
-    birthDate: string;
-  }>;
-}
-
-export interface ProductionRecord {
-  id: string;
-  animalId: string;
-  date: string;
-  morningQuantity: number;
-  eveningQuantity: number;
-  totalQuantity: number;
-  calfQuantity: number;
-  poshoQuantity: number;
-  availableForSales: number;
-  carryOverQuantity: number;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  animal: ProductionAnimal;
-  recordedBy: {
-    id: string;
-    username: string;
-  };
-}
-
-export interface SalesRecord {
-  id: string;
-  animalId?: string;
-  date: string;
-  timeRecorded: string;
-  quantity: number;
-  pricePerLiter: number;
-  totalAmount: number;
-  customerName?: string;
-  notes?: string;
-  animal?: ProductionAnimal;
-  soldBy: {
-    id: string;
-    username: string;
-  };
-}
-
-export interface CreateProductionData {
-  animalId: string;
-  date: string;
-  morningQuantity: number;
-  eveningQuantity: number;
-  calfQuantity?: number;
-  poshoQuantity?: number;
-  notes?: string;
-}
-
-export interface CreateSalesData {
-  animalId?: string;
-  date: string;
-  quantity: number;
-  pricePerLiter: number;
-  customerName?: string;
-  notes?: string;
-}
 
 // Hook to get production-ready animals
 export const useProductionReadyAnimals = () => {
@@ -110,7 +40,8 @@ export const useProductionRecords = (
 
   return useQuery<
     {
-      productions: ProductionRecord[];
+      morningProductions: ProductionRecord[];
+      eveningProductions: ProductionRecord[];
       pagination: {
         page: number;
         limit: number;
@@ -127,8 +58,8 @@ export const useProductionRecords = (
       );
       return response.data;
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 };
 
@@ -178,19 +109,15 @@ export const useSalesRecords = (
 export const useCreateProduction = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ProductionRecord, Error, CreateProductionData>({
+  return useMutation<any, Error, CreateProductionData>({
     mutationFn: async (data: CreateProductionData) => {
       const response = await apiClient.post("/production", data);
-      return response.data.production;
+      return response.data;
     },
     onSuccess: () => {
-      // Invalidate production queries
       queryClient.invalidateQueries({ queryKey: ["production"] });
-      // Invalidate sales queries (production affects available sales)
       queryClient.invalidateQueries({ queryKey: ["sales"] });
-      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      // Invalidate reports
       queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
@@ -200,19 +127,15 @@ export const useCreateProduction = () => {
 export const useCreateSales = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<SalesRecord, Error, CreateSalesData>({
+  return useMutation<any, Error, CreateSalesData>({
     mutationFn: async (data: CreateSalesData) => {
       const response = await apiClient.post("/sales", data);
-      return response.data.sales;
+      return response.data;
     },
     onSuccess: () => {
-      // Invalidate sales queries
       queryClient.invalidateQueries({ queryKey: ["sales"] });
-      // Invalidate production queries (sales affect available production)
       queryClient.invalidateQueries({ queryKey: ["production"] });
-      // Invalidate dashboard stats
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      // Invalidate reports
       queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
@@ -285,14 +208,15 @@ export const useProductionData = (dateRange: string = "today") => {
   const filters = getDateFilter();
   const { data, isLoading, refetch } = useProductionRecords(1, 100, filters);
 
+  // Return morning and evening productions separately for new flow
   return {
-    data: data?.productions || [],
+    morningProductions: data?.morningProductions || [],
+    eveningProductions: data?.eveningProductions || [],
     isLoading,
     refetch,
   };
 };
 
-// Hook to get sales data with date filtering
 export const useSalesData = (dateRange: string = "today") => {
   const getDateFilter = () => {
     const today = new Date();
@@ -345,13 +269,18 @@ export const useSalesData = (dateRange: string = "today") => {
   };
 };
 
-// Hook to get production statistics
 export const useProductionStats = () => {
   return useQuery<
     {
       todayProduction: number;
+      todayNetProduction: number;
+      todayCarryOver: number;
       weekProduction: number;
+      weekNetProduction: number;
+      weekCarryOver: number;
       monthProduction: number;
+      monthNetProduction: number;
+      monthCarryOver: number;
       activeAnimals: number;
       monthlySales: number;
     },
@@ -360,65 +289,66 @@ export const useProductionStats = () => {
     queryKey: ["production", "stats"],
     queryFn: async () => {
       const today = new Date();
-      const startOfToday = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate()
-      );
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const startOfWeek = new Date(startOfToday);
       startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
       // Get production data
-      const [todayRes, weekRes, monthRes, animalsRes, salesRes] =
+      const [todayRes, weekRes, monthRes, animalsRes, salesRes, todaySummaryRes, weekSummaryRes, monthSummaryRes] =
         await Promise.all([
-          apiClient.get(
-            `/production?startDate=${startOfToday.toISOString()}&endDate=${new Date(
-              startOfToday.getTime() + 24 * 60 * 60 * 1000
-            ).toISOString()}&limit=1000`
-          ),
-          apiClient.get(
-            `/production?startDate=${startOfWeek.toISOString()}&limit=1000`
-          ),
-          apiClient.get(
-            `/production?startDate=${startOfMonth.toISOString()}&limit=1000`
-          ),
+          apiClient.get(`/production?startDate=${startOfToday.toISOString()}&endDate=${new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000).toISOString()}&limit=1000`),
+          apiClient.get(`/production?startDate=${startOfWeek.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
+          apiClient.get(`/production?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
           apiClient.get("/animals/production-ready"),
-          apiClient.get(
-            `/sales?startDate=${startOfMonth.toISOString()}&limit=1000`
-          ),
+          apiClient.get(`/sales?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
+          apiClient.get(`/production/summary?date=${startOfToday.toISOString()}`),
+          apiClient.get(`/production/summary?startDate=${startOfWeek.toISOString()}&endDate=${new Date().toISOString()}`),
+          apiClient.get(`/production/summary?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}`),
         ]);
 
-      const todayProduction =
-        todayRes.data.productions?.reduce(
-          (sum: number, record: ProductionRecord) => sum + record.totalQuantity,
-          0
-        ) || 0;
+      // Aggregate morning/evening quantities
+      const sumQuantities = (records: ProductionRecord[]) =>
+        records.reduce((sum, record) => sum + (record.quantity_am || 0) + (record.quantity_pm || 0), 0);
 
-      const weekProduction =
-        weekRes.data.productions?.reduce(
-          (sum: number, record: ProductionRecord) => sum + record.totalQuantity,
-          0
-        ) || 0;
+      // Net production = sum of balances (morning + evening)
+      const sumNetProduction = (records: ProductionRecord[]) =>
+        records.reduce((sum, record) => sum + (record.balance_am || 0) + (record.balance_pm || 0), 0);
 
-      const monthProduction =
-        monthRes.data.productions?.reduce(
-          (sum: number, record: ProductionRecord) => sum + record.totalQuantity,
-          0
-        ) || 0;
+      // Carry-over: use balance_evening from summary
+      const getCarryOver = (summary: any) => {
+        if (Array.isArray(summary?.data)) {
+          // For week/month, sum all balance_evening
+          return summary.data.reduce((sum: number, s: any) => sum + (s.balance_evening || 0), 0);
+        }
+        return summary?.data?.balance_evening || 0;
+      };
+
+      const todayProduction = sumQuantities([...(todayRes.data.morningProductions || []), ...(todayRes.data.eveningProductions || [])]);
+      const todayNetProduction = sumNetProduction([...(todayRes.data.morningProductions || []), ...(todayRes.data.eveningProductions || [])]);
+      const todayCarryOver = getCarryOver(todaySummaryRes);
+
+      const weekProduction = sumQuantities([...(weekRes.data.morningProductions || []), ...(weekRes.data.eveningProductions || [])]);
+      const weekNetProduction = sumNetProduction([...(weekRes.data.morningProductions || []), ...(weekRes.data.eveningProductions || [])]);
+      const weekCarryOver = getCarryOver(weekSummaryRes);
+
+      const monthProduction = sumQuantities([...(monthRes.data.morningProductions || []), ...(monthRes.data.eveningProductions || [])]);
+      const monthNetProduction = sumNetProduction([...(monthRes.data.morningProductions || []), ...(monthRes.data.eveningProductions || [])]);
+      const monthCarryOver = getCarryOver(monthSummaryRes);
 
       const activeAnimals = animalsRes.data.total || 0;
-
-      const monthlySales =
-        salesRes.data.sales?.reduce(
-          (sum: number, record: SalesRecord) => sum + record.totalAmount,
-          0
-        ) || 0;
+      const monthlySales = salesRes.data.sales?.reduce((sum: number, record: SalesRecord) => sum + record.totalAmount, 0) || 0;
 
       return {
         todayProduction,
+        todayNetProduction,
+        todayCarryOver,
         weekProduction,
-        monthProduction: monthProduction,
+        weekNetProduction,
+        weekCarryOver,
+        monthProduction,
+        monthNetProduction,
+        monthCarryOver,
         activeAnimals,
         monthlySales,
       };

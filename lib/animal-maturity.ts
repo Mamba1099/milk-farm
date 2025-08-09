@@ -7,8 +7,6 @@ import { prisma } from "@/lib/prisma";
 export async function updateAnimalMaturityStatus() {
   try {
     const now = new Date();
-
-    // Find animals that have passed their expected maturity date but are not yet marked as ready for production
     const animalsToUpdate = await prisma.animal.findMany({
       where: {
         expectedMaturityDate: {
@@ -29,7 +27,6 @@ export async function updateAnimalMaturityStatus() {
       `Found ${animalsToUpdate.length} animals to update maturity status`
     );
 
-    // Update each animal
     for (const animal of animalsToUpdate) {
       const updates: {
         isMatured: boolean;
@@ -39,12 +36,10 @@ export async function updateAnimalMaturityStatus() {
         isMatured: true,
       };
 
-      // If the animal is a calf and has matured, upgrade it to a cow
       if (animal.type === "CALF") {
         updates.type = "COW";
       }
 
-      // Mark female cows as ready for production
       if (animal.gender === "FEMALE") {
         updates.isReadyForProduction = true;
       }
@@ -86,17 +81,13 @@ export function calculateExpectedMaturityDate(
 
   switch (type) {
     case "CALF":
-      // Calves mature at 18-24 months, we'll use 20 months as average
       maturityDate.setMonth(maturityDate.getMonth() + 20);
       break;
     case "COW":
     case "BULL":
-      // If they're already classified as cow/bull, they should be mature
-      // But we'll add 6 months as a safety buffer
       maturityDate.setMonth(maturityDate.getMonth() + 6);
       break;
     default:
-      // Default to 20 months
       maturityDate.setMonth(maturityDate.getMonth() + 20);
   }
 
@@ -112,57 +103,23 @@ export async function updateProductionCarryOver() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Get all production records for today
-    const todayProductions = await prisma.production.findMany({
-      where: {
-        date: today,
-      },
-    });
-
-    console.log(
-      `Processing carry-over for ${todayProductions.length} production records`
-    );
-
-    // Calculate carry-over for each production record
-    for (const production of todayProductions) {
-      // Get total sales for this animal today
-      const totalSales = await prisma.sales.aggregate({
-        where: {
-          animalId: production.animalId,
-          date: {
-            gte: today,
-            lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
-          },
-        },
-        _sum: {
-          quantity: true,
-        },
-      });
-
-      const soldQuantity = totalSales._sum.quantity || 0;
-      const remainingQuantity = Math.max(
-        0,
-        production.availableForSales - soldQuantity
-      );
-
-      // Update the production record with carry-over quantity
-      if (remainingQuantity > 0) {
-        await prisma.production.update({
-          where: { id: production.id },
-          data: {
-            carryOverQuantity: remainingQuantity,
-          },
-        });
-
-        console.log(
-          `Set carry-over of ${remainingQuantity}L for animal ${production.animalId}`
-        );
-      }
+    const todaySummary = await prisma.productionSummary.findUnique({ where: { date: today } });
+    if (!todaySummary) {
+      return { success: false, message: "No production summary for today." };
     }
+
+    const carryOver = todaySummary.balance_evening || 0;
+    console.log(`Carry-over for today (balance_evening): ${carryOver}L`);
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+    await prisma.productionSummary.upsert({
+      where: { date: tomorrow },
+      update: { balance_yesterday: carryOver },
+      create: { date: tomorrow, balance_yesterday: carryOver },
+    });
 
     return {
       success: true,
-      processed: todayProductions.length,
+      carryOver,
     };
   } catch (error) {
     console.error("Error updating production carry-over:", error);
