@@ -2,12 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth-context";
-import { ServingRecordsList } from "@/components/production/serving-records-list";
+import { ServingForm } from "@/components/production/serving-form";
 
-// Animation variants
 const fadeInUp: Variants = {
   initial: {
     opacity: 0,
@@ -31,18 +29,21 @@ const staggerContainer: Variants = {
   },
 };
 
-export default function ServingRecordsPage() {
-  const { user } = useAuth();
+export default function AddServingPage() {
   const router = useRouter();
 
-  const handleAdd = () => {
-    router.push("/production/serving/add");
+  const handleSuccess = () => {
+    // Navigation is handled in the hook
+  };
+
+  const handleClose = () => {
+    router.push("/production/serving");
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 sm:p-6">
       <motion.div
-        className="mx-2"
+        className="max-w-4xl mx-auto"
         initial="initial"
         animate="animate"
         variants={staggerContainer}
@@ -62,29 +63,20 @@ export default function ServingRecordsPage() {
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Serving Records
+              Add New Serving Record
             </h1>
             <p className="text-gray-600 text-sm sm:text-base">
-              Track breeding and serving activities for your animals
+              Record breeding and serving activities for your female animals
             </p>
           </div>
-          {user?.role === "FARM_MANAGER" && (
-            <Button
-              onClick={handleAdd}
-              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 w-full sm:w-auto text-sm sm:text-base"
-            >
-              <Plus size={18} className="sm:w-5 sm:h-5" />
-              Add Serving Record
-            </Button>
-          )}
         </motion.div>
 
-        {/* Serving Records List */}
-        <motion.div
-          className=""
-          variants={fadeInUp}
-        >
-          <ServingRecordsList showAddButton={false} />
+        {/* Form in Modal Style */}
+        <motion.div variants={fadeInUp}>
+          <ServingForm
+            onClose={handleClose}
+            onSuccess={handleSuccess}
+          />
         </motion.div>
       </motion.div>
     </div>
