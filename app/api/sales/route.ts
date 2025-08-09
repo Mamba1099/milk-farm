@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const animalId = searchParams.get("animalId");
     const date = searchParams.get("date");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
@@ -28,11 +27,9 @@ export async function GET(request: NextRequest) {
 
     const where: Prisma.SalesWhereInput = {};
 
-    if (animalId) where.animalId = animalId;
-
     if (date) {
       const dateObj = new Date(date);
-      where.date = {
+      where.timeRecorded = {
         gte: new Date(
           dateObj.getFullYear(),
           dateObj.getMonth(),
@@ -45,7 +42,7 @@ export async function GET(request: NextRequest) {
         ),
       };
     } else if (startDate && endDate) {
-      where.date = {
+      where.timeRecorded = {
         gte: new Date(startDate),
         lte: new Date(endDate),
       };
@@ -55,15 +52,6 @@ export async function GET(request: NextRequest) {
       prisma.sales.findMany({
         where,
         include: {
-          animal: {
-            select: {
-              id: true,
-              tagNumber: true,
-              name: true,
-              type: true,
-              image: true,
-            },
-          },
           soldBy: {
             select: {
               id: true,
@@ -109,101 +97,27 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validatedData = CreateSalesSchema.parse(body);
+    const PaymentMethodEnum = ["CASH", "MPESA"];
+    const validatedData = CreateSalesSchema.parse({
+      ...body,
+      payment_method: PaymentMethodEnum.includes(body.payment_method) ? body.payment_method : "CASH"
+    });
 
     const salesDate = new Date(validatedData.date);
     const timeRecorded = new Date();
-    const totalAmount = validatedData.quantity * validatedData.pricePerLiter;
+  const totalAmount = validatedData.quantity;
 
-    if (validatedData.animalId) {
-      const animal = await prisma.animal.findUnique({
-        where: { id: validatedData.animalId },
-        include: {
-          disposals: true,
-        },
-      });
-
-      if (!animal) {
-        return createSecureErrorResponse("Animal not found", 404, request);
-      }
-
-      if (animal.disposals.length > 0) {
-        return createSecureErrorResponse("Cannot record sales for disposed animal", 400, request);
-      }
-
-      const productionToday = await prisma.production.findUnique({
-        where: {
-          animalId_date: {
-            animalId: validatedData.animalId,
-            date: new Date(
-              salesDate.getFullYear(),
-              salesDate.getMonth(),
-              salesDate.getDate()
-            ),
-          },
-        },
-      });
-
-      if (!productionToday) {
-        return createSecureErrorResponse("No production record found for this animal today", 400, request);
-      }
-
-      const totalSalesToday = await prisma.sales.aggregate({
-        where: {
-          animalId: validatedData.animalId,
-          date: {
-            gte: new Date(
-              salesDate.getFullYear(),
-              salesDate.getMonth(),
-              salesDate.getDate()
-            ),
-            lt: new Date(
-              salesDate.getFullYear(),
-              salesDate.getMonth(),
-              salesDate.getDate() + 1
-            ),
-          },
-        },
-        _sum: {
-          quantity: true,
-        },
-      });
-
-      const totalSoldToday = totalSalesToday._sum.quantity || 0;
-      const availableQuantity =
-        productionToday.availableForSales - totalSoldToday;
-
-      if (validatedData.quantity > availableQuantity) {
-        return createSecureErrorResponse(
-          `Insufficient milk available. Available: ${availableQuantity} liters, Requested: ${validatedData.quantity} liters`,
-          400,
-          request
-        );
-      }
-    }
 
     const sales = await prisma.sales.create({
       data: {
-        animalId: validatedData.animalId,
-        date: salesDate,
         timeRecorded,
         quantity: validatedData.quantity,
-        pricePerLiter: validatedData.pricePerLiter,
         totalAmount,
         soldById: user.id,
         customerName: validatedData.customerName,
-        notes: validatedData.notes,
+        payment_method: validatedData.payment_method as "CASH" | "MPESA",
       },
       include: {
-        animal: {
-          select: {
-            id: true,
-            tagNumber: true,
-            name: true,
-            type: true,
-            image: true,
-          },
-        },
         soldBy: {
           select: {
             id: true,
