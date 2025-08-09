@@ -6,12 +6,10 @@ import {
   ProfileCard,
   AnimalStatsCard,
   ProductionStatsCard,
-  TreatmentStatsCard,
   EmployeeOverviewCard,
   SystemOverviewCard,
   FarmSummaryCard,
   QuickAnalyticsOverview,
-  QuickActionsCard,
   RecentAnimalsCard,
   RoleBasedInfo,
 } from "@/components/dashboard";
@@ -48,7 +46,6 @@ export default function DashboardPage() {
           <ProfileCard />
           <AnimalStatsCard />
           <ProductionStatsCard />
-          <TreatmentStatsCard />
           <EmployeeOverviewCard />
           <SystemOverviewCard />
           <FarmSummaryCard />
@@ -56,9 +53,6 @@ export default function DashboardPage() {
 
         {/* Quick Analytics Overview */}
         <QuickAnalyticsOverview />
-
-        {/* Quick Actions */}
-        <QuickActionsCard />
 
         {/* Recent Animals */}
         <RecentAnimalsCard />
