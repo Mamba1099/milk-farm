@@ -242,8 +242,8 @@ export default function TreatmentsPage() {
                         <TableCell>
                           <Badge variant="secondary">{treatment.disease}</Badge>
                         </TableCell>
-                        <TableCell className="max-w-md">
-                          <div className="whitespace-normal break-words leading-relaxed">
+                        <TableCell className="w-full sm:w-64 md:w-80 lg:w-96">
+                          <div className="flex items-start min-w-[19rem] max-w-[28rem] break-words whitespace-normal leading-relaxed">
                             {treatment.treatment}
                           </div>
                         </TableCell>
