@@ -27,7 +27,7 @@ export function SystemOverviewCard() {
 
   return (
     <motion.div variants={fadeInUp}>
-      <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200 hover:shadow-lg transition-all duration-300 h-full">
+  <Card className="bg-gradient-to-br from-red-200 to-red-400 border-red-300 hover:shadow-lg transition-all duration-300 h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-red-800">
             <Icons.settings className="h-5 w-5" />

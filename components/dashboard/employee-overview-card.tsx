@@ -27,7 +27,7 @@ export function EmployeeOverviewCard() {
 
   return (
     <motion.div variants={fadeInUp}>
-      <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 hover:shadow-lg transition-all duration-300 h-full">
+  <Card className="bg-gradient-to-br from-yellow-200 to-yellow-400 border-yellow-300 hover:shadow-lg transition-all duration-300 h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-orange-800">
             <Icons.users className="h-5 w-5" />
@@ -60,18 +60,18 @@ export function EmployeeOverviewCard() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-3 bg-white/60 rounded-lg">
                   <div className="text-2xl font-bold text-orange-800">
-                    {userData.totalUsers}
+                    {userData.employees}
                   </div>
-                  <div className="text-xs text-orange-600">
-                    Total Users
+                  <div className="text-base text-orange-600">
+                    Total Employees
                   </div>
                 </div>
                 <div className="text-center p-3 bg-white/60 rounded-lg">
                   <div className="text-2xl font-bold text-orange-800">
                     {userData.activeUsers}
                   </div>
-                  <div className="text-xs text-orange-600">
-                    Active Users
+                  <div className="text-base text-orange-600">
+                    Active
                   </div>
                 </div>
               </div>

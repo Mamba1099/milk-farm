@@ -19,7 +19,7 @@ export function ProfileCard() {
 
   return (
     <motion.div variants={fadeInUp}>
-      <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-all duration-300 h-full">
+  <Card className="bg-gradient-to-br from-sky-200 to-sky-400 border-sky-300 hover:shadow-lg transition-all duration-300 h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-800 text-lg sm:text-xl">
             <Icons.user className="h-4 w-4 sm:h-5 sm:w-5" />

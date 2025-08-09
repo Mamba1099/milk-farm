@@ -22,7 +22,7 @@ export function FarmSummaryCard() {
 
   return (
     <motion.div variants={fadeInUp}>
-      <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200 hover:shadow-lg transition-all duration-300 h-full">
+  <Card className="bg-gradient-to-br from-indigo-200 to-indigo-400 border-indigo-300 hover:shadow-lg transition-all duration-300 h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-indigo-800">
             <Icons.barChart className="h-5 w-5" />

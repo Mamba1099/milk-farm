@@ -41,6 +41,8 @@ export interface Treatment {
 }
 
 export interface UserStats {
+  active: number;
+  total: number;
   totalUsers: number;
   activeUsers: number;
   farmManagers: number;
