@@ -100,7 +100,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                               currentPath.startsWith("/animals") ||
                               currentPath.startsWith("/production") ||
                               currentPath.startsWith("/accounts") ||
-                              currentPath.startsWith("/reports") ||
                               currentPath.startsWith("/analytics") ||
                               currentPath.startsWith("/settings");
 
