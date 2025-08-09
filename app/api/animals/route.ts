@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         servings: {
           orderBy: { createdAt: "desc" },
           take: 3,
-          include: { servedBy: { select: { username: true } } },
+          include: { recordedBy: { select: { username: true } } },
         },
         productionRecords: {
           orderBy: { date: "desc" },
