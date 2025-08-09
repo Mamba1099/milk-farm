@@ -44,6 +44,16 @@ enum ServingOutcome {
   PENDING
 }
 
+enum ServingType {
+  BULL
+  AI
+}
+
+enum OvaType {
+  PREDETERMINED
+  NORMAL
+}
+
 enum MilkAllocation {
   CALF
   POSHO
@@ -139,18 +149,20 @@ model Disposal {
 model Serving {
   id              String         @id @default(cuid())
   femaleId        String
-  maleId          String?
-  servedAt        DateTime       @default(now())
+  bullName        String?        
+  servingType     ServingType
+  ovaType         OvaType        @default(NORMAL)
+  dateServed      DateTime       @default(now())
+  servedBy        String      
   outcome         ServingOutcome @default(PENDING)
-  pregnancyDate   DateTime?   
   actualBirthDate DateTime?   
-  servedById      String
+  recordedById    String
   notes           String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  female   Animal @relation(fields: [femaleId], references: [id], onDelete: Cascade)
-  servedBy User   @relation(fields: [servedById], references: [id])
+  female     Animal @relation(fields: [femaleId], references: [id], onDelete: Cascade)
+  recordedBy User   @relation(fields: [recordedById], references: [id])
 
   @@map("servings")
 }
