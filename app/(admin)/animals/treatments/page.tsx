@@ -90,7 +90,7 @@ export default function TreatmentsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 sm:p-6">
       <motion.div
-        className="max-w-7xl mx-auto"
+        className="mx-2"
         initial="initial"
         animate="animate"
         variants={staggerContainer}
