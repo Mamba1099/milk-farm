@@ -39,21 +39,6 @@ export async function GET(request: NextRequest) {
         image: true,
         isMatured: true,
         isReadyForProduction: true,
-        motherOf: {
-          where: {
-            type: "CALF",
-            disposals: {
-              none: {},
-            },
-          },
-          select: {
-            id: true,
-            tagNumber: true,
-            name: true,
-            birthDate: true,
-            image: true,
-          },
-        },
       },
       orderBy: {
         tagNumber: "asc",
