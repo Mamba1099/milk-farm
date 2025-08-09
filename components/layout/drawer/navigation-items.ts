@@ -67,9 +67,9 @@ export const navigationItems: NavigationItem[] = [
     roles: ["FARM_MANAGER", "EMPLOYEE"],
   },
   {
-    name: "Reports",
-    href: "/reports",
-    icon: Icons.barChart,
+    name: "Sales",
+    href: "/sales",
+    icon: Icons.dollarSign,
     roles: ["FARM_MANAGER"],
   },
   {

@@ -39,6 +39,10 @@ import {
   Calendar,
   Clock,
   Crown,
+  DollarSign,
+  ShoppingCart,
+  TrendingUp,
+  Coins,
 } from "lucide-react";
 
 export const Icons = {
@@ -83,4 +87,8 @@ export const Icons = {
   x: X,
   plus: Plus,
   edit: Edit,
+  dollarSign: DollarSign,
+  shoppingCart: ShoppingCart,
+  trendingUp: TrendingUp,
+  coins: Coins,
 };
