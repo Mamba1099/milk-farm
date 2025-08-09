@@ -11,7 +11,6 @@ export {
   useDashboardStats,
   useAnimalStats,
   useProductionStats,
-  useTreatmentStats,
   useUserStats,
   useSystemHealth,
 } from "./use-dashboard-hooks";
@@ -33,4 +32,3 @@ export {
   useTreatmentStatistics,
 } from "./use-animal-hooks";
 export * from "./use-employee-hooks";
-export * from "./use-reports-hooks";
