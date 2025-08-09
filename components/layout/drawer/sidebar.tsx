@@ -45,7 +45,7 @@ export function Sidebar({
   return (
     <div
       className={cn(
-        "flex flex-col h-full bg-white border-r border-gray-200",
+        "flex flex-col h-full bg-white border-r border-gray-200 overflow-y-auto",
         className
       )}
     >
