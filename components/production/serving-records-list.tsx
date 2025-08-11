@@ -30,7 +30,7 @@ export function ServingRecordsList({
   };
   console.log('ServingRecordsList component rendered!');
   
-  const { data: servingResponse, isLoading, error } = useServings(filters);
+  const { data: servingResponse, error } = useServings(filters);
   const servings = servingResponse?.servings || [];
 
   const stats = servings.reduce(

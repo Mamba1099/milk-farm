@@ -29,7 +29,7 @@ export function SystemOverviewCard() {
     <motion.div variants={fadeInUp}>
   <Card className="bg-gradient-to-br from-red-200 to-red-400 border-red-300 hover:shadow-lg transition-all duration-300 h-full">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-800">
+         <CardTitle className="flex items-center gap-2 text-blue-800 text-lg sm:text-xl">
             <Icons.settings className="h-5 w-5" />
             System Overview
           </CardTitle>
@@ -59,43 +59,33 @@ export function SystemOverviewCard() {
             <div className="space-y-3">
               <div className="grid grid-cols-1 gap-3">
                 <div className="text-center p-3 bg-white/60 rounded-lg">
-                  <div className="text-lg font-bold text-red-800">
+                  <div className="text-2xl font-bold text-gray-900">
                     {systemData.environment === "production"
                       ? "Production"
                       : "Development"}
                   </div>
-                  <div className="text-xs text-red-600">
+                  <div className="text-sm text-blue-800">
                     Environment
                   </div>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-red-600">
+                  <span className="text-sm text-blue-800">
                     Database:
                   </span>
                   <span
-                    className={`text-sm font-medium ${
-                      systemData.database.status === "Connected"
-                        ? "text-green-600"
-                        : systemData.database.status === "Error"
-                        ? "text-red-600"
-                        : "text-yellow-600"
-                    }`}
+                    className={`text-md font-bold text-gray-900`}
                   >
                     {systemData.database.status}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-red-600">
+                  <span className="text-sm text-blue-800">
                     File Storage:
                   </span>
                   <span
-                    className={`text-sm font-medium ${
-                      systemData.fileStorage.status === "Active"
-                        ? "text-green-600"
-                        : "text-yellow-600"
-                    }`}
+                    className={`text-md font-bold text-gray-900`}
                   >
                     {systemData.fileStorage.status}
                   </span>

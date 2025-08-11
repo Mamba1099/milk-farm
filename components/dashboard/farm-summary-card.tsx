@@ -24,7 +24,7 @@ export function FarmSummaryCard() {
     <motion.div variants={fadeInUp}>
   <Card className="bg-gradient-to-br from-indigo-200 to-indigo-400 border-indigo-300 hover:shadow-lg transition-all duration-300 h-full">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-indigo-800">
+         <CardTitle className="flex items-center gap-2 text-blue-800 text-lg sm:text-xl">
             <Icons.barChart className="h-5 w-5" />
             Farm Summary
           </CardTitle>
@@ -33,44 +33,44 @@ export function FarmSummaryCard() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-white/60 rounded-lg">
-                <div className="text-2xl font-bold text-indigo-800">
+                <div className="text-2xl font-bold text-gray-900">
                   {animalsData?.total || 0}
                 </div>
-                <div className="text-xs text-indigo-600">
+                <div className="text-sm text-blue-800">
                   Total Animals
                 </div>
               </div>
               <div className="text-center p-3 bg-white/60 rounded-lg">
-                <div className="text-2xl font-bold text-indigo-800">
+                <div className="text-2xl font-bold text-gray-900">
                   {productionData?.todayQuantity || 0}L
                 </div>
-                <div className="text-xs text-indigo-600">
+                <div className="text-sm text-blue-800">
                   Today&apos;s Milk
                 </div>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-indigo-600">
+                <span className="text-sm text-blue-800">
                   Health Status:
                 </span>
-                <span className="text-sm font-medium text-green-600">
+                <span className="text-md font-bold text-gray-900">
                   {animalsData?.healthy || 0} Healthy
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-indigo-600">
+                <span className="text-sm text-blue-800">
                   Production Records:
                 </span>
-                <span className="text-sm font-medium text-indigo-800">
+                <span className="text-md font-bold text-gray-900">
                   {productionData?.totalRecords || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-indigo-600">
+                <span className="text-sm text-blue-800">
                   System Users:
                 </span>
-                <span className="text-sm font-medium text-indigo-800">
+                <span className="text-md font-bold text-gray-900">
                   {userData?.totalUsers || 0}
                 </span>
               </div>

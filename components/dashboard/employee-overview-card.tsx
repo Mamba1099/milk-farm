@@ -27,9 +27,9 @@ export function EmployeeOverviewCard() {
 
   return (
     <motion.div variants={fadeInUp}>
-  <Card className="bg-gradient-to-br from-yellow-200 to-yellow-400 border-yellow-300 hover:shadow-lg transition-all duration-300 h-full">
+  <Card className="bg-gradient-to-br from-yellow-200 to-yellow-100 border-yellow-300 hover:shadow-lg transition-all duration-300 h-full">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-orange-800">
+          <CardTitle className="flex items-center gap-2 text-blue-800 text-lg sm:text-xl">
             <Icons.users className="h-5 w-5" />
             Employee Overview
           </CardTitle>
@@ -59,45 +59,45 @@ export function EmployeeOverviewCard() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-3 bg-white/60 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-800">
+                  <div className="text-2xl font-bold">
                     {userData.employees}
                   </div>
-                  <div className="text-base text-orange-600">
+                  <div className="text-base text-gray-900">
                     Total Employees
                   </div>
                 </div>
                 <div className="text-center p-3 bg-white/60 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-800">
+                  <div className="text-2xl font-bold">
                     {userData.activeUsers}
                   </div>
-                  <div className="text-base text-orange-600">
+                  <div className="text-base text-gray-900">
                     Active
                   </div>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-orange-600">
+                  <span className="text-sm text-gray-900">
                     Farm Managers:
                   </span>
-                  <span className="text-sm font-medium text-orange-800">
+                  <span className="text-sm font-bold text-gray-900">
                     {userData.farmManagers}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-orange-600">
+                  <span className="text-sm text-gray-900">
                     Employees:
                   </span>
-                  <span className="text-sm font-medium text-orange-800">
+                  <span className="text-sm font-bold text-gray-900">
                     {userData.employees}
                   </span>
                 </div>
               </div>
               <div className="mt-4 p-3 bg-white/40 rounded-lg">
                 <div className="text-center">
-                  <div className="text-sm text-orange-700">
+                  <div className="text-sm text-gray-900">
                     System Access:{" "}
-                    <span className="font-semibold">Full Control</span>
+                    <span className="font-bold">Full Control</span>
                   </div>
                 </div>
               </div>
