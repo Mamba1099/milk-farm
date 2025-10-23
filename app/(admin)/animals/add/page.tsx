@@ -53,14 +53,6 @@ export default function AddAnimalPage() {
           className="flex items-center gap-4 mb-6 sm:mb-8"
           variants={fadeInUp}
         >
-          <Button
-            variant="outline"
-            onClick={() => router.push("/animals")}
-            className="flex items-center gap-2 text-sm sm:text-base"
-          >
-            <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
-            Back
-          </Button>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Add New Animal
