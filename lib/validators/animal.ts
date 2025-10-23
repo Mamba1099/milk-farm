@@ -44,6 +44,8 @@ export const CreateAnimalSchema = z.object({
       z.instanceof(File),
       z.string().url(),
       z.string().regex(/^\/uploads\//, "Must be a valid file path or URL"),
+      z.string().min(1), // Allow any non-empty string
+      z.literal(""), // Allow empty string
       z.null(),
       z.undefined(),
     ])
