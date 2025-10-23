@@ -5,14 +5,22 @@ import { useEffect, useState } from "react";
 const images = [
   "/assets/dairy-1.jpg",
   "/assets/dairy-2.jpg",
-  "/assets/dairy-3.jpg",
   "/assets/dairy-4.jpg",
   "/assets/dairy-5.jpg",
-];
+].filter(Boolean); // Remove any empty strings or falsy values
 
 export default function FullWidthSlideshow() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
+
+  // Return early if no images are available
+  if (!images || images.length === 0) {
+    return (
+      <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] xl:h-[700px] bg-gray-200 flex items-center justify-center">
+        <p className="text-gray-500">No images available</p>
+      </div>
+    );
+  }
 
   const goToNext = () => {
     setDirection("right");
@@ -44,13 +52,15 @@ export default function FullWidthSlideshow() {
         }`}
       >
         <div className="w-full h-full">
-          <Image
-            src={images[prevIndex]}
-            alt={`Dairy farm ${prevIndex + 1}`}
-            fill
-            className="object-cover object-center"
-            sizes="100vw"
-          />
+          {images[prevIndex] && (
+            <Image
+              src={images[prevIndex]}
+              alt={`Dairy farm ${prevIndex + 1}`}
+              fill
+              className="object-cover object-center"
+              sizes="100vw"
+            />
+          )}
         </div>
       </div>
 
@@ -61,14 +71,16 @@ export default function FullWidthSlideshow() {
         }`}
       >
         <div className="w-full h-full">
-          <Image
-            src={images[currentIndex]}
-            alt={`Dairy farm ${currentIndex + 1}`}
-            fill
-            className="object-cover object-center"
-            priority={currentIndex === 0}
-            sizes="100vw"
-          />
+          {images[currentIndex] && (
+            <Image
+              src={images[currentIndex]}
+              alt={`Dairy farm ${currentIndex + 1}`}
+              fill
+              className="object-cover object-center"
+              priority={currentIndex === 0}
+              sizes="100vw"
+            />
+          )}
         </div>
       </div>
 
@@ -79,13 +91,15 @@ export default function FullWidthSlideshow() {
         }`}
       >
         <div className="w-full h-full">
-          <Image
-            src={images[nextIndex]}
-            alt={`Dairy farm ${nextIndex + 1}`}
-            fill
-            className="object-cover object-center"
-            sizes="100vw"
-          />
+          {images[nextIndex] && (
+            <Image
+              src={images[nextIndex]}
+              alt={`Dairy farm ${nextIndex + 1}`}
+              fill
+              className="object-cover object-center"
+              sizes="100vw"
+            />
+          )}
         </div>
       </div>
 
