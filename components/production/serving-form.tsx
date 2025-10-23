@@ -15,13 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useCreateServing } from "@/hooks/use-serving-hooks";
 import { useAnimals } from "@/hooks/use-animal-hooks";
-import type { CreateServingData } from "@/lib/types/serving";
-
-interface ServingFormProps {
-  onCancel?: () => void;
-  onClose?: () => void;
-  onSuccess?: () => void;
-}
+import type { CreateServingData, ServingFormProps } from "@/lib/types/serving";
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
