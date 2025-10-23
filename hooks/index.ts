@@ -17,6 +17,11 @@ export {
 
 export { useToast, type Toast } from "./use-toast";
 export {
+  useSales,
+  useSalesStats,
+  useCreateSale,
+} from "./use-sales-hooks";
+export {
   useAnimals,
   useAnimal,
   useCreateAnimal,
