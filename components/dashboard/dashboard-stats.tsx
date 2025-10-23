@@ -123,7 +123,7 @@ export const AnimalStatsCard: React.FC = () => {
     <StatCard
       title="Animal Statistics"
       icon={<Icons.cow className="h-5 w-5 text-green-800" />}
-  gradient="bg-gradient-to-br from-purple-200 to-violet-400"
+      gradient="bg-gradient-to-br from-green-200 via-green-400 to-green-600 border-green-300"
     >
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
