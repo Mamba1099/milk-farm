@@ -56,13 +56,14 @@ export const sessionManager = {
     if (timeUntilExpiry > fiveMinutesInMs) {
       const warningTime = timeUntilExpiry - fiveMinutesInMs;
       setTimeout(() => {
-        if (toastFunction && !isHandlingSessionExpiry) {
+        if (toastFunction && !isHandlingSessionExpiry && !hasShownExpiryToast) {
           toastFunction({
             type: "warning",
             title: "Session Warning",
             description: "Your session will expire in 5 minutes. Please save your work.",
             duration: 10000
           });
+          hasShownExpiryToast = true;
         }
       }, warningTime);
     }
@@ -105,6 +106,7 @@ export const sessionManager = {
   clearSession: () => {
     sessionInfo = null;
     isHandlingSessionExpiry = false; 
+    hasShownExpiryToast = false;
     lastSessionCheck = 0;
     if (sessionExpiryTimeout) {
       clearTimeout(sessionExpiryTimeout);
@@ -170,13 +172,14 @@ function handleSessionExpired() {
   isHandlingSessionExpiry = true;
   console.log("Handling session expiry...");
   
-  if (toastFunction) {
+  if (toastFunction && !hasShownExpiryToast) {
     toastFunction({
       type: "warning",
       title: "Session Expired",
       description: "Your session has expired. You will be redirected to the login page.",
       duration: 5000
     });
+    hasShownExpiryToast = true;
   }
   
   sessionManager.stopSessionCheck();
