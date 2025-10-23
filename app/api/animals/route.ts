@@ -9,6 +9,7 @@ import {
 } from "@/lib/security";
 import { getUserFromSession } from "@/lib/auth-session";
 import { Prisma } from "@prisma/client";
+import { getPublicImageUrl, normalizeImageUrl } from "@/supabase/storage/client";
 
 export async function GET(request: NextRequest) {
   try {
@@ -75,10 +76,15 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    const animalsWithImageUrl = animals.map(animal => ({
+      ...animal,
+      image: normalizeImageUrl(animal.image),
+    }));
+
     const total = await prisma.animal.count({ where });
 
     return createSecureResponse({
-      animals,
+      animals: animalsWithImageUrl,
       pagination: {
         total,
         pages: Math.ceil(total / validatedQuery.limit),
@@ -131,27 +137,31 @@ export async function POST(request: NextRequest) {
 
     let imageUrl = null;
   
-    if (data.imagePath) {
-      imageUrl = data.imagePath as string;
-      delete data.imagePath;
+    if (data.imageUrl) {
+      imageUrl = data.imageUrl as string;
+      delete data.imageUrl;
     } 
     else if (imageFile && imageFile.size > 0) {
       const uploadResult = await uploadAnimalImage(imageFile);
       if (uploadResult.error) {
         return createSecureErrorResponse(uploadResult.error, 500, request);
       }
-      imageUrl = uploadResult.imagePath;
+      imageUrl = uploadResult.imageUrl; // Use full URL instead of imagePath
     }
 
-    const validatedData = CreateAnimalSchema.parse(data);
+    // Prepare data for validation
+    const validationData = {
+      ...data,
+      image: imageUrl || null, // Ensure null instead of undefined
+    };
+
+    const validatedData = CreateAnimalSchema.parse(validationData);
 
     const createData: any = {
       ...validatedData,
     };
 
-    if (imageUrl) {
-      createData.image = imageUrl;
-    }
+    // The image is already included in validatedData from validation
 
     const birthDate = new Date(validatedData.birthDate);
     const today = new Date();
@@ -207,7 +217,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return createSecureResponse(animal, { status: 201 }, request);
+    const responseAnimal = {
+      ...animal,
+      image: normalizeImageUrl(animal.image),
+    };
+
+    return createSecureResponse(responseAnimal, { status: 201 }, request);
   } catch (error) {
     return createSecureErrorResponse("Failed to create animal", 500, request);
   }

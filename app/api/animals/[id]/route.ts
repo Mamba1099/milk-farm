@@ -9,6 +9,7 @@ import {
   createSecureErrorResponse 
 } from "@/lib/security";
 import { getUserFromSession } from "@/lib/auth-session";
+import { getPublicImageUrl, normalizeImageUrl } from "@/supabase/storage/client";
 
 export async function GET(
   request: NextRequest,
@@ -48,7 +49,11 @@ export async function GET(
       return createSecureErrorResponse("Animal not found", 404, request);
     }
 
-    return createSecureResponse(animal, {}, request);
+    const responseAnimal = {
+      ...animal,
+      image: normalizeImageUrl(animal.image),
+    };
+    return createSecureResponse(responseAnimal, {}, request);
   } catch (error) {
     return createSecureErrorResponse("Failed to fetch animal", 500, request);
   }
@@ -86,35 +91,31 @@ export async function PUT(
     const formData = await request.formData();
     const data = Object.fromEntries(formData.entries());
 
-    let imageUrl = existingAnimal.image;
-  
+    let imagePath = existingAnimal.image;
     if (data.imageUrl) {
       if (existingAnimal.image) {
         await deleteAnimalImage(existingAnimal.image);
       }
-      imageUrl = data.imageUrl as string;
+      imagePath = data.imageUrl as string; // Store the full URL directly
       delete data.imageUrl;
-    } 
-    else {
+    } else {
       const imageFile = formData.get("image") as File;
       if (imageFile && imageFile.size > 0) {
         const uploadResult = await uploadAnimalImage(imageFile);
         if (uploadResult.error) {
           return createSecureErrorResponse(uploadResult.error, 500, request);
         }
-        
         if (existingAnimal.image) {
           await deleteAnimalImage(existingAnimal.image);
         }
-        
-        imageUrl = uploadResult.imagePath;
+        imagePath = uploadResult.imageUrl; // Use full URL instead of imagePath
       }
     }
 
     const animalData = {
       id,
       ...data,
-      image: imageUrl,
+      image: imagePath || null, // Ensure null instead of undefined/empty string
       weight: data.weight ? parseFloat(data.weight as string) : undefined,
     };
 
@@ -127,7 +128,6 @@ export async function PUT(
           id: { not: id },
         },
       });
-
       if (existingTag) {
         return createSecureErrorResponse("Tag number already exists", 409, request);
       }
@@ -144,7 +144,6 @@ export async function PUT(
       expectedMaturityDate = existingAnimal.expectedMaturityDate;
     } else {
       const animalType = validatedData.type || existingAnimal.type;
-      
       if (animalType === "COW") {
         expectedMaturityDate = new Date(birthDate.getTime() + 24 * 30.44 * 24 * 60 * 60 * 1000);
       } else if (animalType === "BULL") {
@@ -156,9 +155,7 @@ export async function PUT(
 
     let isMatured = false;
     let isReadyForProduction = false;
-    
     const animalType = validatedData.type || existingAnimal.type;
-
     if (animalType === "COW") {
       isMatured = ageInMonths >= 24;
       if (isMatured && (validatedData.gender || existingAnimal.gender) === "FEMALE") {
@@ -184,12 +181,12 @@ export async function PUT(
     }
 
     const { id: _id, ...updateData } = validatedData;
-
     const cleanUpdateData: any = {
       ...updateData,
       expectedMaturityDate,
       isMatured,
       isReadyForProduction,
+      image: imagePath,
     };
 
     Object.keys(cleanUpdateData).forEach((key: string) => {
@@ -210,12 +207,17 @@ export async function PUT(
         servings: {
           orderBy: { createdAt: "desc" },
           take: 5,
-            include: { recordedBy: { select: { username: true } } },
+          include: { recordedBy: { select: { username: true } } },
         },
       },
     });
+    
+    const responseAnimal = {
+      ...updatedAnimal,
+      image: normalizeImageUrl(updatedAnimal.image),
+    };
 
-    return createSecureResponse(updatedAnimal, {}, request);
+    return createSecureResponse(responseAnimal, {}, request);
   } catch (error) {
     console.error("Animal update error:", error);
     if (error instanceof ZodError) {
