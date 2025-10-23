@@ -3,6 +3,7 @@ export { DashboardHeader } from './dashboard-header';
 
 // Dashboard stat cards
 export { AnimalStatsCard, ProductionStatsCard} from './dashboard-stats';
+export { LivestockStatsCard } from './livestock-stats-card';
 export { ProfileCard } from './profile-card';
 export { EmployeeOverviewCard } from './employee-overview-card';
 export { SystemOverviewCard } from './system-overview-card';
