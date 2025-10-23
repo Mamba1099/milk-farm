@@ -27,7 +27,7 @@ export function EmployeeOverviewCard() {
 
   return (
     <motion.div variants={fadeInUp}>
-  <Card className="bg-gradient-to-br from-yellow-200 to-yellow-100 border-yellow-300 hover:shadow-lg transition-all duration-300 h-full">
+  <Card className="bg-gradient-to-br from-emerald-200 via-teal-100 to-cyan-100 border-emerald-200 hover:shadow-xl hover:shadow-emerald-100/50 transition-all duration-300 h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-800 text-lg sm:text-xl">
             <Icons.users className="h-5 w-5" />
