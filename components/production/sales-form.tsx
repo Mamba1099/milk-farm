@@ -10,13 +10,7 @@ import {
   useCreateSales,
   type CreateSalesData,
 } from "@/hooks/use-production-hooks";
-
-interface SalesFormProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess?: () => void;
-  selectedDate?: string;
-}
+import { SalesFormProps } from "@/lib/types/animal";
 
 export function SalesForm({
   isOpen,
