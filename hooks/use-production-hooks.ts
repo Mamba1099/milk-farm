@@ -13,8 +13,12 @@ export const useProductionReadyAnimals = () => {
       const response = await apiClient.get("/animals/production-ready");
       return response.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+    refetchOnMount: "always", // Only refetch on mount if data is stale
+    refetchOnReconnect: "always", // Only refetch on reconnect if data is stale
+    retry: 2, // Limit retry attempts
   });
 };
 
@@ -58,8 +62,11 @@ export const useProductionRecords = (
       );
       return response.data;
     },
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+    refetchOnMount: "always", // Only refetch on mount if data is stale
+    retry: 2, // Limit retry attempts
   });
 };
 
