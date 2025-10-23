@@ -81,12 +81,20 @@ export const sessionManager = {
 
   startSessionCheck: (onExpired: () => void) => {
     onSessionExpired = onExpired;
+    
+    // Clear any existing interval to prevent duplicates
+    if (checkInterval) {
+      clearInterval(checkInterval);
+    }
+    
+    // Start new interval
     checkInterval = setInterval(() => {
       if (!isHandlingSessionExpiry) {
         checkSession();
       }
     }, 15 * 60 * 1000);
   
+    // Initial check only if not handling expiry
     if (!isHandlingSessionExpiry) {
       checkSession();
     }
@@ -172,6 +180,9 @@ function handleSessionExpired() {
   isHandlingSessionExpiry = true;
   console.log("Handling session expiry...");
   
+  // Stop all session checking immediately
+  sessionManager.stopSessionCheck();
+  
   if (toastFunction && !hasShownExpiryToast) {
     toastFunction({
       type: "warning",
@@ -182,14 +193,16 @@ function handleSessionExpired() {
     hasShownExpiryToast = true;
   }
   
-  sessionManager.stopSessionCheck();
+  // Clear session data
   sessionManager.clearSession();
   
+  // Call the expiry callback
   if (onSessionExpired) {
     onSessionExpired();
   }
   
+  // Longer timeout to prevent rapid expiry handling
   setTimeout(() => {
     isHandlingSessionExpiry = false;
-  }, 2000);
+  }, 10000); // 10 seconds instead of 2
 }
