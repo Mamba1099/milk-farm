@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { X, Upload } from "lucide-react";
-import Image from "next/image";
+import { RobustImage } from "@/components/ui/robust-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -197,13 +197,23 @@ export function AnimalsEditDialog({
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <Image
-                        src={imagePreview || currentAnimal?.image!}
-                        alt="Animal preview"
-                        width={300}
-                        height={200}
-                        className="rounded-lg object-cover w-full h-48"
-                      />
+                      {imagePreview ? (
+                        <img
+                          src={imagePreview}
+                          alt="Animal preview"
+                          className="rounded-lg object-cover w-full h-48"
+                        />
+                      ) : (
+                        <RobustImage
+                          src={currentAnimal?.image}
+                          alt={`${currentAnimal?.name || currentAnimal?.tagNumber} preview`}
+                          width={300}
+                          height={192}
+                          className="rounded-lg object-cover w-full h-48"
+                          fallbackText={currentAnimal?.name || currentAnimal?.tagNumber}
+                          unoptimized={false}
+                        />
+                      )}
                       {imagePreview && (
                         <button
                           type="button"

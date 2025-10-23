@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { Edit2, Trash2, Eye, Heart, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { RobustImage } from "@/components/ui/robust-image";
 import { getHealthStatusColor, getAnimalTypeColor } from "@/lib/utils";
 import { AnimalCardProps } from "@/lib/types/animal";
 
@@ -39,9 +39,11 @@ export function AnimalCard({ animal, onView, onEdit, onDelete, canEdit = false }
     onView(animal);
   };
 
-  const calculateAge = (birthDate: string) => {
+  const calculateAge = (birthDate: string | Date) => {
+    const birth =
+      typeof birthDate === "string" ? new Date(birthDate) : birthDate;
     return Math.floor(
-      (new Date().getTime() - new Date(birthDate).getTime()) /
+      (new Date().getTime() - birth.getTime()) /
         (1000 * 60 * 60 * 24 * 365)
     );
   };
@@ -52,12 +54,14 @@ export function AnimalCard({ animal, onView, onEdit, onDelete, canEdit = false }
         {/* Animal Image */}
         <div className="relative h-48 w-full mb-4 rounded-lg overflow-hidden bg-gray-100">
           {animal.image ? (
-            <Image
+            <RobustImage
               src={animal.image}
               alt={`${animal.name || animal.tagNumber} image`}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              width={400}
+              height={192}
+              className="rounded-lg object-cover w-full h-48"
+              fallbackText={animal.name || animal.tagNumber}
+              unoptimized={false}
             />
           ) : (
             <div className="h-full w-full flex items-center justify-center">

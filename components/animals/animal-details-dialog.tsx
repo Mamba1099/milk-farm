@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getHealthStatusColor, getAnimalTypeColor } from "@/lib/utils";
 import { calculateAge, formatDate, calculateDaysRemaining } from "@/lib/date-utils";
 import { AnimalDetailsDialogProps } from "@/lib/types/animal";
-import Image from "next/image";
+import { RobustImage } from "@/components/ui/robust-image";
 
 export function AnimalDetailsDialog({
   animal,
@@ -46,7 +46,7 @@ export function AnimalDetailsDialog({
               <div>
                 <div className="relative h-64 w-full rounded-lg overflow-hidden bg-gray-100">
                   {animal.image ? (
-                    <Image
+                    <RobustImage
                       src={animal.image}
                       alt={`${animal.name || animal.tagNumber} image`}
                       fill
