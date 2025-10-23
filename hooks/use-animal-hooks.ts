@@ -29,6 +29,11 @@ export function useAnimals(query?: Partial<AnimalQuery>) {
       const response = await apiClient.get(`/animals?${params}`);
       return response.data;
     },
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+    refetchOnMount: "always", // Only refetch on mount if data is stale
+    retry: 2, // Limit retry attempts
   });
 }
 
@@ -40,6 +45,11 @@ export function useAnimal(id: string) {
       return response.data;
     },
     enabled: !!id,
+    staleTime: 3 * 60 * 1000, // Consider data fresh for 3 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+    refetchOnMount: "always", // Only refetch on mount if data is stale
+    retry: 2, // Limit retry attempts
   });
 }
 
@@ -51,23 +61,20 @@ export function useCreateAnimal() {
   return useMutation({
     mutationFn: async (data: CreateAnimalInput) => {
       try {
-        let imageUrl = null;
+        let imagePath = null;
         if (data.image && data.image instanceof File) {
           const uploadResult = await uploadImage({
             file: data.image,
             bucket: "farm-house",
             folder: "animals"
           });
-          
           if (uploadResult.error) {
             throw new Error(uploadResult.error);
           }
-          
-          imageUrl = uploadResult.imagePath;
+          imagePath = uploadResult.imageUrl; // Use imageUrl (full URL) instead of imagePath
         }
 
         const formData = new FormData();
-
         Object.entries(data).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
             if (key === "image") {
@@ -79,11 +86,9 @@ export function useCreateAnimal() {
             }
           }
         });
-
-        if (imageUrl) {
-          formData.append("imagePath", imageUrl);
+        if (imagePath) {
+          formData.append("imageUrl", imagePath);
         }
-
         const response = await apiClient.post("/animals", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
@@ -125,7 +130,7 @@ export function useUpdateAnimal() {
   return useMutation({
     mutationFn: async (data: UpdateAnimalInput) => {
       try {
-        let imageUrl = null;
+        let imagePath = null;
         if (data.image && data.image instanceof File) {
           const uploadResult = await uploadImage({
             file: data.image,
@@ -135,7 +140,7 @@ export function useUpdateAnimal() {
           if (uploadResult.error) {
             throw new Error(uploadResult.error);
           }
-          imageUrl = uploadResult.imagePath; // Store the path, not the full URL
+          imagePath = uploadResult.imageUrl; // Use imageUrl (full URL) instead of imagePath
         }
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
@@ -149,8 +154,8 @@ export function useUpdateAnimal() {
             }
           }
         });
-        if (imageUrl) {
-          formData.append("imagePath", imageUrl);
+        if (imagePath) {
+          formData.append("imageUrl", imagePath);
         }
         const response = await apiClient.put(
           `/animals/${data.id}`,
@@ -361,7 +366,7 @@ export function useTreatmentStatistics() {
       const response = await apiClient.get("/treatments/statistics");
       return response.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }
