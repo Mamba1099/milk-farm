@@ -5,12 +5,11 @@ import { motion, type Variants } from "framer-motion";
 import {
   Search,
   Filter,
-  Calendar,
-  TrendingUp,
   Milk,
   Eye,
   Edit,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -28,7 +27,6 @@ import {
   useProductionData,
   useProductionStats,
 } from "@/hooks/use-production-hooks";
-import { ProductionForm } from "@/components/production/production-form";
 import { formatDate } from "@/lib/utils";
 import { ProductionRecordsList } from "@/components/production/production-records-list";
 
@@ -73,11 +71,10 @@ const cardVariants: Variants = {
 
 export default function ProductionPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDateRange, setSelectedDateRange] = useState("today");
-  const [showProductionForm, setShowProductionForm] = useState(false);
 
-  // Data queries
   const {
     morningProductions,
     eveningProductions,
@@ -96,7 +93,6 @@ export default function ProductionPage() {
       record.animal.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Compose stats for ProductionStatisticsCard
   const productionStats = {
     todayProduction: stats?.todayProduction || 0,
     weekProduction: stats?.weekProduction || 0,
@@ -104,11 +100,6 @@ export default function ProductionPage() {
     activeAnimals: stats?.activeAnimals || 0,
     morningTotal,
     eveningTotal,
-  };
-
-  const handleFormSuccess = () => {
-    refetchProduction();
-    setShowProductionForm(false);
   };
 
   return (
@@ -134,7 +125,7 @@ export default function ProductionPage() {
           </div>
           {user?.role === "FARM_MANAGER" && (
             <Button
-              onClick={() => setShowProductionForm(true)}
+              onClick={() => router.push("/production/add")}
               className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 w-full sm:w-auto text-sm sm:text-base"
             >
               <Milk size={18} className="sm:w-5 sm:h-5" />
@@ -214,14 +205,6 @@ export default function ProductionPage() {
           <p className="text-gray-400 mb-6 text-sm sm:text-base">
             Start tracking milk production by adding daily records
           </p>
-          {user?.role === "FARM_MANAGER" && (
-            <Button
-              onClick={() => setShowProductionForm(true)}
-              className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base"
-            >
-              Add First Production Record
-            </Button>
-          )}
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -236,7 +219,7 @@ export default function ProductionPage() {
                 <TableHead>Calf Deduction</TableHead>
                 <TableHead>Net Production</TableHead>
                 <TableHead>Status</TableHead>
-                {user?.role === "FARM_MANAGER" && (
+                {(user?.role === "FARM_MANAGER" || user?.role === "EMPLOYEE") && (
                   <TableHead>Actions</TableHead>
                 )}
               </TableRow>
@@ -279,7 +262,7 @@ export default function ProductionPage() {
                         : "Recorded"}
                     </Badge>
                   </TableCell>
-                  {user?.role === "FARM_MANAGER" && (
+                  {(user?.role === "FARM_MANAGER" || user?.role === "EMPLOYEE") && (
                     <TableCell>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline">
@@ -299,15 +282,7 @@ export default function ProductionPage() {
       )}
     </Card>
   </motion.div>
-      {/* Production Form */}
-      {showProductionForm && (
-        <ProductionForm
-          isOpen={showProductionForm}
-          onClose={() => setShowProductionForm(false)}
-          onSuccess={handleFormSuccess}
-        />
-      )}
-    </motion.div>
-  </div>
+  </motion.div>
+    </div>
   );
 }
