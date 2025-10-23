@@ -2,6 +2,14 @@ export function getPublicImageUrl(path: string) {
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   return `${SUPABASE_URL}/storage/v1/object/public/farm-house/${path}`;
 }
+
+export function normalizeImageUrl(imageValue: string | null): string | null {
+  if (!imageValue) return null;
+  if (imageValue.startsWith('http://') || imageValue.startsWith('https://')) {
+    return imageValue;
+  }
+  return getPublicImageUrl(imageValue);
+}
 import { createSupabaseClient } from "../client";
 import { v4 as uuidv4 } from "uuid";
 
