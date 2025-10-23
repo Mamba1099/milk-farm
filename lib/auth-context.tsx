@@ -43,26 +43,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const canEdit = isFarmManager;
   const canView = isAuthenticated;
 
-  // Set up session check mutation
   useEffect(() => {
     sessionManager.setSessionCheckMutation(sessionCheckMutation);
   }, [sessionCheckMutation]);
 
-  // Set up toast function for session expiry notifications
   useEffect(() => {
     sessionManager.setToastFunction(toast);
   }, [toast]);
 
-  // Session management
   useEffect(() => {
     if (isAuthenticated) {
-      // Start session checking when user is authenticated
       sessionManager.startSessionCheck(() => {
         console.log("Session expired, logging out...");
         handleSessionExpired();
       });
     } else {
-      // Stop session checking when not authenticated
       sessionManager.stopSessionCheck();
     }
 
@@ -77,17 +72,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
     
+    console.log("Session expired, logging out...");
     setIsLoggingOut(true);
     try {
       sessionManager.clearSession();
       await logoutMutation.mutateAsync();
-      router.push("/login");
+      window.location.href = "/login";
     } catch (error) {
       console.error("Error during session expiration logout:", error);
-      // Force redirect even if logout fails
-      router.push("/login");
+      window.location.href = "/login";
     } finally {
-      // Reset the flag after a delay
       setTimeout(() => setIsLoggingOut(false), 2000);
     }
   };
@@ -106,7 +100,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!isAuthenticated && isProtectedRoute) {
         console.log("Redirecting to login - not authenticated on protected route");
         router.replace("/login");
-      } else if (isAuthenticated && isAuthPage) {
+      } else if (isAuthenticated && isAuthPage && !isLoggingOut) {
         console.log("Redirecting to dashboard - authenticated on auth page");
         router.replace("/dashboard");
       }
@@ -139,13 +133,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
     
+    console.log("Manual logout initiated...");
     setIsLoggingOut(true);
     try {
+      sessionManager.clearSession();
       await logoutMutation.mutateAsync();
-      router.push("/login");
+      // Force redirect to login and prevent redirect loops
+      window.location.href = "/login";
     } catch (error) {
       console.error("Logout error:", error);
-      router.push("/login");
+      window.location.href = "/login";
     } finally {
       // Reset the flag after a delay
       setTimeout(() => setIsLoggingOut(false), 2000);
