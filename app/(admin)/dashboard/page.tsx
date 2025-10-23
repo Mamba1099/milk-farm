@@ -4,7 +4,7 @@ import { motion, type Variants } from "framer-motion";
 import {
   DashboardHeader,
   ProfileCard,
-  AnimalStatsCard,
+  LivestockStatsCard,
   ProductionStatsCard,
   EmployeeOverviewCard,
   SystemOverviewCard,
@@ -44,7 +44,7 @@ export default function DashboardPage() {
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8"
         >
           <ProfileCard />
-          <AnimalStatsCard />
+          <LivestockStatsCard />
           <ProductionStatsCard />
           <EmployeeOverviewCard />
           <SystemOverviewCard />
