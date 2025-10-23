@@ -3,7 +3,7 @@
 import { motion, type Variants } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
-import Image from "next/image";
+import { RobustImage } from "@/components/ui/robust-image";
 import { getHealthStatusColor, getHealthStatusBadgeColor } from "@/lib/utils";
 import { useAnimals } from "@/hooks/use-animal-hooks";
 import type { Animal } from "@/lib/types";
@@ -49,12 +49,14 @@ export function RecentAnimalsCard() {
                   <div className="flex items-start space-x-3">
                     <div className="relative h-16 w-16 rounded-lg overflow-hidden flex-shrink-0">
                       {animal.image ? (
-                        <Image
+                        <RobustImage
                           src={animal.image}
                           alt={`${animal.name || animal.tagNumber} image`}
-                          fill
-                          className="object-cover"
-                          sizes="64px"
+                          width={64}
+                          height={64}
+                          className="rounded-lg object-cover w-full h-full"
+                          fallbackText={animal.name || animal.tagNumber}
+                          unoptimized={false}
                         />
                       ) : (
                         <div className="h-full w-full bg-gray-100 flex items-center justify-center">
