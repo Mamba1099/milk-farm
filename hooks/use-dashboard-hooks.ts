@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-context";
 import {
   Animal,
   Production,
@@ -14,6 +15,7 @@ import {
 
 export const useAnimalStats = () => {
   const { toast } = useToast();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   return useQuery<DashboardStats["animals"], Error>({
     queryKey: ["dashboard", "animals"],
@@ -45,7 +47,22 @@ export const useAnimalStats = () => {
           injured: animals.filter((a) => a.healthStatus === "INJURED").length,
           matured: animals.filter((a) => a.isMatured === true).length,
         };
-      } catch (error) {
+      } catch (error: any) {
+        // If it's an authentication error, return empty stats instead of throwing
+        if (error.response?.status === 401) {
+          console.warn("Authentication required for animal stats - returning empty data");
+          return {
+            total: 0,
+            cows: 0,
+            bulls: 0,
+            calves: 0,
+            healthy: 0,
+            sick: 0,
+            injured: 0,
+            matured: 0,
+          };
+        }
+        
         toast({
           title: "Error",
           description: "Failed to fetch animal statistics",
@@ -54,16 +71,36 @@ export const useAnimalStats = () => {
         throw new Error("Failed to fetch animal statistics");
       }
     },
-    retry: 2,
-    staleTime: 1 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true,
-    refetchInterval: 5 * 60 * 1000,
+    enabled: isAuthenticated && !authLoading,
+    retry: (failureCount, error: any) => {
+      // Don't retry on auth errors
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
+    refetchOnWindowFocus: false, // Reduce aggressive refetching
+    refetchOnMount: "always", // Only refetch on mount if data is stale
+    // Removed refetchInterval to prevent automatic polling every 5 minutes
+    // Provide fallback data when query is disabled
+    placeholderData: {
+      total: 0,
+      cows: 0,
+      bulls: 0,
+      calves: 0,
+      healthy: 0,
+      sick: 0,
+      injured: 0,
+      matured: 0,
+    },
   });
 };
 
 export const useProductionStats = () => {
   const { toast } = useToast();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   return useQuery<DashboardStats["production"], Error>({
     queryKey: ["dashboard", "production"],
@@ -138,7 +175,23 @@ export const useProductionStats = () => {
               : 0,
           lastRecordDate,
         };
-      } catch (error) {
+      } catch (error: any) {
+        // If it's an authentication error, return empty stats instead of throwing
+        if (error.response?.status === 401) {
+          console.warn("Authentication required for production stats - returning empty data");
+          return {
+            totalRecords: 0,
+            todayQuantity: 0,
+            weeklyTotal: 0,
+            weeklyAverage: 0,
+            monthlyTotal: 0,
+            totalQuantity: 0,
+            averageDaily: 0,
+            averagePerAnimal: 0,
+            lastRecordDate: null,
+          };
+        }
+        
         toast({
           title: "Error",
           description: "Failed to fetch production statistics",
@@ -147,15 +200,38 @@ export const useProductionStats = () => {
         throw new Error("Failed to fetch production statistics");
       }
     },
-    retry: 2,
-    staleTime: 1 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    enabled: isAuthenticated && !authLoading,
+    retry: (failureCount, error: any) => {
+      // Don't retry on auth errors
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
+    refetchOnWindowFocus: false, // Reduce aggressive refetching
+    refetchOnMount: "always", // Only refetch on mount if data is stale
+    // Removed refetchInterval to prevent automatic polling every 5 minutes
+    // Provide fallback data when query is disabled
+    placeholderData: {
+      totalRecords: 0,
+      todayQuantity: 0,
+      weeklyTotal: 0,
+      weeklyAverage: 0,
+      monthlyTotal: 0,
+      totalQuantity: 0,
+      averageDaily: 0,
+      averagePerAnimal: 0,
+      lastRecordDate: null,
+    },
   });
 };
 
 
 export const useUserStats = () => {
   const { toast } = useToast();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   return useQuery<UserStats, Error>({
     queryKey: ["dashboard", "users"],
@@ -163,13 +239,21 @@ export const useUserStats = () => {
       try {
         const response = await apiClient.get("/users?stats=true");
         return response.data.stats;
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch user statistics",
-          type: "error",
-        });
+      } catch (error: any) {
+        // If it's an authentication error, return fallback stats instead of throwing
+        if (error.response?.status === 401) {
+          console.warn("Authentication required for user stats - returning fallback data");
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to fetch user statistics",
+            type: "error",
+          });
+        }
+        
         return {
+          active: 1,
+          total: 1,
           totalUsers: 1,
           activeUsers: 1,
           farmManagers: 1,
@@ -177,14 +261,32 @@ export const useUserStats = () => {
         };
       }
     },
-    retry: 2,
+    enabled: isAuthenticated && !authLoading,
+    retry: (failureCount, error: any) => {
+      // Don't retry on auth errors
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    // Provide fallback data when query is disabled
+    placeholderData: {
+      active: 1,
+      total: 1,
+      totalUsers: 1,
+      activeUsers: 1,
+      farmManagers: 1,
+      employees: 0,
+    },
   });
 };
 
 export const useSystemHealth = () => {
   const { toast } = useToast();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   return useQuery<SystemHealth, Error>({
     queryKey: ["dashboard", "systemHealth"],
@@ -218,9 +320,17 @@ export const useSystemHealth = () => {
         };
       }
     },
-    retry: 2,
+    enabled: isAuthenticated && !authLoading,
+    retry: (failureCount, error: any) => {
+      // Don't retry on auth errors
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 
