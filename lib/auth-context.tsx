@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser, useLogoutMutation } from "@/hooks/use-user-queries";
 import { useLoginMutation } from "@/hooks/use-login";
 import { useSessionCheck } from "@/hooks/use-session-check";
@@ -21,7 +22,9 @@ export const useAuth = (): AuthContextType => {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const [hasRedirected, setHasRedirected] = React.useState(false);
   const { toast } = useToast();
 
   const {
@@ -51,20 +54,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sessionManager.setToastFunction(toast);
   }, [toast]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      sessionManager.startSessionCheck(() => {
-        console.log("Session expired, logging out...");
-        handleSessionExpired();
-      });
-    } else {
-      sessionManager.stopSessionCheck();
-    }
+  // Temporarily disable automatic session checking to break the loop
+  // useEffect(() => {
+  //   if (isAuthenticated) {
+  //     sessionManager.startSessionCheck(() => {
+  //       console.log("Session expired, logging out...");
+  //       handleSessionExpired();
+  //     });
+  //   } else {
+  //     sessionManager.stopSessionCheck();
+  //   }
 
-    return () => {
-      sessionManager.stopSessionCheck();
-    };
-  }, [isAuthenticated]);
+  //   return () => {
+  //     sessionManager.stopSessionCheck();
+  //   };
+  // }, [isAuthenticated]);
 
   const handleSessionExpired = async () => {
     if (isLoggingOut) {
@@ -75,19 +79,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log("Session expired, logging out...");
     setIsLoggingOut(true);
     try {
+      // Clear session first to prevent any further auth checks
       sessionManager.clearSession();
+      queryClient.removeQueries({ queryKey: ["user"] });
+      queryClient.clear();
+      
       await logoutMutation.mutateAsync();
-      window.location.href = "/login";
+      window.location.replace("/login");
     } catch (error) {
       console.error("Error during session expiration logout:", error);
-      window.location.href = "/login";
+      window.location.replace("/login");
     } finally {
-      setTimeout(() => setIsLoggingOut(false), 2000);
+      setTimeout(() => setIsLoggingOut(false), 5000);
     }
   };
 
   useEffect(() => {
-    if (!isLoading && !isLoggingOut) {
+    if (!isLoading && !isLoggingOut && !hasRedirected) {
       const currentPath = window.location.pathname;
       const isAuthPage = ["/login", "/signup"].includes(currentPath);
       const isProtectedRoute = currentPath.startsWith("/dashboard") || 
@@ -95,17 +103,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                               currentPath.startsWith("/production") ||
                               currentPath.startsWith("/accounts") ||
                               currentPath.startsWith("/analytics") ||
-                              currentPath.startsWith("/settings");
+                              currentPath.startsWith("/settings") ||
+                              currentPath.startsWith("/sales");
 
       if (!isAuthenticated && isProtectedRoute) {
         console.log("Redirecting to login - not authenticated on protected route");
-        router.replace("/login");
+        setHasRedirected(true);
+        window.location.replace("/login");
       } else if (isAuthenticated && isAuthPage && !isLoggingOut) {
         console.log("Redirecting to dashboard - authenticated on auth page");
-        router.replace("/dashboard");
+        setHasRedirected(true);
+        setTimeout(() => {
+          window.location.replace("/dashboard");
+        }, 100); // Small delay to prevent rapid redirects
       }
     }
-  }, [isAuthenticated, isLoading, isLoggingOut, router]);
+  }, [isAuthenticated, isLoading, isLoggingOut, hasRedirected]);
 
   const hasRole = (roles: string | string[]): boolean => {
     if (!user) return false;
@@ -135,17 +148,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     console.log("Manual logout initiated...");
     setIsLoggingOut(true);
+    setHasRedirected(false);
+    
     try {
+      // Clear session and cache first
       sessionManager.clearSession();
+      queryClient.removeQueries({ queryKey: ["user"] });
+      queryClient.clear();
+      
+      // Clear any local storage items that might be keeping auth state
+      localStorage.clear();
+      sessionStorage.clear();
+      
       await logoutMutation.mutateAsync();
+      
       // Force redirect to login and prevent redirect loops
-      window.location.href = "/login";
+      setTimeout(() => {
+        window.location.replace("/login");
+      }, 100);
+      
     } catch (error) {
       console.error("Logout error:", error);
-      window.location.href = "/login";
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.replace("/login");
     } finally {
-      // Reset the flag after a delay
-      setTimeout(() => setIsLoggingOut(false), 2000);
+      // Reset the flag after a longer delay
+      setTimeout(() => {
+        setIsLoggingOut(false);
+        setHasRedirected(false);
+      }, 5000);
     }
   };
 
