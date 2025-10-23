@@ -26,8 +26,6 @@ export const useLoginMutation = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
-
-      // Set session info in session manager if available
       if (data.session) {
         sessionManager.setSessionInfo({
           startTime: data.session.startTime,
