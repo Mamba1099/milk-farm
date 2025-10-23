@@ -91,3 +91,9 @@ export interface ServingRecordsTableProps {
   title?: string;
   onEdit?: (serving: ServingRecord) => void;
 }
+
+export interface ServingFormProps {
+  onCancel?: () => void;
+  onClose?: () => void;
+  onSuccess?: () => void;
+}

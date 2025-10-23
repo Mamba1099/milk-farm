@@ -208,3 +208,10 @@ export interface TreatmentStatsSummaryProps {
   } | null;
 };
 }
+
+export interface SalesFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+  selectedDate?: string;
+}

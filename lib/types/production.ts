@@ -24,6 +24,8 @@ export interface ProductionRecordsTableProps {
 
 
 export interface ProductionAnimal {
+  image_url: any;
+  motherName: string | undefined;
   id: string;
   tagNumber: string;
   name?: string;
