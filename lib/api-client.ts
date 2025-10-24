@@ -122,4 +122,17 @@ export const API_ENDPOINTS = {
     logout: "/auth/logout",
     profile: "/auth/me",
   },
+  analytics: {
+    dailyProduction: "/analytics/daily-production",
+    salesRevenue: "/analytics/sales-revenue",
+    productionCalfFeeding: "/analytics/production-calf-feeding",
+    topProducingCows: "/analytics/top-producing-cows",
+    treatmentCostTrends: "/analytics/treatment-cost-trends",
+    treatmentExpenses: "/analytics/treatment-expenses",
+    servingOutcomes: "/analytics/serving-outcomes",
+    servingTypes: "/analytics/serving-types",
+    breedingActivity: "/analytics/breeding-activity",
+    calvingIntervals: "/analytics/calving-intervals",
+    seasonalBreeding: "/analytics/seasonal-breeding",
+  },
 } as const;
