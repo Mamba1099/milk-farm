@@ -43,6 +43,7 @@ import {
   ShoppingCart,
   TrendingUp,
   Coins,
+  Smartphone,
 } from "lucide-react";
 
 export const Icons = {
@@ -91,4 +92,5 @@ export const Icons = {
   shoppingCart: ShoppingCart,
   trendingUp: TrendingUp,
   coins: Coins,
+  smartphone: Smartphone,
 };
