@@ -9,9 +9,13 @@ import { ClockLoader } from "react-spinners";
 
 interface SalesRevenueData {
   date: string;
-  revenue: number;
-  quantity: number;
-  transactions: number;
+  fullDate: string;
+  totalRevenue: number;
+  totalQuantity: number;
+  salesCount: number;
+  averagePrice: number;
+  cashSales: number;
+  mpesaSales: number;
 }
 
 export function SalesRevenueChart() {
@@ -21,7 +25,10 @@ export function SalesRevenueChart() {
       const response = await apiClient.get(API_ENDPOINTS.analytics.salesRevenue);
       return response.data as SalesRevenueData[];
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchInterval: false,
   });
 
   if (isLoading) {
@@ -64,33 +71,55 @@ export function SalesRevenueChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Icons.dollarSign className="h-5 w-5 text-green-600" />
-          Sales Revenue Performance
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+          <Icons.dollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+          <span className="truncate">Daily Sales Revenue - {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip 
-              formatter={(value, name) => [
-                name === 'revenue' ? `KSh ${value.toLocaleString()}` :
-                name === 'quantity' ? `${value} L` : `${value} transactions`,
-                name === 'revenue' ? 'Revenue' :
-                name === 'quantity' ? 'Quantity Sold' : 'Transactions'
-              ]}
-            />
-            <Bar 
-              dataKey="revenue" 
-              fill="#10B981" 
-              name="Revenue"
-              radius={[4, 4, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+      <CardContent className="p-2 sm:p-6">
+        {/* Mobile: Horizontal scroll container */}
+        <div className="w-full overflow-x-auto lg:overflow-x-visible chart-scroll">
+          <div className="min-w-[800px] lg:min-w-full">
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart 
+                data={data} 
+                margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                barCategoryGap="20%"
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="date" 
+                  interval={0}
+                  tick={{ fontSize: 10 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Revenue (KES)', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }}
+                />
+                <Tooltip 
+                  labelFormatter={(label, payload) => {
+                    if (payload && payload[0] && payload[0].payload) {
+                      return `Date: ${payload[0].payload.fullDate}`;
+                    }
+                    return `Day ${label}`;
+                  }}
+                  formatter={(value) => [`KSh ${value.toLocaleString()}`, 'Revenue']}
+                  contentStyle={{ fontSize: '12px' }}
+                />
+                <Bar 
+                  dataKey="totalRevenue" 
+                  fill="#DC2626" 
+                  name="Revenue"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={60}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

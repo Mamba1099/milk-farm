@@ -9,20 +9,22 @@ import { ClockLoader } from "react-spinners";
 
 interface TreatmentExpenseData {
   month: string;
-  totalExpense: number;
+  totalCost: number;
   treatmentCount: number;
-  averagePerTreatment: number;
-  averagePerAnimal: number;
+  avgCost: number;
 }
 
 export function TreatmentExpenseChart() {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["analytics", "treatment-expenses"],
+    queryKey: ["analytics", "treatment-expense"],
     queryFn: async () => {
-      const response = await apiClient.get(API_ENDPOINTS.analytics.treatmentExpenses);
+      const response = await apiClient.get(API_ENDPOINTS.analytics.treatmentExpense);
       return response.data as TreatmentExpenseData[];
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchInterval: false,
   });
 
   if (isLoading) {
@@ -65,39 +67,54 @@ export function TreatmentExpenseChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Icons.dollarSign className="h-5 w-5 text-red-600" />
-          Monthly Treatment Expenses
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+          <Icons.dollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+          <span className="truncate">Monthly Treatment Expenses</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip 
-              formatter={(value, name) => [
-                name === 'totalExpense' ? `KSh ${value.toLocaleString()}` :
-                name === 'treatmentCount' ? `${value} treatments` :
-                name === 'averagePerTreatment' ? `KSh ${value.toLocaleString()}` :
-                `KSh ${value.toLocaleString()}`,
-                name === 'totalExpense' ? 'Total Expense' :
-                name === 'treatmentCount' ? 'Treatment Count' :
-                name === 'averagePerTreatment' ? 'Avg per Treatment' : 'Avg per Animal'
-              ]}
-            />
-            <Bar 
-              dataKey="totalExpense" 
-              fill="#EF4444" 
-              name="Total Expense"
-              radius={[4, 4, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+      <CardContent className="p-2 sm:p-6">
+        {/* Mobile: Horizontal scroll container */}
+        <div className="w-full overflow-x-auto lg:overflow-x-visible chart-scroll">
+          <div className="min-w-[500px] lg:min-w-full">
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fontSize: 10 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Cost (KES)', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }}
+                />
+                <Tooltip 
+                  formatter={(value, name) => [
+                    name === 'totalCost' ? `KSh ${value.toLocaleString()}` :
+                    name === 'treatmentCount' ? `${value} treatments` :
+                    name === 'avgCost' ? `KSh ${value.toLocaleString()}` :
+                    `KSh ${value.toLocaleString()}`,
+                    name === 'totalCost' ? 'Total Cost' :
+                    name === 'treatmentCount' ? 'Treatment Count' :
+                    name === 'avgCost' ? 'Average Cost' : 'Average Cost'
+                  ]}
+                  contentStyle={{ fontSize: '12px' }}
+                />
+                <Bar 
+                  dataKey="totalCost" 
+                  fill="#EF4444" 
+                  name="Total Cost"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
         
-        {/* Summary Stats */}
-        <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+        {/* Summary Stats - Better mobile layout */}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
           <div className="text-center p-2 bg-red-50 rounded">
             <div className="font-semibold text-red-700">Total Treatments</div>
             <div className="text-red-600">
@@ -107,7 +124,7 @@ export function TreatmentExpenseChart() {
           <div className="text-center p-2 bg-red-50 rounded">
             <div className="font-semibold text-red-700">Total Cost</div>
             <div className="text-red-600">
-              KSh {data.reduce((sum, item) => sum + item.totalExpense, 0).toLocaleString()}
+              KSh {data.reduce((sum, item) => sum + item.totalCost, 0).toLocaleString()}
             </div>
           </div>
         </div>

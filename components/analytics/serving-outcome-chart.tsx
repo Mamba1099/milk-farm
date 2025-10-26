@@ -27,7 +27,10 @@ export function ServingOutcomeChart() {
       const response = await apiClient.get(API_ENDPOINTS.analytics.servingOutcomes);
       return response.data as ServingOutcomeData[];
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchInterval: false,
   });
 
   if (isLoading) {
@@ -91,61 +94,72 @@ export function ServingOutcomeChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Icons.heart className="h-5 w-5 text-pink-600" />
-          Serving Outcome Distribution
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+          <Icons.heart className="h-4 w-4 sm:h-5 sm:w-5 text-pink-600" />
+          <span className="truncate">Serving Outcome Distribution</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={renderCustomizedLabel}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="count"
-            >
-              {data.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={OUTCOME_COLORS[entry.outcome as keyof typeof OUTCOME_COLORS] || '#6B7280'} 
+      <CardContent className="p-2 sm:p-6">
+        {/* Mobile: Allow horizontal scroll for pie chart */}
+        <div className="w-full overflow-x-auto lg:overflow-x-visible chart-scroll">
+          <div className="min-w-[350px] lg:min-w-full">
+            <ResponsiveContainer width="100%" height={400}>
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={renderCustomizedLabel}
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="count"
+                >
+                  {data.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={OUTCOME_COLORS[entry.outcome as keyof typeof OUTCOME_COLORS] || '#6B7280'} 
+                    />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value, name, props) => [
+                    `${value} servings (${props.payload.percentage.toFixed(1)}%)`,
+                    props.payload.outcome
+                  ]}
+                  contentStyle={{ fontSize: '12px' }}
                 />
-              ))}
-            </Pie>
-            <Tooltip 
-              formatter={(value, name, props) => [
-                `${value} servings (${props.payload.percentage.toFixed(1)}%)`,
-                props.payload.outcome
-              ]}
-            />
-            <Legend 
-              formatter={(value, entry: any) => {
-                const payload = entry?.payload;
-                return payload ? `${payload.outcome} (${payload.count})` : value;
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+                <Legend 
+                  formatter={(value, entry: any) => {
+                    const payload = entry?.payload;
+                    return payload ? `${payload.outcome} (${payload.count})` : value;
+                  }}
+                  wrapperStyle={{ fontSize: '12px' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
         
-        {/* Summary Stats */}
-        <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
-          {data.map((outcome) => (
-            <div 
-              key={outcome.outcome} 
-              className="text-center p-2 rounded"
-              style={{ 
-                backgroundColor: `${OUTCOME_COLORS[outcome.outcome as keyof typeof OUTCOME_COLORS]}15`,
-                color: OUTCOME_COLORS[outcome.outcome as keyof typeof OUTCOME_COLORS] 
-              }}
-            >
-              <div className="font-semibold">{outcome.outcome}</div>
-              <div>{outcome.count} servings</div>
-            </div>
-          ))}
+        {/* Summary Stats - Better mobile layout */}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+          {(['SUCCESSFUL', 'FAILED', 'PENDING'] as const).map((outcomeType) => {
+            const outcome = data.find(d => d.outcome === outcomeType);
+            return (
+              <div 
+                key={outcomeType} 
+                className="text-center p-2 rounded"
+                style={{ 
+                  backgroundColor: `${OUTCOME_COLORS[outcomeType]}15`,
+                  color: OUTCOME_COLORS[outcomeType] 
+                }}
+              >
+                <div className="font-semibold">{outcomeType}</div>
+                <div>{outcome?.count || 0} servings</div>
+                <div className="text-xs opacity-75">{outcome?.percentage.toFixed(1) || 0}%</div>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

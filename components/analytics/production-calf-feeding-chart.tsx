@@ -7,11 +7,11 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
 import { ClockLoader } from "react-spinners";
 
-interface ProductionComparisonData {
+interface ProductionCalfFeedingData {
   date: string;
-  totalProduction: number;
-  calfFeeding: number;
-  availableForSale: number;
+  morningFed: number;
+  eveningFed: number;
+  totalFed: number;
 }
 
 export function ProductionCalfFeedingChart() {
@@ -19,9 +19,12 @@ export function ProductionCalfFeedingChart() {
     queryKey: ["analytics", "production-calf-feeding"],
     queryFn: async () => {
       const response = await apiClient.get(API_ENDPOINTS.analytics.productionCalfFeeding);
-      return response.data as ProductionComparisonData[];
+      return response.data as ProductionCalfFeedingData[];
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchInterval: false,
   });
 
   if (isLoading) {
@@ -78,27 +81,27 @@ export function ProductionCalfFeedingChart() {
             <Tooltip 
               formatter={(value, name) => [
                 `${value} L`,
-                name === 'totalProduction' ? 'Total Production' :
-                name === 'calfFeeding' ? 'Calf Feeding' : 'Available for Sale'
+                name === 'morningFed' ? 'Morning Fed' :
+                name === 'eveningFed' ? 'Evening Fed' : 'Total Fed'
               ]}
             />
             <Legend />
             <Bar 
-              dataKey="totalProduction" 
+              dataKey="morningFed" 
               fill="#3B82F6" 
-              name="Total Production"
+              name="Morning Fed"
               radius={[4, 4, 0, 0]}
             />
             <Bar 
-              dataKey="calfFeeding" 
+              dataKey="eveningFed" 
               fill="#F59E0B" 
-              name="Calf Feeding"
+              name="Evening Fed"
               radius={[4, 4, 0, 0]}
             />
             <Bar 
-              dataKey="availableForSale" 
+              dataKey="totalFed" 
               fill="#10B981" 
-              name="Available for Sale"
+              name="Total Fed"
               radius={[4, 4, 0, 0]}
             />
           </BarChart>
