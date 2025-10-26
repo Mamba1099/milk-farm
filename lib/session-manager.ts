@@ -87,7 +87,7 @@ export const sessionManager = {
       clearInterval(checkInterval);
     }
     
-    // Start new interval
+    // Start new interval - check every 15 minutes to reduce load
     checkInterval = setInterval(() => {
       if (!isHandlingSessionExpiry) {
         checkSession();
@@ -96,6 +96,7 @@ export const sessionManager = {
   
     // Initial check only if not handling expiry
     if (!isHandlingSessionExpiry) {
+      console.log("Starting initial session check");
       checkSession();
     }
   },
@@ -112,13 +113,20 @@ export const sessionManager = {
   },
 
   clearSession: () => {
+    console.log("Clearing session data and stopping all timers");
     sessionInfo = null;
     isHandlingSessionExpiry = false; 
     hasShownExpiryToast = false;
     lastSessionCheck = 0;
+    
     if (sessionExpiryTimeout) {
       clearTimeout(sessionExpiryTimeout);
       sessionExpiryTimeout = null;
+    }
+    
+    if (checkInterval) {
+      clearInterval(checkInterval);
+      checkInterval = null;
     }
   },
 
@@ -139,6 +147,8 @@ async function checkSession() {
   }
   lastSessionCheck = now;
   
+  console.log("Performing session validation check");
+  
   try {
     const result = await sessionCheckMutation.mutateAsync();
     
@@ -151,10 +161,14 @@ async function checkSession() {
         };
         
         if (!sessionInfo || sessionInfo.endTime !== newSessionInfo.endTime) {
+          console.log("Session info updated, setting up expiry timer");
           sessionInfo = newSessionInfo;
           sessionManager.setupSessionExpiry(newSessionInfo.endTime);
         }
       }
+    } else {
+      console.log("No session data returned - session may be invalid");
+      handleSessionExpired();
     }
   } catch (error) {
     if (error && typeof error === "object" && "response" in error) {
@@ -167,7 +181,8 @@ async function checkSession() {
       }
     }
     
-    console.log("Session check error:", error);
+    console.log("Session check error (network or server issue):", error);
+    // Don't logout on network errors, just log and continue
   }
 }
 
@@ -178,31 +193,22 @@ function handleSessionExpired() {
   }
   
   isHandlingSessionExpiry = true;
-  console.log("Handling session expiry...");
+  console.log("Session expired detected by session manager");
   
   // Stop all session checking immediately
   sessionManager.stopSessionCheck();
   
-  if (toastFunction && !hasShownExpiryToast) {
-    toastFunction({
-      type: "warning",
-      title: "Session Expired",
-      description: "Your session has expired. You will be redirected to the login page.",
-      duration: 5000
-    });
-    hasShownExpiryToast = true;
-  }
-  
-  // Clear session data
+  // Clear session data immediately
   sessionManager.clearSession();
   
-  // Call the expiry callback
+  // Call the expiry callback (which will handle page reload)
   if (onSessionExpired) {
+    console.log("Calling auth context session expiry handler");
     onSessionExpired();
   }
   
-  // Longer timeout to prevent rapid expiry handling
+  // Reset flag after longer timeout to prevent rapid calls
   setTimeout(() => {
     isHandlingSessionExpiry = false;
-  }, 10000); // 10 seconds instead of 2
+  }, 5000);
 }
