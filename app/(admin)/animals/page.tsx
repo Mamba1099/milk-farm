@@ -12,6 +12,7 @@ import { AnimalDetailsDialog } from "@/components/animals/animal-details-dialog"
 import { AnimalCard } from "@/components/animals/animal-card";
 import { AnimalFilters } from "@/components/animals/animal-filters";
 import {  AnimalFilters as AnimalFiltersType, AnimalWithDetails, AnimalWithParents } from "@/lib/types/animal";
+import { DayEndTimer } from "@/components/production/day-end-timer";
 
 // Animation variants
 const fadeInUp = {
@@ -125,6 +126,13 @@ export default function AnimalsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 sm:p-6">
+      {/* Day-end timer (runs in background for all users) */}
+      <DayEndTimer 
+        dayEndHour={24}          // Day ends at midnight (00:00)
+        triggerMinutesBefore={60} // Trigger 1 hour before (23:00)
+        isActive={true}          // Always active when animals page is open
+      />
+      
       <motion.div
         className="max-w-7xl mx-auto"
         initial="initial"
