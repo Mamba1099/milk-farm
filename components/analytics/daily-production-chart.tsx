@@ -2,16 +2,19 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useQuery } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
 import { ClockLoader } from "react-spinners";
 
-interface ProductionData {
+interface DailyProductionData {
   date: string;
+  fullDate: string;
   morningProduction: number;
   eveningProduction: number;
   totalProduction: number;
+  calfFeedingAM: number;
+  calfFeedingPM: number;
 }
 
 export function DailyProductionChart() {
@@ -19,9 +22,12 @@ export function DailyProductionChart() {
     queryKey: ["analytics", "daily-production"],
     queryFn: async () => {
       const response = await apiClient.get(API_ENDPOINTS.analytics.dailyProduction);
-      return response.data as ProductionData[];
+      return response.data as DailyProductionData[];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchInterval: false,
   });
 
   if (isLoading) {
@@ -64,47 +70,54 @@ export function DailyProductionChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Icons.milk className="h-5 w-5 text-blue-600" />
-          Daily Production Trends
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+          <Icons.milk className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+          <span className="truncate">Daily Production - {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip 
-              formatter={(value, name) => [
-                `${value} L`,
-                name === 'morningProduction' ? 'Morning' :
-                name === 'eveningProduction' ? 'Evening' : 'Total'
-              ]}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="morningProduction" 
-              stroke="#3B82F6" 
-              strokeWidth={2}
-              name="Morning Production"
-            />
-            <Line 
-              type="monotone" 
-              dataKey="eveningProduction" 
-              stroke="#10B981" 
-              strokeWidth={2}
-              name="Evening Production"
-            />
-            <Line 
-              type="monotone" 
-              dataKey="totalProduction" 
-              stroke="#6366F1" 
-              strokeWidth={3}
-              name="Total Production"
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      <CardContent className="p-2 sm:p-6">
+        {/* Mobile: Horizontal scroll container */}
+        <div className="w-full overflow-x-auto lg:overflow-x-visible chart-scroll">
+          <div className="min-w-[800px] lg:min-w-full">
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart 
+                data={data} 
+                margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                barCategoryGap="20%"
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="date" 
+                  interval={0}
+                  tick={{ fontSize: 10 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis 
+                  label={{ value: 'Liters', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }}
+                  tick={{ fontSize: 10 }}
+                />
+                <Tooltip 
+                  labelFormatter={(label, payload) => {
+                    if (payload && payload[0] && payload[0].payload) {
+                      return `Date: ${payload[0].payload.fullDate}`;
+                    }
+                    return `Day ${label}`;
+                  }}
+                  formatter={(value) => [`${value} L`, 'Total Production']}
+                  contentStyle={{ fontSize: '12px' }}
+                />
+                <Bar 
+                  dataKey="totalProduction" 
+                  fill="#059669" 
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={60}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
