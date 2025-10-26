@@ -71,7 +71,7 @@ export function useCreateAnimal() {
           if (uploadResult.error) {
             throw new Error(uploadResult.error);
           }
-          imagePath = uploadResult.imageUrl; // Use imageUrl (full URL) instead of imagePath
+          imagePath = uploadResult.imageUrl;
         }
 
         const formData = new FormData();
@@ -268,6 +268,8 @@ export function useCreateTreatment() {
       queryClient.invalidateQueries({ queryKey: ["animals"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["treatment-statistics"] });
+      
       
       toast({
         type: "success",
