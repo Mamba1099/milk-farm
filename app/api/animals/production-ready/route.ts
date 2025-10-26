@@ -6,6 +6,7 @@ import {
   createSecureErrorResponse 
 } from "@/lib/security";
 import { getUserFromSession } from "@/lib/auth-session";
+import { getPublicImageUrl, normalizeImageUrl } from "@/supabase/storage/client";
 
 export async function GET(request: NextRequest) {
   try {
@@ -45,9 +46,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    const animalsWithImageUrl = animals.map(animal => ({
+      ...animal,
+      image: normalizeImageUrl(animal.image),
+    }));
+
     return createSecureResponse({
-      animals,
-      total: animals.length,
+      animals: animalsWithImageUrl,
+      total: animalsWithImageUrl.length,
     }, {}, request);
   } catch (error) {
     return createSecureErrorResponse("Failed to fetch production-ready animals", 500, request);
