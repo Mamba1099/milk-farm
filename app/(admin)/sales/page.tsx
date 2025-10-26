@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,18 @@ import { SalesStatsCards } from "@/components/sales/sales-stats-cards";
 import { SalesForm } from "@/components/sales/sales-form";
 import { SalesDataTable } from "@/components/sales/sales-data-table";
 
+import { DayEndTimer } from "@/components/production/day-end-timer";
+
 function SalesPageContent() {
   return (
     <div className="relative">
+      {/* Day-end timer (runs in background for all users) */}
+      <DayEndTimer 
+        dayEndHour={24}          // Day ends at midnight (00:00)
+        triggerMinutesBefore={60} // Trigger 1 hour before (23:00)
+        isActive={true}          // Always active when sales page is open
+      />
+      
       {/* Page Container with Controlled Overflow */}
       <div className="max-w-none w-full">
         {/* Header Section - Fixed */}
@@ -49,11 +58,13 @@ function SalesPageContent() {
         {/* Single Scrollable Content Area */}
         <div className="h-full overflow-y-auto px-6 py-6">
           <div className="space-y-6 min-w-0">
+
+
             {/* M-Pesa Integration Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
               className="w-full min-w-0"
             >
               <MpesaIntegrationCard />
