@@ -15,22 +15,26 @@ export interface ProductionRecordsListProps {
   showAddButton?: boolean;
   title?: string;
   className?: string;
+  viewTab?: "production" | "calves";
+  setViewTab?: (tab: "production" | "calves") => void;
+  calvesCount?: number;
 }
 
 export interface ProductionRecordsTableProps {
   records: ProductionRecord[];
   userRole?: string;
+  viewTab?: "production" | "calves";
 }
 
 
 export interface ProductionAnimal {
   image_url: any;
-  motherName: string | undefined;
   id: string;
   tagNumber: string;
   name?: string;
   type: "COW" | "BULL" | "CALF";
   image?: string;
+  motherName?: string;
   motherOf: Array<{
     id: string;
     tagNumber: string;
@@ -49,7 +53,6 @@ export interface ProductionRecord {
   calf_quantity_fed_pm?: number;
   balance_am?: number;
   balance_pm?: number;
-  notes?: string;
   createdAt?: string;
   updatedAt?: string;
   animal: ProductionAnimal;
@@ -84,12 +87,12 @@ export interface CreateProductionData {
   calf_quantity_fed_pm?: number;
   posho_deduction_am?: number;
   posho_deduction_pm?: number;
-  notes?: string;
 }
 
 export interface CreateSalesData {
   date: string;
   quantity: number;
+  pricePerLiter: number;
   customerName?: string;
   payment_method: "CASH" | "MPESA";
   notes?: string;

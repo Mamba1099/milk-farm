@@ -11,6 +11,7 @@ export interface Sale {
   soldBy?: {
     id: string;
     username: string;
+    role: "FARM_MANAGER" | "EMPLOYEE";
   };
 }
 
