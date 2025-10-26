@@ -9,6 +9,7 @@ import { useSessionCheck } from "@/hooks/use-session-check";
 import { useToast } from "@/hooks/use-toast";
 import { LoginInput, AuthContextType, AuthProviderProps } from "@/lib/types";
 import { sessionManager } from "@/lib/session-manager";
+import { isProtectedRoute, isAuthRoute, clearAuthData } from "@/lib/auth-utils";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -25,6 +26,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const queryClient = useQueryClient();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   const [hasRedirected, setHasRedirected] = React.useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      if ((currentPath === '/login' || currentPath === '/dashboard') && hasRedirected) {
+        const resetTimer = setTimeout(() => {
+          console.log("Resetting redirect state after successful navigation");
+          setHasRedirected(false);
+          setIsLoggingOut(false);
+        }, 2000);
+        
+        return () => clearTimeout(resetTimer);
+      }
+    }
+  }, [hasRedirected]);
   const { toast } = useToast();
 
   const {
@@ -54,70 +70,112 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sessionManager.setToastFunction(toast);
   }, [toast]);
 
-  // Temporarily disable automatic session checking to break the loop
-  // useEffect(() => {
-  //   if (isAuthenticated) {
-  //     sessionManager.startSessionCheck(() => {
-  //       console.log("Session expired, logging out...");
-  //       handleSessionExpired();
-  //     });
-  //   } else {
-  //     sessionManager.stopSessionCheck();
-  //   }
+  useEffect(() => {
+    if (isAuthenticated && !isLoggingOut) {
+      console.log("Starting session monitoring for authenticated user");
+      sessionManager.startSessionCheck(() => {
+        console.log("Session expired, triggering logout...");
+        handleSessionExpired();
+      });
+    } else {
+      console.log("Stopping session monitoring - user not authenticated or logging out");
+      sessionManager.stopSessionCheck();
+    }
 
-  //   return () => {
-  //     sessionManager.stopSessionCheck();
-  //   };
-  // }, [isAuthenticated]);
+    return () => {
+      sessionManager.stopSessionCheck();
+    };
+  }, [isAuthenticated, isLoggingOut]);
 
-  const handleSessionExpired = async () => {
+  /**
+   * Handle token expiration events.
+   */
+  useEffect(() => {
+    const handleTokenExpired = (event: CustomEvent) => {
+      console.log("Received token expired event:", event.detail);
+      handleSessionExpired();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('tokenExpired', handleTokenExpired as EventListener);
+      return () => {
+        window.removeEventListener('tokenExpired', handleTokenExpired as EventListener);
+      };
+    }
+  }, []);
+
+    const handleSessionExpired = async () => {
     if (isLoggingOut) {
-      console.log("Logout already in progress, skipping...");
+      console.log("Logout already in progress, skipping session expiry handling...");
       return;
     }
     
-    console.log("Session expired, logging out...");
+    console.log("Session expired, clearing context and reloading page...");
     setIsLoggingOut(true);
+    
     try {
-      // Clear session first to prevent any further auth checks
       sessionManager.clearSession();
+      sessionManager.stopSessionCheck();
       queryClient.removeQueries({ queryKey: ["user"] });
-      queryClient.clear();
+      queryClient.removeQueries({ queryKey: ["auth"] });
+      queryClient.removeQueries({ queryKey: ["session"] });
+      if (typeof window !== 'undefined') {
+        clearAuthData();
+      }
+
+      toast({
+        type: "warning",
+        title: "Session Expired",
+        description: "Your session has expired. Page will reload...",
+        duration: 2000
+      });
       
-      await logoutMutation.mutateAsync();
-      window.location.replace("/login");
+      setTimeout(() => {
+        console.log("Reloading page to reset authentication state...");
+        window.location.reload();
+      }, 500);
+      
     } catch (error) {
-      console.error("Error during session expiration logout:", error);
-      window.location.replace("/login");
-    } finally {
-      setTimeout(() => setIsLoggingOut(false), 5000);
+      console.error("Error during session expiration cleanup:", error);
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     }
   };
 
   useEffect(() => {
-    if (!isLoading && !isLoggingOut && !hasRedirected) {
-      const currentPath = window.location.pathname;
-      const isAuthPage = ["/login", "/signup"].includes(currentPath);
-      const isProtectedRoute = currentPath.startsWith("/dashboard") || 
-                              currentPath.startsWith("/animals") ||
-                              currentPath.startsWith("/production") ||
-                              currentPath.startsWith("/accounts") ||
-                              currentPath.startsWith("/analytics") ||
-                              currentPath.startsWith("/settings") ||
-                              currentPath.startsWith("/sales");
+    if (isLoading || isLoggingOut || hasRedirected) {
+      return;
+    }
 
-      if (!isAuthenticated && isProtectedRoute) {
+    const timeoutId = setTimeout(() => {
+      const currentPath = window.location.pathname;
+      const isOnAuthPage = isAuthRoute(currentPath);
+      const isOnProtectedRoute = isProtectedRoute(currentPath);
+
+      console.log("Auth redirect check:", {
+        currentPath,
+        isAuthenticated,
+        isOnAuthPage,
+        isOnProtectedRoute,
+        isLoading,
+        isLoggingOut,
+        hasRedirected
+      });
+
+      if (!isAuthenticated && isOnProtectedRoute) {
         console.log("Redirecting to login - not authenticated on protected route");
         setHasRedirected(true);
+        clearAuthData();
         window.location.replace("/login");
-      } else if (isAuthenticated && isAuthPage && !isLoggingOut) {
+      } else if (isAuthenticated && isOnAuthPage) {
         console.log("Redirecting to dashboard - authenticated on auth page");
         setHasRedirected(true);
-        setTimeout(() => {
-          window.location.replace("/dashboard");
-        }, 100); // Small delay to prevent rapid redirects
+        window.location.replace("/dashboard");
       }
-    }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [isAuthenticated, isLoading, isLoggingOut, hasRedirected]);
 
   const hasRole = (roles: string | string[]): boolean => {
@@ -132,52 +190,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: LoginInput) => {
     try {
-      await loginMutation.mutateAsync(credentials);
-      await refetchUser();
-      router.push("/dashboard");
+      console.log("Starting login process...");
+      const result = await loginMutation.mutateAsync(credentials);
+      
+      // Set session info from login response
+      if (result?.session) {
+        sessionManager.setSessionInfo(result.session);
+      }
+      
+      console.log("Login successful, invalidating queries and redirecting...");
+      // Invalidate the user query to trigger a refetch naturally
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      
+      console.log("Redirecting to dashboard...");
+      setHasRedirected(true); // Prevent the redirect useEffect from running
+      
+      // Small delay to allow query invalidation to process
+      setTimeout(() => {
+        window.location.replace("/dashboard");
+      }, 100);
     } catch (error) {
+      console.error("Login failed:", error);
       throw error;
     }
   };
 
   const logout = async () => {
-    if (isLoggingOut) {
+    if (isLoggingOut || hasRedirected) {
       console.log("Logout already in progress, skipping manual logout...");
       return;
     }
     
     console.log("Manual logout initiated...");
     setIsLoggingOut(true);
-    setHasRedirected(false);
+    setHasRedirected(true);
     
     try {
-      // Clear session and cache first
+      sessionManager.stopSessionCheck();
       sessionManager.clearSession();
       queryClient.removeQueries({ queryKey: ["user"] });
       queryClient.clear();
-      
-      // Clear any local storage items that might be keeping auth state
-      localStorage.clear();
-      sessionStorage.clear();
-      
+      if (typeof window !== 'undefined') {
+        clearAuthData();
+      }
       await logoutMutation.mutateAsync();
-      
-      // Force redirect to login and prevent redirect loops
+      toast({
+        type: "success",
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+        duration: 2000
+      });
       setTimeout(() => {
         window.location.replace("/login");
-      }, 100);
+      }, 500);
       
     } catch (error) {
       console.error("Logout error:", error);
-      localStorage.clear();
-      sessionStorage.clear();
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
       window.location.replace("/login");
-    } finally {
-      // Reset the flag after a longer delay
-      setTimeout(() => {
-        setIsLoggingOut(false);
-        setHasRedirected(false);
-      }, 5000);
     }
   };
 
