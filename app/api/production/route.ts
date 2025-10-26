@@ -9,6 +9,7 @@ import {
 } from "@/lib/services/production-calculations";
 import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
 import { getUserFromSession } from "@/lib/auth-session";
+import { updateDaySummary } from "@/lib/services/production-balance";
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,40 +66,106 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Get both morning and evening productions without pagination to combine them properly
     const [morningProductions, morningTotal] = await Promise.all([
       prisma.morningProduction.findMany({
         where,
-        skip,
-        take: limit,
         orderBy: { date: "desc" },
         include: {
-          animal: { select: { id: true, tagNumber: true, name: true, type: true, image: true } },
+          animal: { select: { id: true, tagNumber: true, name: true, type: true, image: true, motherName: true } },
           recordedBy: { select: { id: true, username: true } },
         },
       }),
       prisma.morningProduction.count({ where }),
     ]);
+    
     const [eveningProductions, eveningTotal] = await Promise.all([
       prisma.eveningProduction.findMany({
         where,
-        skip,
-        take: limit,
         orderBy: { date: "desc" },
         include: {
-          animal: { select: { id: true, tagNumber: true, name: true, type: true, image: true } },
+          animal: { select: { id: true, tagNumber: true, name: true, type: true, image: true, motherName: true } },
           recordedBy: { select: { id: true, username: true } },
         },
       }),
       prisma.eveningProduction.count({ where }),
     ]);
-    const totalPages = Math.ceil((morningTotal + eveningTotal) / limit);
+
+    // Combine morning and evening productions for the same animal and date
+    const combinedRecordsMap = new Map();
+
+    // Process morning productions
+    morningProductions.forEach((record) => {
+      const dateKey = new Date(record.date).toDateString();
+      const key = `${record.animalId}-${dateKey}`;
+      
+      combinedRecordsMap.set(key, {
+        id: record.id,
+        animalId: record.animalId,
+        date: record.date,
+        quantity_am: record.quantity_am,
+        quantity_pm: null,
+        calf_quantity_fed_am: record.calf_quantity_fed_am,
+        calf_quantity_fed_pm: null,
+        balance_am: record.balance_am,
+        balance_pm: null,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+        animal: record.animal,
+        recordedBy: record.recordedBy,
+      });
+    });
+
+    // Process evening productions and merge with morning data
+    eveningProductions.forEach((record) => {
+      const dateKey = new Date(record.date).toDateString();
+      const key = `${record.animalId}-${dateKey}`;
+      
+      if (combinedRecordsMap.has(key)) {
+        // Update existing record with evening data
+        const existingRecord = combinedRecordsMap.get(key);
+        existingRecord.quantity_pm = record.quantity_pm;
+        existingRecord.calf_quantity_fed_pm = record.calf_quantity_fed_pm;
+        existingRecord.balance_pm = record.balance_pm;
+        // Use the later timestamp for updatedAt
+        if (new Date(record.updatedAt) > new Date(existingRecord.updatedAt)) {
+          existingRecord.updatedAt = record.updatedAt;
+        }
+      } else {
+        // Create new record for evening-only production
+        combinedRecordsMap.set(key, {
+          id: record.id,
+          animalId: record.animalId,
+          date: record.date,
+          quantity_am: null,
+          quantity_pm: record.quantity_pm,
+          calf_quantity_fed_am: null,
+          calf_quantity_fed_pm: record.calf_quantity_fed_pm,
+          balance_am: null,
+          balance_pm: record.balance_pm,
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt,
+          animal: record.animal,
+          recordedBy: record.recordedBy,
+        });
+      }
+    });
+
+    // Convert to array and sort by date (newest first)
+    const combinedRecords = Array.from(combinedRecordsMap.values())
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // Apply pagination to combined records
+    const paginatedRecords = combinedRecords.slice(skip, skip + limit);
+    const totalCombinedRecords = combinedRecords.length;
+    const totalPages = Math.ceil(totalCombinedRecords / limit);
+
     return createSecureResponse({
-      morningProductions,
-      eveningProductions,
+      records: paginatedRecords,
       pagination: {
         page,
         limit,
-        total: morningTotal + eveningTotal,
+        total: totalCombinedRecords,
         totalPages,
       },
     }, { status: 200 }, request);
@@ -124,10 +191,20 @@ export async function POST(request: NextRequest) {
 
     // Morning Production
     if (body.type === "morning") {
-      const { animalId, date, quantity_am, calf_quantity_fed_am, notes } = body;
+      const { animalId, date, quantity_am, calf_quantity_fed_am } = body;
       const animal = await prisma.animal.findUnique({ where: { id: animalId } });
       if (!animal) return createSecureErrorResponse("Animal not found", 404, request);
-      if (!animal.isReadyForProduction) return createSecureErrorResponse("Animal is not ready for production", 400, request);
+      const isCalfFeedingOnly = quantity_am === 0 && calf_quantity_fed_am > 0;
+      const isProductiveAnimal = quantity_am > 0;
+      
+      if (isProductiveAnimal && !animal.isReadyForProduction) {
+        return createSecureErrorResponse("Animal is not ready for production", 400, request);
+      }
+      
+      if (!isCalfFeedingOnly && !isProductiveAnimal) {
+        return createSecureErrorResponse("Please provide either production quantity or calf feeding quantity", 400, request);
+      }
+      
       const targetDate = new Date(date);
       const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
@@ -135,19 +212,107 @@ export async function POST(request: NextRequest) {
         where: { animalId, date: { gte: startOfDay, lt: endOfDay } },
       });
       if (existingRecord) return createSecureErrorResponse("Morning production record already exists for this animal on this date", 409, request);
-      const balance_am = quantity_am - calf_quantity_fed_am;
-      const morningProduction = await prisma.morningProduction.create({
-        data: { animalId, date: new Date(date), quantity_am, calf_quantity_fed_am, balance_am, recordedById: user.id, notes },
-        include: { animal: { select: { id: true, tagNumber: true, name: true, type: true, image: true } }, recordedBy: { select: { id: true, username: true } } },
+      
+      await prisma.$transaction(async (tx) => {
+        const balance_am = quantity_am - calf_quantity_fed_am;
+        
+        const morningProduction = await tx.morningProduction.create({
+          data: { animalId, date: new Date(date), quantity_am, calf_quantity_fed_am, balance_am, recordedById: user.id },
+          include: { animal: { select: { id: true, tagNumber: true, name: true, type: true, image: true, motherName: true } }, recordedBy: { select: { id: true, username: true } } },
+        });
+
+        // If this is a mother cow with production, create calf feeding records
+        if (isProductiveAnimal && calf_quantity_fed_am > 0) {
+          const calves = await tx.animal.findMany({
+            where: { 
+              type: "CALF",
+              motherName: animal.name || animal.tagNumber
+            }
+          });
+
+          for (const calf of calves) {
+            // Check if calf record already exists for this date
+            const existingCalfRecord = await tx.morningProduction.findFirst({
+              where: { 
+                animalId: calf.id, 
+                date: { gte: startOfDay, lt: endOfDay } 
+              },
+            });
+
+            if (!existingCalfRecord) {
+              await tx.morningProduction.create({
+                data: { 
+                  animalId: calf.id, 
+                  date: new Date(date), 
+                  quantity_am: 0, 
+                  calf_quantity_fed_am: calf_quantity_fed_am / calves.length,
+                  balance_am: 0,
+                  recordedById: user.id 
+                },
+              });
+            }
+          }
+        }
+
+        // If this is a calf feeding record, update mother's production record
+        if (animal.type === "CALF" && animal.motherName && isCalfFeedingOnly) {
+          const mother = await tx.animal.findFirst({
+            where: { 
+              OR: [
+                { name: animal.motherName },
+                { tagNumber: animal.motherName }
+              ]
+            }
+          });
+
+          if (mother) {
+            const existingMotherRecord = await tx.morningProduction.findFirst({
+              where: { 
+                animalId: mother.id, 
+                date: { gte: startOfDay, lt: endOfDay } 
+              },
+            });
+
+            if (existingMotherRecord) {
+              await tx.morningProduction.update({
+                where: { id: existingMotherRecord.id },
+                data: { 
+                  calf_quantity_fed_am: (existingMotherRecord.calf_quantity_fed_am || 0) + calf_quantity_fed_am,
+                  balance_am: (existingMotherRecord.quantity_am || 0) - ((existingMotherRecord.calf_quantity_fed_am || 0) + calf_quantity_fed_am)
+                }
+              });
+            }
+          }
+        }
       });
-      return createSecureResponse({ message: "Morning production record created successfully", morningProduction }, { status: 201 }, request);
+
+      const createdRecord = await prisma.morningProduction.findFirst({
+        where: { animalId, date: { gte: startOfDay, lt: endOfDay } },
+        include: { animal: { select: { id: true, tagNumber: true, name: true, type: true, image: true, motherName: true } }, recordedBy: { select: { id: true, username: true } } },
+      });
+
+      // Update daily summary after production record
+      await updateDaySummary(targetDate);
+
+      return createSecureResponse({ message: "Morning production record created successfully", morningProduction: createdRecord }, { status: 201 }, request);
     }
-    // Evening Production
+
     if (body.type === "evening") {
-      const { animalId, date, quantity_pm, calf_quantity_fed_pm, notes } = body;
+      const { animalId, date, quantity_pm, calf_quantity_fed_pm } = body;
       const animal = await prisma.animal.findUnique({ where: { id: animalId } });
       if (!animal) return createSecureErrorResponse("Animal not found", 404, request);
-      if (!animal.isReadyForProduction) return createSecureErrorResponse("Animal is not ready for production", 400, request);
+      
+      const isCalfFeedingOnly = quantity_pm === 0 && calf_quantity_fed_pm > 0;
+      const isProductiveAnimal = quantity_pm > 0;
+      
+      if (isProductiveAnimal && !animal.isReadyForProduction) {
+        return createSecureErrorResponse("Animal is not ready for production", 400, request);
+      }
+      
+      if (!isCalfFeedingOnly && !isProductiveAnimal) {
+        return createSecureErrorResponse("Please provide either production quantity or calf feeding quantity", 400, request);
+      }
+      
       const targetDate = new Date(date);
       const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
@@ -155,30 +320,99 @@ export async function POST(request: NextRequest) {
         where: { animalId, date: { gte: startOfDay, lt: endOfDay } },
       });
       if (existingRecord) return createSecureErrorResponse("Evening production record already exists for this animal on this date", 409, request);
-      const balance_pm = quantity_pm - calf_quantity_fed_pm;
-      const eveningProduction = await prisma.eveningProduction.create({
-        data: { animalId, date: new Date(date), quantity_pm, calf_quantity_fed_pm, balance_pm, recordedById: user.id, notes },
-        include: { animal: { select: { id: true, tagNumber: true, name: true, type: true, image: true } }, recordedBy: { select: { id: true, username: true } } },
+      await prisma.$transaction(async (tx) => {
+        const balance_pm = quantity_pm - calf_quantity_fed_pm;
+        const eveningProduction = await tx.eveningProduction.create({
+          data: { animalId, date: new Date(date), quantity_pm, calf_quantity_fed_pm, balance_pm, recordedById: user.id },
+          include: { animal: { select: { id: true, tagNumber: true, name: true, type: true, image: true, motherName: true } }, recordedBy: { select: { id: true, username: true } } },
+        });
+
+        // If this is a mother cow with production, create calf feeding records
+        if (isProductiveAnimal && calf_quantity_fed_pm > 0) {
+          const calves = await tx.animal.findMany({
+            where: { 
+              type: "CALF",
+              motherName: animal.name || animal.tagNumber
+            }
+          });
+
+          for (const calf of calves) {
+            // Check if calf record already exists for this date
+            const existingCalfRecord = await tx.eveningProduction.findFirst({
+              where: { 
+                animalId: calf.id, 
+                date: { gte: startOfDay, lt: endOfDay } 
+              },
+            });
+
+            if (!existingCalfRecord) {
+              // Create calf feeding record
+              await tx.eveningProduction.create({
+                data: { 
+                  animalId: calf.id, 
+                  date: new Date(date), 
+                  quantity_pm: 0,  // Calves don't produce milk
+                  calf_quantity_fed_pm: calf_quantity_fed_pm / calves.length, // Split feeding among calves
+                  balance_pm: 0,  // No balance for calves (they don't produce)
+                  recordedById: user.id 
+                },
+              });
+            }
+          }
+        }
+
+        // If this is a calf feeding record, update mother's production record
+        if (animal.type === "CALF" && animal.motherName && isCalfFeedingOnly) {
+          const mother = await tx.animal.findFirst({
+            where: { 
+              OR: [
+                { name: animal.motherName },
+                { tagNumber: animal.motherName }
+              ]
+            }
+          });
+
+          if (mother) {
+            const existingMotherRecord = await tx.eveningProduction.findFirst({
+              where: { 
+                animalId: mother.id, 
+                date: { gte: startOfDay, lt: endOfDay } 
+              },
+            });
+
+            if (existingMotherRecord) {
+              // Update mother's calf feeding quantity
+              await tx.eveningProduction.update({
+                where: { id: existingMotherRecord.id },
+                data: { 
+                  calf_quantity_fed_pm: (existingMotherRecord.calf_quantity_fed_pm || 0) + calf_quantity_fed_pm,
+                  balance_pm: (existingMotherRecord.quantity_pm || 0) - ((existingMotherRecord.calf_quantity_fed_pm || 0) + calf_quantity_fed_pm)
+                }
+              });
+            }
+          }
+        }
       });
-      return createSecureResponse({ message: "Evening production record created successfully", eveningProduction }, { status: 201 }, request);
+
+      // Fetch the created record to return
+      const createdRecord = await prisma.eveningProduction.findFirst({
+        where: { animalId, date: { gte: startOfDay, lt: endOfDay } },
+        include: { animal: { select: { id: true, tagNumber: true, name: true, type: true, image: true, motherName: true } }, recordedBy: { select: { id: true, username: true } } },
+      });
+
+      // Update daily summary after production record
+      await updateDaySummary(targetDate);
+
+      return createSecureResponse({ message: "Evening production record created successfully", eveningProduction: createdRecord }, { status: 201 }, request);
     }
-    // Production Summary
+    /**
+     * Production Summary - using simplified balance service
+     */
     if (body.type === "summary") {
-      const { date, posho_deduction_am, posho_deduction_pm } = body;
-      const morningBalances = await prisma.morningProduction.findMany({ where: { date: new Date(date) } });
-      const total_morning = calculateTotalMorning(morningBalances);
-      const yesterday = new Date(new Date(date).getTime() - 24 * 60 * 60 * 1000);
-      const prevSummary = await prisma.productionSummary.findUnique({ where: { date: yesterday } });
-      const balance_yesterday = prevSummary?.balance_evening || 0;
-      const balance_morning = calculateBalanceMorning(total_morning, balance_yesterday, posho_deduction_am);
-      const eveningBalances = await prisma.eveningProduction.findMany({ where: { date: new Date(date) } });
-      const total_evening = calculateTotalEvening(eveningBalances);
-      const balance_evening = calculateBalanceEvening(total_evening, balance_morning, posho_deduction_pm);
-      // Save summary
-      const summary = await prisma.productionSummary.upsert({
-        where: { date: new Date(date) },
-        update: { total_morning, balance_morning, balance_yesterday, total_evening, balance_evening, posho_deduction_am, posho_deduction_pm },
-        create: { date: new Date(date), total_morning, balance_morning, balance_yesterday, total_evening, balance_evening, posho_deduction_am, posho_deduction_pm },
+      const { date } = body;
+      await updateDaySummary(new Date(date));
+      const summary = await prisma.productionSummary.findUnique({ 
+        where: { date: new Date(date) } 
       });
       return createSecureResponse({ message: "Production summary updated", summary }, { status: 201 }, request);
     }
