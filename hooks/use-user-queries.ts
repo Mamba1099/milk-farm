@@ -9,11 +9,13 @@ export const useCurrentUser = () => {
     queryKey: ["user", "current"],
     queryFn: async (): Promise<User | null> => {
       try {
+        console.log("Fetching current user data...");
         const response = await apiClient.get<{ user: User }>(
           API_ENDPOINTS.auth.profile
         );
         
         if (response.data && response.data.user) {
+          console.log("User data fetched successfully");
           return response.data.user;
         }
         
@@ -23,6 +25,7 @@ export const useCurrentUser = () => {
           const axiosError = error as { response?: { status?: number } };
           
           if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
+            console.log("User authentication failed - 401/403");
             return null;
           }
         }
@@ -40,11 +43,12 @@ export const useCurrentUser = () => {
       }
       return failureCount < 1;
     },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: false,
     refetchInterval: false,
+    notifyOnChangeProps: ['data', 'error', 'isLoading'],
   });
 };
 
