@@ -12,6 +12,8 @@ import {
   SystemHealth,
   DashboardStats,
 } from "@/lib/types";
+import { ProductionRecord } from "@/lib/types/production";
+import { isSameDay } from "date-fns";
 
 export const useAnimalStats = () => {
   const { toast } = useToast();
@@ -79,12 +81,10 @@ export const useAnimalStats = () => {
       }
       return failureCount < 2;
     },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
-    refetchOnWindowFocus: false, // Reduce aggressive refetching
-    refetchOnMount: "always", // Only refetch on mount if data is stale
-    // Removed refetchInterval to prevent automatic polling every 5 minutes
-    // Provide fallback data when query is disabled
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: "always",
     placeholderData: {
       total: 0,
       cows: 0,
@@ -107,9 +107,12 @@ export const useProductionStats = () => {
     queryFn: async () => {
       try {
         const response = await apiClient.get("/production?limit=1000");
-        const productions: Production[] = response.data.productions || [];
+        const { records = [] } = response.data;
 
-        if (productions.length === 0) {
+        // Filter out calf records for production stats
+        const allProductions = (records as ProductionRecord[]).filter((p: ProductionRecord) => p.animal.type !== "CALF");
+
+        if (allProductions.length === 0) {
           return {
             totalRecords: 0,
             todayQuantity: 0,
@@ -128,50 +131,54 @@ export const useProductionStats = () => {
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-        const todayProductions = productions.filter((p) =>
-          p.date.startsWith(today)
+        const todayProductions = allProductions.filter((p: ProductionRecord) =>
+          isSameDay(new Date(p.date), now)
+        );
+        const weeklyProductions = allProductions.filter(
+          (p: ProductionRecord) => new Date(p.date) >= weekAgo
+        );
+        const monthlyProductions = allProductions.filter(
+          (p: ProductionRecord) => new Date(p.date) >= monthAgo
         );
 
-        const weeklyProductions = productions.filter(
-          (p) => new Date(p.date) >= weekAgo
-        );
-
-        const monthlyProductions = productions.filter(
-          (p) => new Date(p.date) >= monthAgo
-        );
-
+        // Calculate quantities from morning and evening productions
         const todayQuantity = todayProductions.reduce(
-          (sum, p) => sum + (p.totalQuantity || 0),
+          (sum: number, p: ProductionRecord) => sum + ((p.quantity_am || 0) + (p.quantity_pm || 0)),
           0
         );
         const weeklyTotal = weeklyProductions.reduce(
-          (sum, p) => sum + (p.totalQuantity || 0),
+          (sum: number, p: ProductionRecord) => sum + ((p.quantity_am || 0) + (p.quantity_pm || 0)),
           0
         );
         const monthlyTotal = monthlyProductions.reduce(
-          (sum, p) => sum + (p.totalQuantity || 0),
+          (sum: number, p: ProductionRecord) => sum + ((p.quantity_am || 0) + (p.quantity_pm || 0)),
           0
         );
         const weeklyAverage = Math.round(weeklyTotal / 7);
 
-        const sortedProductions = [...productions].sort(
+        const sortedProductions = [...allProductions].sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         const lastRecordDate =
           sortedProductions.length > 0 ? sortedProductions[0].date : null;
 
+        const totalQuantity = allProductions.reduce(
+          (sum: number, p: ProductionRecord) => sum + ((p.quantity_am || 0) + (p.quantity_pm || 0)),
+          0
+        );
+
         return {
-          totalRecords: productions.length,
+          totalRecords: allProductions.length,
           todayQuantity,
           weeklyTotal,
           weeklyAverage,
           monthlyTotal,
-          totalQuantity: monthlyTotal,
+          totalQuantity,
           averageDaily: weeklyAverage,
           averagePerAnimal:
-            productions.length > 0
-              ? monthlyTotal /
-                Math.max(1, new Set(productions.map((p) => p.animalId)).size)
+            allProductions.length > 0
+              ? totalQuantity /
+                Math.max(1, new Set(allProductions.map((p: any) => p.animalId)).size)
               : 0,
           lastRecordDate,
         };
@@ -208,12 +215,10 @@ export const useProductionStats = () => {
       }
       return failureCount < 2;
     },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
-    refetchOnWindowFocus: false, // Reduce aggressive refetching
-    refetchOnMount: "always", // Only refetch on mount if data is stale
-    // Removed refetchInterval to prevent automatic polling every 5 minutes
-    // Provide fallback data when query is disabled
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: "always",
     placeholderData: {
       totalRecords: 0,
       todayQuantity: 0,
@@ -240,7 +245,6 @@ export const useUserStats = () => {
         const response = await apiClient.get("/users?stats=true");
         return response.data.stats;
       } catch (error: any) {
-        // If it's an authentication error, return fallback stats instead of throwing
         if (error.response?.status === 401) {
           console.warn("Authentication required for user stats - returning fallback data");
         } else {
@@ -263,7 +267,6 @@ export const useUserStats = () => {
     },
     enabled: isAuthenticated && !authLoading,
     retry: (failureCount, error: any) => {
-      // Don't retry on auth errors
       if (error?.response?.status === 401) {
         return false;
       }
@@ -272,7 +275,6 @@ export const useUserStats = () => {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
-    // Provide fallback data when query is disabled
     placeholderData: {
       active: 1,
       total: 1,
