@@ -175,7 +175,6 @@ model MorningProduction {
   calf_quantity_fed_am Float @default(0)
   balance_am      Float     @default(0)
   recordedById    String
-  notes           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -194,7 +193,6 @@ model EveningProduction {
   calf_quantity_fed_pm Float @default(0)
   balance_pm      Float     @default(0)
   recordedById    String
-  notes           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -206,19 +204,12 @@ model EveningProduction {
 }
 
 model ProductionSummary {
-  id                String    @id @default(cuid())
-  date              DateTime?  @default(now())
-  total_morning     Float?
-  balance_morning   Float?
-  balance_yesterday Float?
-  total_evening     Float?
-  balance_evening   Float?
-  posho_deduction_am   Float?
-  posho_deduction_pm   Float?
-  createdAt         DateTime?  @default(now())
-  updatedAt         DateTime?  @updatedAt
+  id            String    @id @default(cuid())
+  date          DateTime  @unique @default(now())
+  final_balance Float     @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  @@unique([date])
   @@map("production_summary")
 }
 
