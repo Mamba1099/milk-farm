@@ -14,5 +14,8 @@ export { QuickAnalyticsOverview } from './quick-analytics-overview';
 export { RecentAnimalsCard } from './recent-animals-card';
 export { RoleBasedInfo } from './role-based-info';
 
+// Dashboard controls
+export { DayEndSummaryTrigger } from './day-end-summary-trigger';
+
 // Chart components
 export { SimpleBarChart, SimpleProgressChart, StatCard, SimpleTrendChart } from './chart-components';
