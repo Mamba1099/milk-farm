@@ -1,0 +1,158 @@
+import { prisma } from "@/lib/prisma";
+
+/**
+ * Simple Production Balance Service
+ * Uses ProductionSummary model for balance tracking
+ */
+
+export interface DayBalance {
+  date: Date;
+  totalProduction: number;
+  totalCalfFed: number;
+  netProduction: number;
+  totalSales: number;
+  finalBalance: number;
+  balanceYesterday: number;
+}
+
+/**
+ * Calculate daily balance using existing ProductionSummary
+ */
+export async function calculateDayBalance(date: Date): Promise<DayBalance> {
+  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+
+  // Get production records for the day
+  const [morningProductions, eveningProductions] = await Promise.all([
+    prisma.morningProduction.findMany({
+      where: {
+        date: { gte: startOfDay, lt: endOfDay },
+        animal: { type: { not: "CALF" } } // Only count productive animals
+      }
+    }),
+    prisma.eveningProduction.findMany({
+      where: {
+        date: { gte: startOfDay, lt: endOfDay },
+        animal: { type: { not: "CALF" } }
+      }
+    })
+  ]);
+
+  // Calculate totals
+  const morningTotal = morningProductions.reduce((sum, record) => sum + (record.quantity_am || 0), 0);
+  const eveningTotal = eveningProductions.reduce((sum, record) => sum + (record.quantity_pm || 0), 0);
+  const totalProduction = morningTotal + eveningTotal;
+
+  const morningCalfFed = morningProductions.reduce((sum, record) => sum + (record.calf_quantity_fed_am || 0), 0);
+  const eveningCalfFed = eveningProductions.reduce((sum, record) => sum + (record.calf_quantity_fed_pm || 0), 0);
+  const totalCalfFed = morningCalfFed + eveningCalfFed;
+
+  // Net production after calf feeding
+  const netProduction = totalProduction - totalCalfFed;
+
+  // Get total sales for the day
+  const salesTotal = await prisma.sales.aggregate({
+    where: {
+      timeRecorded: { gte: startOfDay, lt: endOfDay }
+    },
+    _sum: { quantity: true }
+  });
+  const totalSales = salesTotal._sum.quantity || 0;
+
+  // Get yesterday's balance
+  const yesterday = new Date(startOfDay);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const yesterdaySummary = await prisma.productionSummary.findUnique({
+    where: { date: yesterday }
+  });
+  const balanceYesterday = yesterdaySummary?.final_balance || 0;
+
+  // Calculate final balance: yesterday's balance + net production - sales
+  const finalBalance = balanceYesterday + netProduction - totalSales;
+
+  return {
+    date: startOfDay,
+    totalProduction,
+    totalCalfFed,
+    netProduction,
+    totalSales,
+    finalBalance,
+    balanceYesterday,
+  };
+}
+
+/**
+ * Update or create daily summary with balance
+ */
+export async function updateDaySummary(date: Date): Promise<void> {
+  const dayBalance = await calculateDayBalance(date);
+  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  await prisma.productionSummary.upsert({
+    where: { date: startOfDay },
+    create: {
+      date: startOfDay,
+      final_balance: dayBalance.finalBalance,
+    },
+    update: {
+      final_balance: dayBalance.finalBalance,
+    }
+  });
+}
+
+/**
+ * Get available milk for sales (including yesterday's balance)
+ */
+export async function getAvailableMilkForSales(date: Date): Promise<{
+  balanceYesterday: number;
+  todayNetProduction: number;
+  totalAvailable: number;
+  totalSold: number;
+  remainingBalance: number;
+}> {
+  const dayBalance = await calculateDayBalance(date);
+
+  const totalAvailable = dayBalance.balanceYesterday + dayBalance.netProduction;
+  const remainingBalance = totalAvailable - dayBalance.totalSales;
+
+  return {
+    balanceYesterday: dayBalance.balanceYesterday,
+    todayNetProduction: dayBalance.netProduction,
+    totalAvailable,
+    totalSold: dayBalance.totalSales,
+    remainingBalance,
+  };
+}
+
+/**
+ * Get morning production total including yesterday's balance
+ */
+export async function getMorningTotalWithBalance(date: Date): Promise<number> {
+  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  // Get yesterday's balance
+  const yesterday = new Date(startOfDay);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const yesterdaySummary = await prisma.productionSummary.findUnique({
+    where: { date: yesterday }
+  });
+  const balanceYesterday = yesterdaySummary?.final_balance || 0;
+
+  // Get morning production
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+  const morningProductions = await prisma.morningProduction.findMany({
+    where: {
+      date: { gte: startOfDay, lt: endOfDay },
+      animal: { type: { not: "CALF" } }
+    }
+  });
+
+  const morningTotal = morningProductions.reduce((sum, record) => sum + (record.quantity_am || 0), 0);
+  const morningCalfFed = morningProductions.reduce((sum, record) => sum + (record.calf_quantity_fed_am || 0), 0);
+  const morningNet = morningTotal - morningCalfFed;
+
+  // Return yesterday's balance + today's morning net production
+  return balanceYesterday + morningNet;
+}
