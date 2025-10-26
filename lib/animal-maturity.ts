@@ -108,13 +108,13 @@ export async function updateProductionCarryOver() {
       return { success: false, message: "No production summary for today." };
     }
 
-    const carryOver = todaySummary.balance_evening || 0;
-    console.log(`Carry-over for today (balance_evening): ${carryOver}L`);
+    const carryOver = todaySummary.final_balance || 0;
+    console.log(`Carry-over for today (final_balance): ${carryOver}L`);
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
     await prisma.productionSummary.upsert({
       where: { date: tomorrow },
-      update: { balance_yesterday: carryOver },
-      create: { date: tomorrow, balance_yesterday: carryOver },
+      update: { final_balance: carryOver },
+      create: { date: tomorrow, final_balance: carryOver },
     });
 
     return {
