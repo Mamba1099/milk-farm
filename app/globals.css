@@ -66,3 +66,34 @@
     --chart-5: 340 75% 55%;
   }
 }
+
+/* Custom scrollbars for mobile chart containers */
+.chart-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb #f9fafb;
+}
+
+.chart-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.chart-scroll::-webkit-scrollbar-track {
+  background: #f9fafb;
+  border-radius: 3px;
+}
+
+.chart-scroll::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+
+.chart-scroll::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}
+
+/* Smooth scrolling for mobile charts */
+@media (max-width: 1024px) {
+  .chart-scroll {
+    scroll-behavior: smooth;
+  }
+}
