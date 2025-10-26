@@ -48,7 +48,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sessionDuration = 30 * 60 * 1000;
+  // Standard session duration (30 minutes)
+  const sessionDuration = 30 * 60 * 1000;
     const sessionStartTime = new Date();
     const sessionEndTime = new Date(sessionStartTime.getTime() + sessionDuration);
 
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
       sessionDuration: sessionDuration,
     };
 
+    // Token validity matches sessionDuration (30 minutes)
     const sessionToken = jwt.sign(payload, JWT_SECRET as string, {
       expiresIn: "30m",
     });
@@ -97,6 +99,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+      // maxAge in seconds (30 minutes)
       maxAge: 30 * 60,
       path: "/",
     });
