@@ -13,6 +13,7 @@ interface CalfProductionTableProps {
   onCalfQuantityChange: (calfId: string, value: string) => void;
   onSubmit: (calfId: string) => void;
   disabled: (calfId: string) => boolean;
+  submitting?: { [calfId: string]: boolean };
 }
 
 export const CalfProductionTable = React.memo(function CalfProductionTable({
@@ -21,7 +22,8 @@ export const CalfProductionTable = React.memo(function CalfProductionTable({
   formState, 
   onCalfQuantityChange, 
   onSubmit, 
-  disabled 
+  disabled,
+  submitting = {}
 }: CalfProductionTableProps) {
   return (
     <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
@@ -41,7 +43,6 @@ export const CalfProductionTable = React.memo(function CalfProductionTable({
               <TableHead className="px-3 py-3 text-left text-sm font-semibold text-gray-700 min-w-[200px]">Calf Info</TableHead>
               <TableHead className="px-3 py-3 text-center text-sm font-semibold text-gray-700 hidden lg:table-cell min-w-[120px]">Mother</TableHead>
               <TableHead className="px-3 py-3 text-center text-sm font-semibold text-gray-700 w-[100px]">Fed (L)</TableHead>
-              <TableHead className="px-3 py-3 text-center text-sm font-semibold text-gray-700 w-[80px]">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -112,11 +113,11 @@ export const CalfProductionTable = React.memo(function CalfProductionTable({
                     <TableCell className="px-3 py-4 text-center">
                       <Button
                         onClick={() => onSubmit(calf.id)}
-                        disabled={isDisabled || !record?.calfQuantity}
-                        className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 text-xs rounded-md"
+                        disabled={isDisabled || !record?.calfQuantity || submitting[calf.id]}
+                        className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 text-xs rounded-md disabled:opacity-50"
                         size="sm"
                       >
-                        Submit
+                        {submitting[calf.id] ? "Saving..." : record?.submitted ? "Saved" : "Submit"}
                       </Button>
                     </TableCell>
                   </TableRow>

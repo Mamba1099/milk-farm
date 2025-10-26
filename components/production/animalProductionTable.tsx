@@ -13,6 +13,7 @@ interface AnimalProductionTableProps {
   onQuantityChange: (animalId: string, value: string) => void;
   onSubmit: (animalId: string) => void;
   disabled: (animalId: string) => boolean;
+  submitting?: { [animalId: string]: boolean };
 }
 
 export const AnimalProductionTable = React.memo(function AnimalProductionTable({ 
@@ -21,7 +22,8 @@ export const AnimalProductionTable = React.memo(function AnimalProductionTable({
   formState, 
   onQuantityChange, 
   onSubmit, 
-  disabled 
+  disabled,
+  submitting = {}
 }: AnimalProductionTableProps) {
   const animalRecords = animals.filter(animal => animal.type !== "CALF");
 
@@ -40,7 +42,7 @@ export const AnimalProductionTable = React.memo(function AnimalProductionTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50">
-              <TableHead className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700">Animal</TableHead>
+              <TableHead className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700">Animal Info</TableHead>
               <TableHead className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs sm:text-sm font-semibold text-gray-700">Production (L)</TableHead>
               <TableHead className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs sm:text-sm font-semibold text-gray-700">Action</TableHead>
             </TableRow>
@@ -48,8 +50,8 @@ export const AnimalProductionTable = React.memo(function AnimalProductionTable({
           <TableBody>
             {animalRecords.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="px-3 sm:px-6 py-6 sm:py-8 text-center text-gray-500 text-sm">
-                  No animals available for production recording
+                <TableCell colSpan={4} className="px-6 py-8 text-center text-gray-500 text-sm">
+                  No animals available for production records
                 </TableCell>
               </TableRow>
             ) : (
@@ -78,6 +80,11 @@ export const AnimalProductionTable = React.memo(function AnimalProductionTable({
                             {animal.name || <span className="italic text-gray-400">Unnamed</span>}
                           </div>
                           <div className="text-xs sm:text-sm text-gray-500">{animal.type}</div>
+                          {animal.motherOf && animal.motherOf.length > 0 && (
+                            <div className="text-xs text-orange-600 mt-1">
+                              Calves: {animal.motherOf.map(calf => calf.name || calf.tagNumber).join(', ')}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -101,11 +108,11 @@ export const AnimalProductionTable = React.memo(function AnimalProductionTable({
                     <TableCell className="px-3 sm:px-6 py-3 sm:py-4 text-center">
                       <Button
                         onClick={() => onSubmit(animal.id)}
-                        disabled={isDisabled || !record?.quantity}
-                        className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-6 py-1 sm:py-2 text-xs sm:text-sm"
+                        disabled={isDisabled || !record?.quantity || submitting[animal.id]}
+                        className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-6 py-1 sm:py-2 text-xs sm:text-sm disabled:opacity-50"
                         size="sm"
                       >
-                        Submit
+                        {submitting[animal.id] ? "Saving..." : record?.submitted ? "Saved" : "Record Production"}
                       </Button>
                     </TableCell>
                   </TableRow>
