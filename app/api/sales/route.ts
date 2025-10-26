@@ -5,6 +5,7 @@ import { z } from "zod";
 import {validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
 import { getUserFromSession } from "@/lib/auth-session";
 import { CreateSalesSchema } from "@/lib/validators/sales";
+import { getAvailableMilkForSales, updateDaySummary } from "@/lib/services/production-balance";
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               username: true,
+              role: true,
             },
           },
         },
@@ -100,13 +102,25 @@ export async function POST(request: NextRequest) {
     const PaymentMethodEnum = ["CASH", "MPESA"];
     const validatedData = CreateSalesSchema.parse({
       ...body,
+      date: new Date().toISOString(), // Automatically set to current date/time
       payment_method: PaymentMethodEnum.includes(body.payment_method) ? body.payment_method : "CASH"
     });
 
     const salesDate = new Date(validatedData.date);
     const timeRecorded = new Date();
-  const totalAmount = validatedData.quantity;
+    const totalAmount = validatedData.totalAmount;
 
+    // Check available milk before allowing sale
+    const availableMilk = await getAvailableMilkForSales(salesDate);
+    const requestedQuantity = validatedData.quantity;
+    
+    if (requestedQuantity > availableMilk.remainingBalance) {
+      return createSecureErrorResponse(
+        `Insufficient milk available. Available: ${availableMilk.remainingBalance}L (Yesterday's balance: ${availableMilk.balanceYesterday}L + Today's net production: ${availableMilk.todayNetProduction}L - Already sold: ${availableMilk.totalSold}L)`, 
+        400, 
+        request
+      );
+    }
 
     const sales = await prisma.sales.create({
       data: {
@@ -122,10 +136,14 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             username: true,
+            role: true,
           },
         },
       },
     });
+
+    // Update daily summary after sale
+    await updateDaySummary(salesDate);
 
     return createSecureResponse({
       message: "Sales record created successfully",
