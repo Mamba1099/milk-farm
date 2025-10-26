@@ -58,29 +58,36 @@ apiClient.interceptors.response.use(
     }
 
     if (status === 401) {
-      // Don't trigger global session expiry for auth/me calls (session checks)
-      // These are handled specifically by the session manager
+      console.log("401 Unauthorized on API endpoint:", originalRequest.url);
+      
+      // For auth/me calls, just return the error - let the auth context handle it naturally
       if (originalRequest.url?.includes("/auth/me")) {
-        console.log("Session check failed (/auth/me), letting session manager handle it");
+        console.log("Session check failed (/auth/me), returning error to auth context");
         return Promise.reject(error);
       }
       
-      console.log("401 error on non-session-check endpoint:", originalRequest.url);
+      // Don't trigger if we're already on login page
+      if (typeof window !== 'undefined' && window.location.pathname === '/login') {
+        console.log("Already on login page, not triggering session expiry");
+        return Promise.reject(error);
+      }
       
+      // For other API calls, trigger session expiry only once
       if (!sessionExpiryNotified) {
         sessionExpiryNotified = true;
-        console.error("Session expired");
+        console.log("Authentication failed on API call - dispatching token expired event");
         
         if (typeof window !== 'undefined') {
+          // Clear auth data immediately
+          localStorage.clear();
+          sessionStorage.clear();
+          document.cookie = "auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          
+          // Dispatch event for auth context to handle the page reload
           window.dispatchEvent(new CustomEvent('tokenExpired', {
-            detail: { message: 'Your session has expired. Please log in again.' }
+            detail: { message: 'Your session has expired.' }
           }));
-
-          if (handleSessionExpiry) {
-            handleSessionExpiry();
-          } else {
-            window.location.href = '/login';
-          }
         }
       }
       return Promise.reject(error);
@@ -125,10 +132,12 @@ export const API_ENDPOINTS = {
   analytics: {
     dailyProduction: "/analytics/daily-production",
     salesRevenue: "/analytics/sales-revenue",
+    monthlyProduction: "/analytics/monthly-production",
+    monthlySales: "/analytics/monthly-sales",
     productionCalfFeeding: "/analytics/production-calf-feeding",
     topProducingCows: "/analytics/top-producing-cows",
     treatmentCostTrends: "/analytics/treatment-cost-trends",
-    treatmentExpenses: "/analytics/treatment-expenses",
+    treatmentExpense: "/analytics/treatment-expense",
     servingOutcomes: "/analytics/serving-outcomes",
     servingTypes: "/analytics/serving-types",
     breedingActivity: "/analytics/breeding-activity",
