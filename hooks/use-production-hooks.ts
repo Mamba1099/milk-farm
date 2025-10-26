@@ -44,8 +44,7 @@ export const useProductionRecords = (
 
   return useQuery<
     {
-      morningProductions: ProductionRecord[];
-      eveningProductions: ProductionRecord[];
+      records: ProductionRecord[];
       pagination: {
         page: number;
         limit: number;
@@ -112,7 +111,9 @@ export const useSalesRecords = (
   });
 };
 
-// Hook to create production record
+/**
+ * create production record
+ */
 export const useCreateProduction = () => {
   const queryClient = useQueryClient();
 
@@ -130,7 +131,9 @@ export const useCreateProduction = () => {
   });
 };
 
-// Hook to create sales record
+/**
+ * create sales record
+ */
 export const useCreateSales = () => {
   const queryClient = useQueryClient();
 
@@ -148,7 +151,9 @@ export const useCreateSales = () => {
   });
 };
 
-// Hook to run system maturity update
+/**
+ * create system maturity update
+ */
 export const useUpdateMaturity = () => {
   const queryClient = useQueryClient();
 
@@ -169,8 +174,7 @@ export const useUpdateMaturity = () => {
   });
 };
 
-// Hook to get production data with date filtering
-export const useProductionData = (dateRange: string = "today") => {
+export const useProductionData = (dateRange: string = "today", customDate?: Date) => {
   const getDateFilter = () => {
     const today = new Date();
     const startOfToday = new Date(
@@ -207,6 +211,22 @@ export const useProductionData = (dateRange: string = "today") => {
           startDate: startOfQuarter.toISOString(),
           endDate: new Date().toISOString(),
         };
+      case "custom":
+        if (customDate) {
+          const startOfCustomDay = new Date(
+            customDate.getFullYear(),
+            customDate.getMonth(),
+            customDate.getDate()
+          );
+          return {
+            startDate: startOfCustomDay.toISOString(),
+            endDate: new Date(
+              startOfCustomDay.getTime() + 24 * 60 * 60 * 1000
+            ).toISOString(),
+          };
+        }
+        return {};
+      case "all":
       default:
         return {};
     }
@@ -215,10 +235,8 @@ export const useProductionData = (dateRange: string = "today") => {
   const filters = getDateFilter();
   const { data, isLoading, refetch } = useProductionRecords(1, 100, filters);
 
-  // Return morning and evening productions separately for new flow
   return {
-    morningProductions: data?.morningProductions || [],
-    eveningProductions: data?.eveningProductions || [],
+    records: data?.records || [],
     isLoading,
     refetch,
   };
@@ -314,33 +332,37 @@ export const useProductionStats = () => {
           apiClient.get(`/production/summary?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}`),
         ]);
 
-      // Aggregate morning/evening quantities
+      // Aggregate morning/evening quantities from productive animals only
       const sumQuantities = (records: ProductionRecord[]) =>
-        records.reduce((sum, record) => sum + (record.quantity_am || 0) + (record.quantity_pm || 0), 0);
+        records
+          .filter(record => record.animal.type !== "CALF") // Only count productive animals, not calf records
+          .reduce((sum, record) => sum + (record.quantity_am || 0) + (record.quantity_pm || 0), 0);
 
-      // Net production = sum of balances (morning + evening)
+      // Net production = sum of balances (morning + evening) from productive animals only
       const sumNetProduction = (records: ProductionRecord[]) =>
-        records.reduce((sum, record) => sum + (record.balance_am || 0) + (record.balance_pm || 0), 0);
+        records
+          .filter(record => record.animal.type !== "CALF") // Only count productive animals, not calf feeding records
+          .reduce((sum, record) => sum + (record.balance_am || 0) + (record.balance_pm || 0), 0);
 
-      // Carry-over: use balance_evening from summary
+      // Carry-over: use final_balance from summary
       const getCarryOver = (summary: any) => {
         if (Array.isArray(summary?.data)) {
-          // For week/month, sum all balance_evening
-          return summary.data.reduce((sum: number, s: any) => sum + (s.balance_evening || 0), 0);
+          // For week/month, sum all final_balance
+          return summary.data.reduce((sum: number, s: any) => sum + (s.final_balance || 0), 0);
         }
-        return summary?.data?.balance_evening || 0;
+        return summary?.data?.final_balance || 0;
       };
 
-      const todayProduction = sumQuantities([...(todayRes.data.morningProductions || []), ...(todayRes.data.eveningProductions || [])]);
-      const todayNetProduction = sumNetProduction([...(todayRes.data.morningProductions || []), ...(todayRes.data.eveningProductions || [])]);
+      const todayProduction = sumQuantities(todayRes.data.records || []);
+      const todayNetProduction = sumNetProduction(todayRes.data.records || []);
       const todayCarryOver = getCarryOver(todaySummaryRes);
 
-      const weekProduction = sumQuantities([...(weekRes.data.morningProductions || []), ...(weekRes.data.eveningProductions || [])]);
-      const weekNetProduction = sumNetProduction([...(weekRes.data.morningProductions || []), ...(weekRes.data.eveningProductions || [])]);
+      const weekProduction = sumQuantities(weekRes.data.records || []);
+      const weekNetProduction = sumNetProduction(weekRes.data.records || []);
       const weekCarryOver = getCarryOver(weekSummaryRes);
 
-      const monthProduction = sumQuantities([...(monthRes.data.morningProductions || []), ...(monthRes.data.eveningProductions || [])]);
-      const monthNetProduction = sumNetProduction([...(monthRes.data.morningProductions || []), ...(monthRes.data.eveningProductions || [])]);
+      const monthProduction = sumQuantities(monthRes.data.records || []);
+      const monthNetProduction = sumNetProduction(monthRes.data.records || []);
       const monthCarryOver = getCarryOver(monthSummaryRes);
 
       const activeAnimals = animalsRes.data.total || 0;
