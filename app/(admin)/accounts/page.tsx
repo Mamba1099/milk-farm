@@ -34,13 +34,11 @@ const staggerContainer: Variants = {
 };
 
 export default function EmployeesPage() {
-  const { user } = useAuth();
+  const { user, canEdit } = useAuth();
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null);
-
-  const canEdit = user?.role === "FARM_MANAGER";
   const deleteUserMutation = useDeleteUser();
   
   // Use hooks for data fetching

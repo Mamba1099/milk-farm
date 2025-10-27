@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { ZodError } from "zod";
@@ -11,10 +11,9 @@ import {
 } from "@/lib/security";
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
-if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
-  throw new Error("JWT secrets are not configured");
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not configured");
 }
 
 export async function POST(request: NextRequest) {
@@ -48,26 +47,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-  // Standard session duration (30 minutes)
-  const sessionDuration = 30 * 60 * 1000;
-    const sessionStartTime = new Date();
-    const sessionEndTime = new Date(sessionStartTime.getTime() + sessionDuration);
-
     const payload = {
       sub: user.id,
       username: user.username,
       email: user.email,
       role: user.role,
       image: user.image,
-      sessionStartTime: sessionStartTime.toISOString(),
-      sessionEndTime: sessionEndTime.toISOString(),
-      sessionDuration: sessionDuration,
     };
 
-    // Token validity matches sessionDuration (30 minutes)
     const sessionToken = jwt.sign(payload, JWT_SECRET as string, {
-      expiresIn: "30m",
+      expiresIn: "3m",
     });
+
 
     await prisma.user.update({
       where: { id: user.id },
@@ -85,22 +76,17 @@ export async function POST(request: NextRequest) {
           image: user.image,
           createdAt: user.createdAt.toISOString(),
         },
-        session: {
-          startTime: sessionStartTime.toISOString(),
-          endTime: sessionEndTime.toISOString(),
-          duration: sessionDuration,
-        },
       },
       { status: 200 },
       request
     );
 
+
     response.cookies.set("session", sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      // maxAge in seconds (30 minutes)
-      maxAge: 30 * 60,
+      maxAge: 30 * 60, // 30 minutes to match JWT expiration
       path: "/",
     });
 

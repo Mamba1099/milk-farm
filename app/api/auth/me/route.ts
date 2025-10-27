@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // First, decode the token to check session timing (without verification)
     let decodedToken;
     try {
       decodedToken = jwt.decode(sessionToken) as {
@@ -47,7 +46,6 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    // Check if session has expired based on stored end time
     if (decodedToken?.sessionEndTime) {
       const sessionEndTime = new Date(decodedToken.sessionEndTime);
       const currentTime = new Date();
