@@ -311,17 +311,7 @@ We welcome contributions! Please follow these steps:
 - Update documentation as needed
 - Ensure all tests pass before submitting
 
-## 📋 Additional Documentation
 
-- [Registration Guide](./REGISTRATION_GUIDE.md) - Detailed user registration process
-- [API Documentation](./docs/api.md) - Complete API reference
-- [Deployment Guide](./docs/deployment.md) - Production deployment instructions
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 **Built with ❤️ for modern dairy farm management**
 
