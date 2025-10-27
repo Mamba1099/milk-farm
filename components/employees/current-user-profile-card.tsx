@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
 import { Employee } from "@/lib/types/employee";
+import { AuthUser } from "@/lib/types/auth";
 
 interface CurrentUserProfileCardProps {
-  user: Employee;
+  user: Employee | AuthUser;
   onEdit: () => void;
 }
 
@@ -23,7 +24,6 @@ const isValidImageUrl = (url: string | null | undefined): boolean => {
     new URL(url);
     return true;
   } catch {
-    // Check for relative paths or data URLs
     return url.startsWith("/") || url.startsWith("data:") || url.startsWith("blob:");
   }
 };
@@ -32,8 +32,17 @@ export const CurrentUserProfileCard: React.FC<CurrentUserProfileCardProps> = ({
   user,
   onEdit,
 }) => {
-  const imageUrl = user.image_url || user.image;
+  let imageUrl = user.image_url || user.image;
+  
+  if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+    imageUrl = `https://yvasgcgtdnmwkfaqjcvt.supabase.co/storage/v1/object/public/farm-house/${imageUrl}`;
+  }
+  
   const hasValidImage = isValidImageUrl(imageUrl);
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <>

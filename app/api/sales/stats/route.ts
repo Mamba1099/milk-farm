@@ -22,14 +22,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date") || new Date().toISOString().split('T')[0];
     
-    // Parse date to get start and end of day
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Get total production for the day (sum of balance_am and balance_pm from productive animals only)
     const [morningProduction, eveningProduction] = await Promise.all([
       prisma.morningProduction.aggregate({
         where: {
@@ -39,7 +37,7 @@ export async function GET(request: NextRequest) {
           },
           animal: {
             type: {
-              not: "CALF" // Exclude calf records from balance calculation
+              not: "CALF"
             }
           }
         },
@@ -55,7 +53,7 @@ export async function GET(request: NextRequest) {
           },
           animal: {
             type: {
-              not: "CALF" // Exclude calf records from balance calculation
+              not: "CALF"
             }
           }
         },
@@ -65,7 +63,6 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    // Get total sales for the day
     const salesAggregation = await prisma.sales.aggregate({
       where: {
         timeRecorded: {
@@ -79,7 +76,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Calculate totals
     const totalMorningProduction = morningProduction._sum.balance_am || 0;
     const totalEveningProduction = eveningProduction._sum.balance_pm || 0;
     const totalProduction = totalMorningProduction + totalEveningProduction;
@@ -91,7 +87,7 @@ export async function GET(request: NextRequest) {
     return createSecureResponse({
       totalProduction,
       totalSales,
-      balanceRemaining: Math.max(0, balanceRemaining), // Ensure non-negative
+      balanceRemaining: Math.max(0, balanceRemaining),
       revenue,
     }, {}, request);
   } catch (error) {

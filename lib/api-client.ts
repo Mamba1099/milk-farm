@@ -1,5 +1,4 @@
 import axios from "axios";
-import { showToast } from "@/lib/toast-manager";
 
 const getBaseURL = () => {
   if (typeof window !== "undefined") {
@@ -22,21 +21,18 @@ export const apiClient = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  withCredentials: true,
 });
 
 apiClient.interceptors.request.use(
   async (config) => {
-    if (typeof window === "undefined") return config;
-
-    if (config.data && typeof config.data === 'object') {
-      const sensitiveFields = ['password', 'confirmPassword', 'oldPassword', 'newPassword'];
-      const hasPassword = sensitiveFields.some(field => field in config.data);
-      
-      if (hasPassword && process.env.NODE_ENV === 'development') {
-        console.log('🔒 API Request with sensitive data hidden for security');
+    if (typeof window !== "undefined") {
+      const accessToken = sessionStorage.getItem("accessToken");
+      if (accessToken && config.headers) {
+        config.headers.Authorization = `Bearer ${accessToken}`;
       }
     }
+
+
 
     return config;
   },
@@ -51,12 +47,6 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     const { status } = error.response || {};
 
-    // We want to handle 401s centrally, but avoid interfering with
-    // auth mutation endpoints like login/logout. Previously we skipped
-    // any request containing `/auth` which also skipped `/auth/me`.
-    // That prevented the client from redirecting when the profile
-    // endpoint returned 401 (expired token). Only skip known
-    // auth mutation endpoints and other explicit paths.
     const url = originalRequest.url || "";
     const isAuthMutation = url.includes("/auth") && !url.includes("/auth/me");
     if (
@@ -68,64 +58,28 @@ apiClient.interceptors.response.use(
     }
 
     if (status === 401) {
-      console.log("401 Unauthorized - checking if session expired");
       if (typeof window !== 'undefined') {
-        // Check if this 401 is from /auth/me (user session check) or contains session expiry info
-        const errorMessage = error.response?.data?.message || '';
-        const isSessionExpiry = url.includes('/auth/me') || 
-                               errorMessage.toLowerCase().includes('session expired') ||
-                               errorMessage.toLowerCase().includes('token expired') ||
-                               errorMessage.toLowerCase().includes('invalid or expired token');
+        sessionStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
+        sessionStorage.removeItem("userName");
         
-        if (isSessionExpiry) {
-          // Show toast notification for session expiry only
-          showToast({
-            type: "warning",
-            title: "Session Expired",
-            description: "Your session has expired. Redirecting to login...",
-            duration: 3000
-          });
+        if (window.location.pathname !== '/login') {
+          window.location.replace('/login');
         }
-        
-        document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        
-        // Small delay to allow toast to show before redirect (if session expired)
-        const delay = isSessionExpiry ? 1000 : 100;
-        setTimeout(() => {
-          if (window.location.pathname !== '/login') {
-            window.location.replace('/login');
-          }
-        }, delay);
       }
       
       return Promise.reject(error);
     }
 
     if (status === 403) {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('accessDenied', {
-          detail: { message: "You don't have permission for this action" }
-        }));
-      }
+      console.warn("403 Forbidden - insufficient permissions");
       return Promise.reject(error);
     }
 
     if (status >= 500) {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('serverError', {
-          detail: { message: "Server error. Please try again later." }
-        }));
-      }
+      console.error("Server error:", status);
     }
 
-    const errorToLog = {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      url: error.config?.url,
-      method: error.config?.method,
-    };
-    console.error("API Error:", errorToLog);
     return Promise.reject(error);
   }
 );
@@ -136,6 +90,7 @@ export const API_ENDPOINTS = {
     login: "/auth",
     logout: "/auth/logout",
     profile: "/auth/me",
+    refresh: "/auth/refresh",
   },
   analytics: {
     dailyProduction: "/analytics/daily-production",

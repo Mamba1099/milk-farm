@@ -69,7 +69,6 @@ export function CountdownTimer({
       return "Time's up!";
     }
     
-    // Only show days if > 0
     const daysPart = timeLeft.days > 0 ? `${timeLeft.days}d ` : "";
     return `${daysPart}${formatTime(timeLeft.hours)}h ${formatTime(timeLeft.minutes)}m ${formatTime(timeLeft.seconds)}s`;
   };

@@ -53,7 +53,6 @@ export function MonthlySalesChart() {
   const maxQuantity = Math.max(...monthlySales.map(d => d.totalQuantity));
   const maxRevenue = Math.max(...monthlySales.map(d => d.totalRevenue));
   
-  // Scale revenue down for better visualization alongside quantity
   const revenueScale = maxQuantity > 0 ? maxQuantity / Math.max(maxRevenue, 1) : 1;
 
   const chartData = monthlySales.map(data => ({

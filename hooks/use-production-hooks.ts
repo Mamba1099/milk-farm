@@ -5,7 +5,6 @@ import { apiClient } from "@/lib/api-client";
 import { ProductionAnimal, ProductionRecord, SalesRecord, CreateProductionData, CreateSalesData } from "@/lib/types/production";
 
 
-// Hook to get production-ready animals
 export const useProductionReadyAnimals = () => {
   return useQuery<{ animals: ProductionAnimal[]; total: number }, Error>({
     queryKey: ["animals", "production-ready"],
@@ -13,16 +12,15 @@ export const useProductionReadyAnimals = () => {
       const response = await apiClient.get("/animals/production-ready");
       return response.data;
     },
-    staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes
-    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-    refetchOnMount: "always", // Only refetch on mount if data is stale
-    refetchOnReconnect: "always", // Only refetch on reconnect if data is stale
-    retry: 2, // Limit retry attempts
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    retry: 2,
   });
 };
 
-// Hook to get production records
 export const useProductionRecords = (
   page: number = 1,
   limit: number = 10,
@@ -61,15 +59,14 @@ export const useProductionRecords = (
       );
       return response.data;
     },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-    refetchOnMount: "always", // Only refetch on mount if data is stale
-    retry: 2, // Limit retry attempts
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: "always",
+    retry: 2,
   });
 };
 
-// Hook to get sales records
 export const useSalesRecords = (
   page: number = 1,
   limit: number = 10,
@@ -106,8 +103,8 @@ export const useSalesRecords = (
       const response = await apiClient.get(`/sales?${queryParams.toString()}`);
       return response.data;
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 };
 
@@ -319,7 +316,6 @@ export const useProductionStats = () => {
       startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-      // Get production data
       const [todayRes, weekRes, monthRes, animalsRes, salesRes, todaySummaryRes, weekSummaryRes, monthSummaryRes] =
         await Promise.all([
           apiClient.get(`/production?startDate=${startOfToday.toISOString()}&endDate=${new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000).toISOString()}&limit=1000`),
@@ -332,22 +328,18 @@ export const useProductionStats = () => {
           apiClient.get(`/production/summary?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}`),
         ]);
 
-      // Aggregate morning/evening quantities from productive animals only
       const sumQuantities = (records: ProductionRecord[]) =>
         records
-          .filter(record => record.animal.type !== "CALF") // Only count productive animals, not calf records
+          .filter(record => record.animal.type !== "CALF")
           .reduce((sum, record) => sum + (record.quantity_am || 0) + (record.quantity_pm || 0), 0);
 
-      // Net production = sum of balances (morning + evening) from productive animals only
       const sumNetProduction = (records: ProductionRecord[]) =>
         records
-          .filter(record => record.animal.type !== "CALF") // Only count productive animals, not calf feeding records
+          .filter(record => record.animal.type !== "CALF")
           .reduce((sum, record) => sum + (record.balance_am || 0) + (record.balance_pm || 0), 0);
 
-      // Carry-over: use final_balance from summary
       const getCarryOver = (summary: any) => {
         if (Array.isArray(summary?.data)) {
-          // For week/month, sum all final_balance
           return summary.data.reduce((sum: number, s: any) => sum + (s.final_balance || 0), 0);
         }
         return summary?.data?.final_balance || 0;
@@ -382,8 +374,8 @@ export const useProductionStats = () => {
         monthlySales,
       };
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 };
 

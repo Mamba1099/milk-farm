@@ -96,7 +96,7 @@ export async function PUT(
       if (existingAnimal.image) {
         await deleteAnimalImage(existingAnimal.image);
       }
-      imagePath = data.imageUrl as string; // Store the full URL directly
+      imagePath = data.imageUrl as string; 
       delete data.imageUrl;
     } else {
       const imageFile = formData.get("image") as File;
@@ -108,14 +108,14 @@ export async function PUT(
         if (existingAnimal.image) {
           await deleteAnimalImage(existingAnimal.image);
         }
-        imagePath = uploadResult.imageUrl; // Use full URL instead of imagePath
-      }
+          imagePath = uploadResult.imageUrl;
+        }
     }
 
     const animalData = {
       id,
       ...data,
-      image: imagePath || null, // Ensure null instead of undefined/empty string
+      image: imagePath || null,
       weight: data.weight ? parseFloat(data.weight as string) : undefined,
     };
 

@@ -109,10 +109,6 @@ export async function POST(request: NextRequest) {
       return createSecureErrorResponse("Unauthorized", 401, request);
     }
 
-    if (user.role !== "FARM_MANAGER") {
-      return createSecureErrorResponse("Insufficient permissions", 403, request);
-    }
-
     const contentType = request.headers.get("content-type") || "";
     let data: Record<string, unknown> = {};
     let imageFile: File | null = null;
@@ -146,13 +142,12 @@ export async function POST(request: NextRequest) {
       if (uploadResult.error) {
         return createSecureErrorResponse(uploadResult.error, 500, request);
       }
-      imageUrl = uploadResult.imageUrl; // Use full URL instead of imagePath
+      imageUrl = uploadResult.imageUrl;
     }
 
-    // Prepare data for validation
     const validationData = {
       ...data,
-      image: imageUrl || null, // Ensure null instead of undefined
+      image: imageUrl || null,
     };
 
     const validatedData = CreateAnimalSchema.parse(validationData);
@@ -160,8 +155,6 @@ export async function POST(request: NextRequest) {
     const createData: any = {
       ...validatedData,
     };
-
-    // The image is already included in validatedData from validation
 
     const birthDate = new Date(validatedData.birthDate);
     const today = new Date();

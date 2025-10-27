@@ -34,9 +34,9 @@ export class AuthErrorBoundary extends React.Component<
     console.error("Auth Error Boundary caught an error:", error, errorInfo);
 
     if (this.state.isAuthError) {
-
-      document.cookie = "session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      sessionStorage.clear();
       localStorage.clear();
+      
       setTimeout(() => {
         window.location.href = "/login";
       }, 1500);

@@ -39,7 +39,6 @@ export function SalesDataTable() {
     setShowCustomDate(false);
   };
 
-  // Get title based on date filter
   const getTitle = () => {
     switch (dateFilter) {
       case "today":
@@ -98,7 +97,6 @@ export function SalesDataTable() {
 
   const sales = data?.sales || [];
   
-  // Filter sales by search term
   const filteredSales = sales.filter(sale =>
     sale.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sale.payment_method?.toLowerCase().includes(searchTerm.toLowerCase())

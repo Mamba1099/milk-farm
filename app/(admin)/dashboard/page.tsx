@@ -15,7 +15,6 @@ import {
 } from "@/components/dashboard";
 import { DayEndTimer } from "@/components/production/day-end-timer";
 
-// Animation variants
 const staggerContainer: Variants = {
   initial: { opacity: 0 },
   animate: {
@@ -32,9 +31,9 @@ export default function DashboardPage() {
     <div className="min-h-screen w-full bg-gradient-to-b from-[#f7f5f2] to-[#e8f5e9]">
       {/* Day-end timer (invisible component that runs in background) */}
       <DayEndTimer 
-        dayEndHour={24}          // Day ends at midnight (00:00)
-        triggerMinutesBefore={60} // Trigger 1 hour before (23:00)
-        isActive={true}          // Always active when dashboard is open
+        dayEndHour={24}
+        triggerMinutesBefore={60}
+        isActive={true}
       />
       
       <motion.div

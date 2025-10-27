@@ -9,7 +9,6 @@ import { EmployeeEditForm, UserStatistics, UserTable, CurrentUserProfileCard } f
 import { Employee } from "@/lib/types/employee";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 
-// Animation variants
 const fadeInUp: Variants = {
   initial: {
     opacity: 0,
@@ -41,7 +40,6 @@ export default function EmployeesPage() {
   const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null);
   const deleteUserMutation = useDeleteUser();
   
-  // Use hooks for data fetching
   const {
     data: usersData,
     isLoading: usersLoading,
@@ -57,8 +55,6 @@ export default function EmployeesPage() {
   const stats = userStats?.stats;
   const users = usersData?.users || [];
   const pagination = usersData?.pagination;
-
-  // Separate current user from other users
   const otherUsers = users.filter((userData: Employee) => userData.id !== user?.id);
   
   const filteredUsers = otherUsers.filter(
@@ -66,9 +62,8 @@ export default function EmployeesPage() {
       userData.username.toLowerCase().includes(search.toLowerCase()) ||
       userData.email.toLowerCase().includes(search.toLowerCase())
   );
-
-  // Find current user in the users list
-  const currentUserProfile = users.find((userData: Employee) => userData.id === user?.id);
+  
+  const currentUserProfile = user;
 
   const handleEditEmployee = (employee: Employee) => {
     setEditingEmployee(employee);
@@ -147,14 +142,7 @@ export default function EmployeesPage() {
           isLoading={usersLoading}
           error={usersError}
           canEdit={canEdit}
-          currentUser={
-            user
-              ? {
-                  ...user,
-                  role: user.role === "FARM_MANAGER" ? "FARM_MANAGER" : "EMPLOYEE",
-                }
-              : undefined
-          }
+          currentUser={user || undefined}
           pagination={
             pagination
               ? {

@@ -40,8 +40,6 @@ export const uploadImage = async ({ file, bucket, folder }: UploadProps) => {
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${data?.path}`;
   const imagePath = data?.path || "";
-  
-  console.log("Image uploaded successfully:", imageUrl);
 
   return { imageUrl, imagePath, error: "" };
 };

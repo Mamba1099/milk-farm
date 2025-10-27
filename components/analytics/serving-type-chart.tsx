@@ -26,7 +26,7 @@ export function ServingTypeChart() {
       const response = await apiClient.get(API_ENDPOINTS.analytics.servingTypes);
       return response.data as ServingTypeData[];
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchInterval: false,

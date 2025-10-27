@@ -22,12 +22,11 @@ export async function calculateDayBalance(date: Date): Promise<DayBalance> {
   const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
-  // Get production records for the day
   const [morningProductions, eveningProductions] = await Promise.all([
     prisma.morningProduction.findMany({
       where: {
         date: { gte: startOfDay, lt: endOfDay },
-        animal: { type: { not: "CALF" } } // Only count productive animals
+        animal: { type: { not: "CALF" } }
       }
     }),
     prisma.eveningProduction.findMany({
@@ -38,7 +37,6 @@ export async function calculateDayBalance(date: Date): Promise<DayBalance> {
     })
   ]);
 
-  // Calculate totals
   const morningTotal = morningProductions.reduce((sum, record) => sum + (record.quantity_am || 0), 0);
   const eveningTotal = eveningProductions.reduce((sum, record) => sum + (record.quantity_pm || 0), 0);
   const totalProduction = morningTotal + eveningTotal;
@@ -47,10 +45,8 @@ export async function calculateDayBalance(date: Date): Promise<DayBalance> {
   const eveningCalfFed = eveningProductions.reduce((sum, record) => sum + (record.calf_quantity_fed_pm || 0), 0);
   const totalCalfFed = morningCalfFed + eveningCalfFed;
 
-  // Net production after calf feeding
   const netProduction = totalProduction - totalCalfFed;
 
-  // Get total sales for the day
   const salesTotal = await prisma.sales.aggregate({
     where: {
       timeRecorded: { gte: startOfDay, lt: endOfDay }
@@ -59,7 +55,6 @@ export async function calculateDayBalance(date: Date): Promise<DayBalance> {
   });
   const totalSales = salesTotal._sum.quantity || 0;
 
-  // Get yesterday's balance
   const yesterday = new Date(startOfDay);
   yesterday.setDate(yesterday.getDate() - 1);
   
@@ -68,7 +63,6 @@ export async function calculateDayBalance(date: Date): Promise<DayBalance> {
   });
   const balanceYesterday = yesterdaySummary?.final_balance || 0;
 
-  // Calculate final balance: yesterday's balance + net production - sales
   const finalBalance = balanceYesterday + netProduction - totalSales;
 
   return {
@@ -131,7 +125,6 @@ export async function getAvailableMilkForSales(date: Date): Promise<{
 export async function getMorningTotalWithBalance(date: Date): Promise<number> {
   const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   
-  // Get yesterday's balance
   const yesterday = new Date(startOfDay);
   yesterday.setDate(yesterday.getDate() - 1);
   
@@ -140,7 +133,6 @@ export async function getMorningTotalWithBalance(date: Date): Promise<number> {
   });
   const balanceYesterday = yesterdaySummary?.final_balance || 0;
 
-  // Get morning production
   const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
   const morningProductions = await prisma.morningProduction.findMany({
     where: {
@@ -153,6 +145,5 @@ export async function getMorningTotalWithBalance(date: Date): Promise<number> {
   const morningCalfFed = morningProductions.reduce((sum, record) => sum + (record.calf_quantity_fed_am || 0), 0);
   const morningNet = morningTotal - morningCalfFed;
 
-  // Return yesterday's balance + today's morning net production
   return balanceYesterday + morningNet;
 }

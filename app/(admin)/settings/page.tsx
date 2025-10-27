@@ -13,7 +13,6 @@ import {
   SystemSettings,
 } from "@/components/settings";
 
-// Animation variants
 const fadeInUp = {
   initial: {
     opacity: 0,

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       return createSecureErrorResponse("Authentication required", 401, request);
     }
 
-    if (user.role !== "FARM_MANAGER") {
+    if (!["FARM_MANAGER", "EMPLOYEE"].includes(user.role)) {
       return createSecureErrorResponse("Insufficient permissions", 403, request);
     }
 

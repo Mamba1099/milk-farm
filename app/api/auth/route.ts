@@ -11,6 +11,7 @@ import {
 } from "@/lib/security";
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not configured");
@@ -47,18 +48,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const payload = {
+    let imageUrl = null;
+    if (user.image) {
+      imageUrl = user.image.startsWith('http') 
+        ? user.image 
+        : `https://yvasgcgtdnmwkfaqjcvt.supabase.co/storage/v1/object/public/farm-house/${user.image}`;
+    }
+
+    const tokenPayload = {
       sub: user.id,
-      username: user.username,
+      userId: user.id,
       email: user.email,
       role: user.role,
+      username: user.username,
       image: user.image,
+      image_url: imageUrl,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
     };
 
-    const sessionToken = jwt.sign(payload, JWT_SECRET as string, {
-      expiresIn: "3m",
+    const accessToken = jwt.sign(tokenPayload, JWT_SECRET as string, {
+      expiresIn: "30m",
     });
 
+    const refreshToken = jwt.sign(
+      { sub: user.id, userId: user.id, type: "refresh" },
+      JWT_REFRESH_SECRET as string,
+      { expiresIn: "7d" }
+    );
 
     await prisma.user.update({
       where: { id: user.id },
@@ -68,6 +85,8 @@ export async function POST(request: NextRequest) {
     const response = createSecureResponse(
       {
         message: "Login successful",
+        accessToken,
+        refreshToken,
         user: {
           id: user.id,
           username: user.username,
@@ -80,15 +99,6 @@ export async function POST(request: NextRequest) {
       { status: 200 },
       request
     );
-
-
-    response.cookies.set("session", sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 30 * 60, // 30 minutes to match JWT expiration
-      path: "/",
-    });
 
     return response;
   } catch (error) {

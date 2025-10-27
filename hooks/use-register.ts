@@ -17,19 +17,10 @@ export const useRegisterMutation = () => {
 
   return useMutation<RegisterResponse, AuthError, RegisterInput>({
     mutationFn: async (data: RegisterInput) => {
-      console.log("Registering user with data:", {
-        ...data,
-        password: "[HIDDEN]",
-        confirmPassword: "[HIDDEN]",
-        image: data.image ? "File provided" : "No file",
-      });
 
       try {
         let imageUrl = null;
-        
-        // Upload image first if provided (same pattern as animals)
         if (data.image && data.image instanceof File) {
-          console.log("Uploading image to Supabase...");
           const uploadResult = await uploadImage({
             file: data.image,
             bucket: "farm-house",
@@ -40,11 +31,9 @@ export const useRegisterMutation = () => {
             throw new Error(uploadResult.error);
           }
           
-          imageUrl = uploadResult.imagePath; // Store the path, not the full URL
-          console.log("Image uploaded successfully, path:", imageUrl);
+          imageUrl = uploadResult.imagePath;
         }
 
-        // Prepare form data with imageUrl instead of file
         const formData = new FormData();
         formData.append("username", data.username);
         formData.append("email", data.email);
@@ -55,8 +44,6 @@ export const useRegisterMutation = () => {
         if (imageUrl) {
           formData.append("imagePath", imageUrl);
         }
-
-        console.log("Sending registration data to API");
 
         const response = await apiClient.post<RegisterResponse>(
           API_ENDPOINTS.auth.register,
@@ -92,7 +79,6 @@ export const useRegisterMutation = () => {
         );
       }
 
-      console.log("Registration successful:", data.message);
     },
     onError: (error) => {
       console.error("Registration failed:", error);

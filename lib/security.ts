@@ -1,7 +1,3 @@
-// lib/security.ts
-// This module provides security functions for validating origins, CSRF protection,
-// and setting security headers in Next.js applications.
-// It includes functions to validate request origins, CSRF tokens, and set security headers.
 import { NextRequest, NextResponse } from "next/server";
 
 function getAllowedOrigins(): string[] {

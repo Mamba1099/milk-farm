@@ -13,7 +13,6 @@ export default function NotFound() {
     try {
       router.back();
     } catch (error) {
-      // Fallback to dashboard if back navigation fails
       router.push('/dashboard');
     }
   };

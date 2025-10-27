@@ -28,7 +28,6 @@ export function ServingRecordsList({
     setEditDialogOpen(false);
     setSelectedServing(null);
   };
-  console.log('ServingRecordsList component rendered!');
   
   const { data: servingResponse, error } = useServings(filters);
   const servings = servingResponse?.servings || [];

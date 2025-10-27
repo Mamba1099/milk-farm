@@ -1,125 +1,216 @@
 "use client";
 
-import React, { createContext, useContext, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
-import { useCurrentUser, useLogoutMutation } from "@/hooks/use-user-queries";
-import { useLoginMutation } from "@/hooks/use-login";
+import { useLogin } from "@/hooks/use-login";
+import { useLogout } from "@/hooks/use-logout";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
+import { jwtDecode } from "jwt-decode";
 import { useToast } from "@/hooks/use-toast";
-import { LoginInput, AuthContextType, AuthProviderProps } from "@/lib/types";
-import { clearAuthData } from "@/lib/auth-utils";
-import { setGlobalToast } from "@/lib/toast-manager";
+import type { TokenPayload, AuthUser, AuthContextType, LoginInput } from "@/lib/types/auth";
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>(null!);
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
-  // Register toast function globally for API client use
-  useEffect(() => {
-    setGlobalToast(toast);
-  }, [toast]);
+  const handleSessionExpiry = useCallback(() => {
+    toast({
+      type: "warning",
+      title: "Session Expired",
+      description: "Your session has expired. Please log in again.",
+    });
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("userName");
+    setUser(null);
+    setError(null);
+    router.push("/login");
+  }, [router, toast]);
 
-  const {
-    data: user,
-    isLoading,
-    error: userError,
-    refetch: authCheck,
-  } = useCurrentUser();
-  
-  const loginMutation = useLoginMutation();
-  const logoutMutation = useLogoutMutation();
-  const isAuthenticated = !!user && !userError;
-  const isFarmManager = user?.role === "FARM_MANAGER";
-  const isEmployee = user?.role === "EMPLOYEE";
-  const canEdit = isFarmManager;
-  const canView = isAuthenticated;
-
-  const login = async (credentials: LoginInput) => {
+  const updateAuthState = useCallback(async () => {
     try {
-      await loginMutation.mutateAsync(credentials);
-      queryClient.invalidateQueries({ queryKey: ["user"] });
-      router.replace("/dashboard");
-    } catch (error) {
-      console.error("Login failed:", error);
-      throw error;
-    }
-  };
+      const accessToken = sessionStorage.getItem("accessToken");
+      const refreshToken = sessionStorage.getItem("refreshToken");
+      const name = sessionStorage.getItem("userName");
 
-  const logout = async () => {
-    if (isLoggingOut) return;
-    handleLogout();
-  };
+      if (accessToken) {
+        const decoded = jwtDecode<TokenPayload>(accessToken);
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    
-    try {
-      queryClient.clear();
-      const isCleared = await clearAuthData();
-      
-      if (isCleared) {
-        toast({
-          type: "success",
-          title: "Logged Out",
-          description: "You have been successfully logged out.",
+        if (decoded.exp * 1000 < Date.now()) {
+          sessionStorage.removeItem("accessToken");
+          sessionStorage.removeItem("refreshToken");
+          sessionStorage.removeItem("userName");
+          setUser(null);
+          return;
+        }
+        setUser({
+          id: decoded.sub,
+          username: decoded.username,
+          email: decoded.email,
+          role: decoded.role as "FARM_MANAGER" | "EMPLOYEE",
+          name: name || decoded.username,
+          phone: undefined,
+          image: decoded.image || null,
+          image_url: decoded.image_url || null,
+          createdAt: decoded.createdAt || new Date().toISOString(),
+          updatedAt: decoded.updatedAt || new Date().toISOString(),
         });
       } else {
-        await logoutMutation.mutateAsync();
-        toast({
-          type: "success", 
-          title: "Logged Out",
-          description: "You have been logged out.",
-        });
+        if (refreshToken) {
+          sessionStorage.removeItem("refreshToken");
+          sessionStorage.removeItem("userName");
+        }
+        setUser(null);
       }
     } catch (error) {
-      console.error("Logout error:", error);
-      document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+      console.error("Auth state update error:", error);
+      sessionStorage.removeItem("accessToken");
+      sessionStorage.removeItem("refreshToken");
+      sessionStorage.removeItem("userName");
+      setUser(null);
+      setError(error instanceof Error ? error : new Error("Auth error"));
     } finally {
-      setIsLoggingOut(false);
-      router.replace("/login");
+      setIsLoading(false);
+      if (!isInitialized) setIsInitialized(true);
     }
-  };
+  }, [isInitialized]);
 
-  const hasRole = (roles: string | string[]): boolean => {
-    if (!user) return false;
-    const roleArray = Array.isArray(roles) ? roles : [roles];
-    return roleArray.includes(user.role);
-  };
+  useEffect(() => {
+    updateAuthState();
+  }, [updateAuthState]);
 
-  const hasAnyRole = (roles: string[]): boolean => {
-    return user ? roles.includes(user.role) : false;
-  };
+  useEffect(() => {
+    const handleStorageChange = () => {
+      updateAuthState();
+    };
 
-  const contextValue: AuthContextType = {
-    user,
-    isAuthenticated,
-    isLoading,
-    isFarmManager,
-    isEmployee,
-    login,
-    logout,
-    authCheck,
-    hasRole,
-    hasAnyRole,
-    canEdit,
-    canView,
-  };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [updateAuthState]);
+
+  const loginMutation = useLogin(updateAuthState);
+  const logoutMutation = useLogout();
+  const autoRefresh = useAutoRefresh();
+
+  const clearError = () => setError(null);
+
+  const clearAllAuthData = useCallback(() => {
+    sessionStorage.clear();
+    setUser(null);
+    setError(null);
+  }, []);
 
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login: async (data: LoginInput) => {
+          try {
+            clearError();
+            const result = await loginMutation.mutateAsync(data);
+            if (result && result.user && result.user.username) {
+              sessionStorage.setItem("userName", result.user.username);
+            }
+            await updateAuthState();
+            if (result && result.user && result.user.role === "FARM_MANAGER") {
+              router.push("/dashboard");
+            } else {
+              router.push("/dashboard");
+            }
+          } catch (error) {
+            const authError = error instanceof Error
+              ? error
+              : new Error("Login failed. Please check your credentials and try again.");
+            setError(authError);
+            throw authError;
+          }
+        },
+        logout: async () => {
+          try {
+            clearError();
+            sessionStorage.clear();
+            setUser(null);
+            if (user?.id) {
+              try {
+                await logoutMutation.mutateAsync(user.id);
+              } catch (serverError) {
+                console.warn(
+                  "Server logout failed, but local logout successful:",
+                  serverError
+                );
+              }
+            }
+            await updateAuthState();
+            router.push("/login");
+          } catch (error) {
+            console.error("Logout error:", error);
+            sessionStorage.clear();
+            setUser(null);
+            router.push("/login");
+            setError(
+              error instanceof Error ? error : new Error("Logout failed")
+            );
+          }
+        },
+        refreshToken: async () => {
+          try {
+            clearError();
+            const refreshToken = sessionStorage.getItem("refreshToken");
+            if (!refreshToken) throw new Error("No refresh token found");
+            await autoRefresh.mutateAsync({ refreshToken });
+            await updateAuthState();
+          } catch (error) {
+            setError(
+              error instanceof Error ? error : new Error("Token refresh failed")
+            );
+          }
+        },
+        isAuthenticated: !!user,
+        isLoading,
+        isInitialized,
+        isLoggingIn: loginMutation.isPending,
+        error,
+        clearError,
+        handleSessionExpiry,
+        clearAllAuthData,
+        hasRole: (roles: string | string[]): boolean => {
+          if (!user) return false;
+          const roleArray = Array.isArray(roles) ? roles : [roles];
+          return roleArray.includes(user.role);
+        },
+        get isFarmManager(): boolean {
+          return user?.role === "FARM_MANAGER";
+        },
+        get isEmployee(): boolean {
+          return user?.role === "EMPLOYEE";
+        },
+        get canEdit(): boolean {
+          return user?.role === "FARM_MANAGER";
+        },
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = (): AuthContextType => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-};
+}

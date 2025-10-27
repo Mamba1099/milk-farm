@@ -15,7 +15,6 @@ import { ProductionRecordsList } from "@/components/production/production-record
 import { ProductionFilters } from "@/components/production/production-filters";
 import { DayEndTimer } from "@/components/production/day-end-timer";
 
-// Animation variants
 const fadeInUp: Variants = {
   initial: {
     opacity: 0,
@@ -69,7 +68,6 @@ export default function ProductionPage() {
   } = useProductionData(selectedDateRange, customDate);
   const { data: stats, isLoading: statsLoading } = useProductionStats();
   
-  // Get calf data
   const { data: calvesData, isLoading: calvesLoading } = useAnimals({ 
     limit: 1000, 
     type: "CALF" 

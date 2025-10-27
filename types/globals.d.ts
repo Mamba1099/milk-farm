@@ -1,4 +1,3 @@
-// Global type declarations for CSS imports and other modules
 
 declare module "*.css" {
   const content: any;

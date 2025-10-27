@@ -27,7 +27,7 @@ export function ServingOutcomeChart() {
       const response = await apiClient.get(API_ENDPOINTS.analytics.servingOutcomes);
       return response.data as ServingOutcomeData[];
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchInterval: false,

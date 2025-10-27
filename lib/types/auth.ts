@@ -8,6 +8,7 @@ export interface User {
   email: string;
   role: string;
   image: string | null;
+  image_url?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -54,6 +55,32 @@ export interface LoginInput {
   password: string;
 }
 
+export interface TokenPayload {
+  sub: string;
+  userId: string;
+  email: string;
+  role: string;
+  username: string;
+  image?: string | null;
+  image_url?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  exp: number;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: "FARM_MANAGER" | "EMPLOYEE";
+  name?: string;
+  phone?: string;
+  username: string;
+  image?: string | null;
+  image_url?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ApiErrorResponse {
   error: string;
   details?: Array<{
@@ -74,18 +101,22 @@ export interface AuthProviderProps {
 }
 
 export interface AuthContextType {
-  user: User | null | undefined;
+  user: AuthUser | null;
+  login: (data: LoginInput) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshToken: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialized: boolean;
+  isLoggingIn: boolean;
+  error: Error | null;
+  clearError: () => void;
+  handleSessionExpiry: () => void;
+  clearAllAuthData: () => void;
+  hasRole: (roles: string | string[]) => boolean;
+  canEdit: boolean;
   isFarmManager: boolean;
   isEmployee: boolean;
-  login: (credentials: LoginInput) => Promise<void>;
-  logout: () => Promise<void>;
-  authCheck: () => Promise<any>;
-  hasRole: (roles: string | string[]) => boolean;
-  hasAnyRole: (roles: string[]) => boolean;
-  canEdit: boolean;
-  canView: boolean;
 }
 
 export interface LoginError {

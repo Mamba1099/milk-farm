@@ -29,11 +29,11 @@ export function useAnimals(query?: Partial<AnimalQuery>) {
       const response = await apiClient.get(`/animals?${params}`);
       return response.data;
     },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-    refetchOnMount: "always", // Only refetch on mount if data is stale
-    retry: 2, // Limit retry attempts
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: "always",
+    retry: 2,
   });
 }
 
@@ -45,11 +45,11 @@ export function useAnimal(id: string) {
       return response.data;
     },
     enabled: !!id,
-    staleTime: 3 * 60 * 1000, // Consider data fresh for 3 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-    refetchOnMount: "always", // Only refetch on mount if data is stale
-    retry: 2, // Limit retry attempts
+    staleTime: 3 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: "always",
+    retry: 2,
   });
 }
 
@@ -140,7 +140,7 @@ export function useUpdateAnimal() {
           if (uploadResult.error) {
             throw new Error(uploadResult.error);
           }
-          imagePath = uploadResult.imageUrl; // Use imageUrl (full URL) instead of imagePath
+          imagePath = uploadResult.imageUrl;
         }
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {

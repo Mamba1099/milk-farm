@@ -18,9 +18,9 @@ function SalesPageContent() {
     <div className="relative">
       {/* Day-end timer (runs in background for all users) */}
       <DayEndTimer 
-        dayEndHour={24}          // Day ends at midnight (00:00)
-        triggerMinutesBefore={60} // Trigger 1 hour before (23:00)
-        isActive={true}          // Always active when sales page is open
+        dayEndHour={24}
+        triggerMinutesBefore={60}
+        isActive={true}
       />
       
       {/* Page Container with Controlled Overflow */}

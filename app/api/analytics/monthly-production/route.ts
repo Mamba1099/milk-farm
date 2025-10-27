@@ -5,12 +5,8 @@ export async function GET(request: NextRequest) {
   try {
     const now = new Date();
     const currentYear = now.getFullYear();
-    
-    // Get start and end of the current year
     const startOfYear = new Date(currentYear, 0, 1);
     const endOfYear = new Date(currentYear, 11, 31);
-
-    // Get morning production for current year
     const morningProduction = await prisma.morningProduction.findMany({
       where: {
         date: {
@@ -30,7 +26,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get evening production for current year
     const eveningProduction = await prisma.eveningProduction.findMany({
       where: {
         date: {
@@ -38,7 +33,7 @@ export async function GET(request: NextRequest) {
           lte: endOfYear,
         },
         animal: {
-          type: { not: "CALF" } // Exclude calf records from production totals
+          type: { not: "CALF" }
         }
       },
       select: {
@@ -50,7 +45,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Create array for all 12 months
     const monthlyData: {
       month: string;
       monthNumber: number;
@@ -73,19 +67,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Process morning production data
     morningProduction.forEach(record => {
       const recordMonth = record.date.getMonth();
       monthlyData[recordMonth].totalMorningProduction += record.quantity_am || 0;
     });
 
-    // Process evening production data
     eveningProduction.forEach(record => {
       const recordMonth = record.date.getMonth();
       monthlyData[recordMonth].totalEveningProduction += record.quantity_pm || 0;
     });
 
-    // Calculate totals and round
     const data = monthlyData.map(entry => ({
       month: entry.month,
       monthNumber: entry.monthNumber,

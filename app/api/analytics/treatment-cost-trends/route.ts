@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get treatment data for the current year (all months in current year)
     const now = new Date();
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
@@ -26,12 +25,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Create array of all months in current year
     const monthsInYear = [];
     for (let month = 0; month <= now.getMonth(); month++) {
       const currentMonth = new Date(now.getFullYear(), month, 1);
       monthsInYear.push({
-        monthKey: currentMonth.toISOString().slice(0, 7), // YYYY-MM
+        monthKey: currentMonth.toISOString().slice(0, 7),
         month: currentMonth.toLocaleDateString('en-US', { 
           month: 'short' 
         }),
@@ -43,15 +41,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Group data by month
     const monthlyData = new Map();
     monthsInYear.forEach(monthData => {
       monthlyData.set(monthData.monthKey, monthData);
     });
 
-    // Process treatment data
     treatmentData.forEach(treatment => {
-      const monthKey = treatment.treatedAt.toISOString().slice(0, 7); // YYYY-MM
+      const monthKey = treatment.treatedAt.toISOString().slice(0, 7);
       if (monthlyData.has(monthKey)) {
         const monthData = monthlyData.get(monthKey);
         monthData.totalCost += treatment.cost;
@@ -61,7 +57,6 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Calculate averages and format data
     const data = Array.from(monthlyData.values()).map(item => ({
       month: item.month,
       totalCost: Math.round(item.totalCost * 100) / 100,

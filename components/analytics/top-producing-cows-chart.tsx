@@ -21,7 +21,7 @@ export function TopProducingCowsChart() {
       const response = await apiClient.get(API_ENDPOINTS.analytics.topProducingCows);
       return response.data as TopProducerData[];
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchInterval: false,

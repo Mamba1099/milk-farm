@@ -40,14 +40,12 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Process sales data
     salesData.forEach(record => {
       const recordMonth = record.timeRecorded.getMonth();
       monthlyData[recordMonth].totalQuantity += record.quantity || 0;
       monthlyData[recordMonth].totalRevenue += record.totalAmount || 0;
     });
 
-    // Round the totals
     const data = monthlyData.map(entry => ({
       month: entry.month,
       monthNumber: entry.monthNumber,

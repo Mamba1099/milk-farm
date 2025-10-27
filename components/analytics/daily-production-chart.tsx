@@ -24,7 +24,7 @@ export function DailyProductionChart() {
       const response = await apiClient.get(API_ENDPOINTS.analytics.dailyProduction);
       return response.data as DailyProductionData[];
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchInterval: false,

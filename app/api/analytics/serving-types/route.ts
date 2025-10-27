@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get all servings with their types and outcomes
     const allServings = await prisma.serving.findMany({
       select: {
         servingType: true,
@@ -14,11 +13,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (allServings.length === 0) {
-      // Return empty data if no servings exist
       return NextResponse.json([]);
     }
 
-    // Group by serving type and calculate statistics
     const servingTypeStats = allServings.reduce((acc: any, serving) => {
       const type = serving.servingType;
       
@@ -35,22 +32,17 @@ export async function GET(request: NextRequest) {
 
       acc[type].total += 1;
       
-      // Count outcomes
       if (serving.outcome === 'SUCCESSFUL') acc[type].successful += 1;
       else if (serving.outcome === 'FAILED') acc[type].failed += 1;
       else if (serving.outcome === 'PENDING') acc[type].pending += 1;
 
-      // Count ova types
       if (serving.ovaType === 'PREDETERMINED') acc[type].predetermined += 1;
       else acc[type].normal += 1;
 
       return acc;
     }, {});
 
-    // Calculate total servings for percentage calculation
     const totalServings = allServings.length;
-
-    // Format data for chart
     const data = Object.entries(servingTypeStats).map(([type, stats]: [string, any]) => {
       const successRate = stats.total > 0 ? (stats.successful / stats.total) * 100 : 0;
       const percentage = totalServings > 0 ? (stats.total / totalServings) * 100 : 0;

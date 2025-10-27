@@ -14,19 +14,8 @@ const fadeInUp: Variants = {
 export function LivestockStatsCard() {
   const { animals } = useDashboardStats();
 
-  // Enhanced debug logging
-  console.log("🐄 LivestockStatsCard debug:", {
-    isLoading: animals.isLoading,
-    isError: animals.isError,
-    data: animals.data,
-    error: animals.error,
-    enabled: animals.isEnabled,
-    status: animals.status,
-    fetchStatus: animals.fetchStatus,
-  });
 
   if (animals.isLoading) {
-    console.log("🔄 LivestockStatsCard: Loading state");
     return (
       <motion.div variants={fadeInUp}>
         <Card className="bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-100 border-orange-200 hover:shadow-xl hover:shadow-orange-100/50 transition-all duration-300 h-full">
@@ -47,7 +36,7 @@ export function LivestockStatsCard() {
   }
 
   if (animals.isError) {
-    console.log("❌ LivestockStatsCard: Error state", animals.error);
+
     return (
       <motion.div variants={fadeInUp}>
         <Card className="bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-100 border-orange-200 hover:shadow-xl hover:shadow-orange-100/50 transition-all duration-300 h-full">
@@ -70,7 +59,6 @@ export function LivestockStatsCard() {
   }
 
   if (!animals.data || animals.data.total === 0) {
-    console.log("📊 LivestockStatsCard: No data state", animals.data);
     return (
       <motion.div variants={fadeInUp}>
         <Card className="bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-100 border-orange-200 hover:shadow-xl hover:shadow-orange-100/50 transition-all duration-300 h-full">
@@ -92,7 +80,6 @@ export function LivestockStatsCard() {
   }
 
   const stats = animals.data;
-  console.log("✅ LivestockStatsCard: Success state", stats);
 
   return (
     <motion.div variants={fadeInUp}>

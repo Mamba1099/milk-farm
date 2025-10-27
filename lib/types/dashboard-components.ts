@@ -1,6 +1,5 @@
 import { Icons } from "@/components/icons";
 
-// Chart Components Types
 export interface ChartData {
   label: string;
   value: number;
@@ -46,7 +45,6 @@ export interface StatCardProps {
   };
 }
 
-// Dashboard Stats Components Types
 export interface DashboardStatCardProps {
   title: string;
   icon: React.ReactNode;

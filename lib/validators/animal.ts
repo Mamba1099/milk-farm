@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Enum schemas matching Prisma enums
 export const GenderSchema = z.enum(["MALE", "FEMALE"]);
 export const AnimalTypeSchema = z.enum(["COW", "BULL", "CALF"]);
 export const HealthStatusSchema = z.enum([
@@ -24,7 +23,6 @@ export const MilkAllocationSchema = z.enum([
   "CARRY_OVER",
 ]);
 
-// Animal validation schemas
 export const CreateAnimalSchema = z.object({
   tagNumber: z.string().min(1, "Tag number is required"),
   name: z.string().optional(),
@@ -43,9 +41,9 @@ export const CreateAnimalSchema = z.object({
     .union([
       z.instanceof(File),
       z.string().url(),
-      z.string().regex(/^\/uploads\//, "Must be a valid file path or URL"),
-      z.string().min(1), // Allow any non-empty string
-      z.literal(""), // Allow empty string
+      z.string().regex(/^\/uploads\/.+/),
+      z.string().min(1),
+      z.literal(""),
       z.null(),
       z.undefined(),
     ])
@@ -68,7 +66,6 @@ export const AnimalQuerySchema = z.object({
   isMatured: z.boolean().optional(),
 });
 
-// Treatment validation schemas
 const BaseTreatmentSchema = z.object({
   animalId: z.string(),
   disease: z.string().min(1, "Disease is required"),
@@ -104,7 +101,6 @@ export const UpdateTreatmentSchema = BaseTreatmentSchema.partial()
     path: ["medicine"],
   });
 
-// Disposal validation schemas
 export const CreateDisposalSchema = z.object({
   animalId: z.string(),
   reason: DisposalReasonSchema,
@@ -120,7 +116,6 @@ export const UpdateDisposalSchema = CreateDisposalSchema.partial().extend({
   id: z.string(),
 });
 
-// Serving validation schemas
 export const CreateServingSchema = z.object({
   femaleId: z.string().min(1, "Please select a female animal"),
   servedAt: z.string().min(1, "Please select a serving date"),
@@ -134,7 +129,6 @@ export const UpdateServingSchema = CreateServingSchema.partial().extend({
   id: z.string(),
 });
 
-// Production validation schemas
 const BaseProductionSchema = z.object({
   animalId: z.string(),
   date: z
@@ -149,7 +143,6 @@ const BaseProductionSchema = z.object({
 
 export const CreateProductionSchema = BaseProductionSchema.refine(
   (data) => {
-    // Calculate total milk
     return data.morning + data.evening > 0;
   },
   {
@@ -161,7 +154,6 @@ export const UpdateProductionSchema = BaseProductionSchema.partial().extend({
   id: z.string(),
 });
 
-// Production validation schema
 export const productionSchema = z.object({
   animalId: z.string().min(1, "Animal ID is required"),
   date: z.string().transform((str) => new Date(str)),
@@ -178,7 +170,6 @@ export const productionSchema = z.object({
   }
 );
 
-// Sales validation schema
 export const salesSchema = z.object({
   animalId: z.string().optional(),
   date: z.string().transform((str) => new Date(str)),
@@ -188,7 +179,6 @@ export const salesSchema = z.object({
   notes: z.string().optional(),
 });
 
-// Type exports for frontend use
 export type CreateAnimalInput = z.infer<typeof CreateAnimalSchema>;
 export type UpdateAnimalInput = z.infer<typeof UpdateAnimalSchema>;
 export type AnimalQuery = z.infer<typeof AnimalQuerySchema>;

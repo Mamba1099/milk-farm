@@ -25,7 +25,7 @@ export function SalesRevenueChart() {
       const response = await apiClient.get(API_ENDPOINTS.analytics.salesRevenue);
       return response.data as SalesRevenueData[];
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchInterval: false,

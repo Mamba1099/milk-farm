@@ -103,7 +103,6 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
 
     setIsTriggering(true);
     try {
-      console.log("🎯 Manually triggering day-end summary...");
       
       const response = await apiClient.post("/production/day-end-summary", {
         date: new Date().toISOString()
@@ -118,7 +117,6 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
         
         setLastTriggerResult(result);
         
-        // Enhanced toast with more details if available
         const finalBalance = response.data?.summary?.finalBalance;
         const description = finalBalance !== undefined 
           ? `Summary complete! Final balance: ${finalBalance}L` 
@@ -129,8 +127,6 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
           description: description,
           type: "success"
         });
-        
-        console.log("✅ Manual day-end summary completed:", response.data);
       }
     } catch (error: any) {
       const result = {

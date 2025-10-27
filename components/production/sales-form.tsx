@@ -29,7 +29,6 @@ export function SalesForm({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Get available milk for sales validation
   const { data: availableMilkData } = useQuery({
     queryKey: ["balance", "available", selectedDate],
     queryFn: async () => {
@@ -51,7 +50,6 @@ export function SalesForm({
       newErrors.quantity = "Quantity must be greater than 0";
     }
 
-    // Check available milk
     if (availableMilk && parseFloat(formData.quantity) > availableMilk.currentBalance) {
       newErrors.quantity = `Insufficient milk. Available: ${availableMilk.currentBalance.toFixed(1)}L`;
     }

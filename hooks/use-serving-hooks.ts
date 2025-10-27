@@ -12,14 +12,11 @@ import type {
   ServingFilters,
   ServingStats 
 } from '@/lib/types/serving';
-import type { CreateServingInput } from '@/lib/validators/serving';
 
-// Fetch servings with filters
 export function useServings(filters?: ServingFilters) {
   return useQuery({
     queryKey: ['servings', filters],
     queryFn: async (): Promise<ServingResponse> => {
-      console.log('Fetching servings with filters:', filters);
       const params = new URLSearchParams();
       if (filters?.animalId) params.append('animalId', filters.animalId);
       if (filters?.servingType) params.append('servingType', filters.servingType);
@@ -28,11 +25,9 @@ export function useServings(filters?: ServingFilters) {
       if (filters?.search) params.append('search', filters.search);
       
       const url = `/servings?${params.toString()}`;
-      console.log('Making request to:', url);
       
       try {
         const response = await apiClient.get(url);
-        console.log('Servings response:', response.data);
         return response.data;
       } catch (error) {
         console.error('Error fetching servings:', error);
@@ -42,7 +37,6 @@ export function useServings(filters?: ServingFilters) {
   });
 }
 
-// Fetch serving statistics
 export function useServingStats() {
   return useQuery({
     queryKey: ['serving-stats'],
@@ -53,7 +47,6 @@ export function useServingStats() {
   });
 }
 
-// Create new serving
 export function useCreateServing() {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -85,7 +78,6 @@ export function useCreateServing() {
   });
 }
 
-// Update serving (for outcome updates after 21 days)
 export function useUpdateServing() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -115,7 +107,6 @@ export function useUpdateServing() {
   });
 }
 
-// Delete serving
 export function useDeleteServing() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

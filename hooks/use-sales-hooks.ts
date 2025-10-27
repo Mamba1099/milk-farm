@@ -78,7 +78,6 @@ export const useSales = (dateRange: string = "today", customDate?: Date) => {
   });
 };
 
-// Hook to get sales statistics
 export const useSalesStats = (dateRange: string = "today", customDate?: Date) => {
   const getDateFilter = () => {
     const today = new Date();

@@ -194,7 +194,6 @@ export function StatCard({
   );
 }
 
-// Simple line chart component for trends
 export function SimpleTrendChart({
   title,
   data,

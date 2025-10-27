@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     const PaymentMethodEnum = ["CASH", "MPESA"];
     const validatedData = CreateSalesSchema.parse({
       ...body,
-      date: new Date().toISOString(), // Automatically set to current date/time
+      date: new Date().toISOString(),
       payment_method: PaymentMethodEnum.includes(body.payment_method) ? body.payment_method : "CASH"
     });
 
@@ -110,7 +110,6 @@ export async function POST(request: NextRequest) {
     const timeRecorded = new Date();
     const totalAmount = validatedData.totalAmount;
 
-    // Check available milk before allowing sale
     const availableMilk = await getAvailableMilkForSales(salesDate);
     const requestedQuantity = validatedData.quantity;
     
@@ -142,7 +141,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update daily summary after sale
     await updateDaySummary(salesDate);
 
     return createSecureResponse({

@@ -38,7 +38,7 @@ export const CreateUserSchema = z.object({
         "Image must be a valid image file (JPEG, JPG, PNG, GIF, WebP, BMP, TIFF, SVG)"
       ),
       z.string().url(),
-      z.string().regex(/^\/uploads\//, "Must be a valid file path or URL"),
+      z.string().regex(/^\/uploads\
       z.null(),
       z.undefined(),
     ])
@@ -81,7 +81,7 @@ export const UpdateUserSchema = z.object({
     .union([
       z.instanceof(File),
       z.string().url(),
-      z.string().regex(/^\/uploads\//, "Must be a valid file path or URL"),
+      z.string().regex(/^\/uploads\
       z.null(),
       z.undefined(),
     ])

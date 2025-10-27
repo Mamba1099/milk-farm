@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // If filtering by date, return single summary; else, return all in range
     if (date) {
       return createSecureResponse({ data: summaries[0] || null });
     } else {

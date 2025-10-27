@@ -7,13 +7,12 @@ const images = [
   "/assets/dairy-2.jpg",
   "/assets/dairy-4.jpg",
   "/assets/dairy-5.jpg",
-].filter(Boolean); // Remove any empty strings or falsy values
+].filter(Boolean);
 
 export default function FullWidthSlideshow() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
 
-  // Return early if no images are available
   if (!images || images.length === 0) {
     return (
       <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] xl:h-[700px] bg-gray-200 flex items-center justify-center">
@@ -39,7 +38,6 @@ export default function FullWidthSlideshow() {
     return () => clearInterval(interval);
   }, []);
 
-  // Calculate previous and next indices for smooth transitions
   const prevIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
   const nextIndex = (currentIndex + 1) % images.length;
 

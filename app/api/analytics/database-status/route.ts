@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get serving data summary
     const servingsCount = await prisma.serving.count();
     const treatmentsCount = await prisma.treatment.count();
     const animalsCount = await prisma.animal.count();

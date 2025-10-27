@@ -17,11 +17,9 @@ export async function GET(request: NextRequest) {
     const dateParam = searchParams.get("date");
     const type = searchParams.get("type") || "current";
 
-    // Get current day's balance or specific date
     const targetDate = dateParam ? new Date(dateParam) : new Date();
     
     if (type === "available") {
-      // Get available milk for sales
       const availableMilk = await getAvailableMilkForSales(targetDate);
       return createSecureResponse({ 
         availableMilk: {
@@ -34,7 +32,6 @@ export async function GET(request: NextRequest) {
       }, { status: 200 }, request);
     }
 
-    // Default: get daily balance
     const dailyBalance = await calculateDayBalance(targetDate);
     return createSecureResponse({ dailyBalance }, { status: 200 }, request);
 

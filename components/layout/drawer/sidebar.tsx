@@ -35,7 +35,6 @@ export function Sidebar({
       const imageUrl = getPublicImageUrl(user.image);
       return imageUrl;
     } catch (error) {
-      console.error("Error generating image URL:", error);
       return null;
     }
   };

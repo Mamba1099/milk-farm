@@ -64,7 +64,6 @@ export const useCreateUser = () => {
       try {
         let response;
         
-        // If there's an image, use FormData
         if (data.image) {
           const formData = new FormData();
           formData.append("username", data.username);
@@ -79,7 +78,6 @@ export const useCreateUser = () => {
             },
           });
         } else {
-          // If no image, send as JSON (exclude confirmPassword and image)
           const { confirmPassword, image, ...submitData } = data;
           response = await apiClient.post("/users", submitData);
         }
@@ -123,7 +121,6 @@ export const useCreateEmployeeByFarmManager = () => {
   return useMutation<{ user: Employee }, Error, FormData>({
     mutationFn: async (formData: FormData) => {
       try {
-        // Ensure role is set to EMPLOYEE
         formData.set("role", "EMPLOYEE");
         
         const response = await apiClient.post("/register", formData, {

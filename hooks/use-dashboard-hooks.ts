@@ -50,7 +50,6 @@ export const useAnimalStats = () => {
           matured: animals.filter((a) => a.isMatured === true).length,
         };
       } catch (error: any) {
-        // If it's an authentication error, return empty stats instead of throwing
         if (error.response?.status === 401) {
           console.warn("Authentication required for animal stats - returning empty data");
           return {
@@ -75,7 +74,6 @@ export const useAnimalStats = () => {
     },
     enabled: isAuthenticated && !authLoading,
     retry: (failureCount, error: any) => {
-      // Don't retry on auth errors
       if (error?.response?.status === 401) {
         return false;
       }
@@ -109,7 +107,6 @@ export const useProductionStats = () => {
         const response = await apiClient.get("/production?limit=1000");
         const { records = [] } = response.data;
 
-        // Filter out calf records for production stats
         const allProductions = (records as ProductionRecord[]).filter((p: ProductionRecord) => p.animal.type !== "CALF");
 
         if (allProductions.length === 0) {
@@ -141,7 +138,6 @@ export const useProductionStats = () => {
           (p: ProductionRecord) => new Date(p.date) >= monthAgo
         );
 
-        // Calculate quantities from morning and evening productions
         const todayQuantity = todayProductions.reduce(
           (sum: number, p: ProductionRecord) => sum + ((p.quantity_am || 0) + (p.quantity_pm || 0)),
           0
@@ -183,7 +179,6 @@ export const useProductionStats = () => {
           lastRecordDate,
         };
       } catch (error: any) {
-        // If it's an authentication error, return empty stats instead of throwing
         if (error.response?.status === 401) {
           console.warn("Authentication required for production stats - returning empty data");
           return {
@@ -209,7 +204,6 @@ export const useProductionStats = () => {
     },
     enabled: isAuthenticated && !authLoading,
     retry: (failureCount, error: any) => {
-      // Don't retry on auth errors
       if (error?.response?.status === 401) {
         return false;
       }
@@ -324,7 +318,6 @@ export const useSystemHealth = () => {
     },
     enabled: isAuthenticated && !authLoading,
     retry: (failureCount, error: any) => {
-      // Don't retry on auth errors
       if (error?.response?.status === 401) {
         return false;
       }

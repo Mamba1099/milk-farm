@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 /**
  * API Request timeout configuration
  */
-export const API_TIMEOUT = 30000; // 30 seconds
+export const API_TIMEOUT = 30000;
 
 /**
  * Wraps an async function with timeout handling
@@ -60,7 +60,6 @@ export function withApiTimeout<T extends unknown[]>(
         return createTimeoutResponse();
       }
 
-      // Re-throw non-timeout errors to be handled by the original handler
       throw error;
     }
   };

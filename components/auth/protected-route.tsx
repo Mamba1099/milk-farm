@@ -29,13 +29,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Auth context handles authentication redirects globally, so we only need to handle role-based access
   if (isAuthenticated && requiredRoles && !hasRole(requiredRoles)) {
     router.replace("/dashboard");
     return null;
   }
 
-  // Auth context will redirect if not authenticated, so we can safely render children
   return <>{children}</>;
 };
 

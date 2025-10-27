@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
 
-    // If only diseases are requested
     if (getDiseases) {
       const diseases = await prisma.treatment.findMany({
         select: {

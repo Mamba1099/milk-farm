@@ -40,10 +40,9 @@ export function TreatmentForm({
   const createTreatmentMutation = useCreateTreatment();
   const { toast } = useToast();
 
-  // Fetch all animals for the dropdown
   const { data: animalsData } = useAnimals({
     page: 1,
-    limit: 1000, // Get all animals
+    limit: 1000,
   });
 
   const {
@@ -70,13 +69,11 @@ export function TreatmentForm({
 
     setIsSubmitting(true);
     try {
-      // Transform the form data to match the API expected format
       const treatmentData: CreateTreatmentInput = {
         ...data,
-        treatedAt: new Date(data.treatedAt), // Convert string to Date
+        treatedAt: new Date(data.treatedAt),
       };
       
-      // Validate using zod schema
       const validatedData = CreateTreatmentSchema.parse(treatmentData);
       
       await createTreatmentMutation.mutateAsync(validatedData);
@@ -84,7 +81,6 @@ export function TreatmentForm({
       onSuccess?.();
       onClose();
     } catch (error) {
-      // Error is already handled in the hook
       console.error("Treatment creation error:", error);
     } finally {
       setIsSubmitting(false);
@@ -96,7 +92,6 @@ export function TreatmentForm({
     onClose();
   };
 
-  // Handle form validation errors
   const handleFormError = (errors: any) => {
     const errorMessages = Object.values(errors).map((error: any) => error?.message).filter(Boolean);
     if (errorMessages.length > 0) {

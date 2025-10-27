@@ -21,13 +21,9 @@ export async function POST(request: NextRequest) {
     let data: Record<string, unknown> = {};
 
     if (contentType.includes("multipart/form-data")) {
-      console.log("Processing multipart/form-data request");
       const formData = await request.formData();
       data = Object.fromEntries(formData.entries());
-      
-      console.log("Form data keys:", Array.from(formData.keys()));
     } else {
-      console.log("Processing JSON request");
       const body = await request.json();
       data = body;
     }
@@ -79,12 +75,9 @@ export async function POST(request: NextRequest) {
 
     let imageUrl = null;
     
-    // Check if imagePath was provided from client-side upload
     if (data.imagePath && typeof data.imagePath === 'string') {
       imageUrl = data.imagePath;
-      console.log("Using imagePath from client:", imageUrl);
     } else {
-      console.log("No imagePath provided");
     }
 
     const user = await prisma.user.create({

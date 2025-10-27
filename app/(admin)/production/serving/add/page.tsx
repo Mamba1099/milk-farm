@@ -33,7 +33,6 @@ export default function AddServingPage() {
   const router = useRouter();
 
   const handleSuccess = () => {
-    // Navigation is handled in the hook
   };
 
   const handleClose = () => {

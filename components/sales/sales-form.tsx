@@ -53,7 +53,6 @@ export function SalesForm() {
         payment_method: formData.paymentMethod
       });
 
-      // Reset form
       setFormData({
         customerName: "",
         quantity: "",

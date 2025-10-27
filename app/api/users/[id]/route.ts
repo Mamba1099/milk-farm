@@ -190,7 +190,7 @@ export async function PUT(
       if (uploadResult.error) {
         return createSecureErrorResponse(uploadResult.error, 500, request);
       }
-      updateData.image = uploadResult.imagePath; // Use imagePath instead of imageUrl
+      updateData.image = uploadResult.imagePath;
     }
 
     if (username || email) {

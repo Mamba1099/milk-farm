@@ -1,13 +1,9 @@
 "use client";
 
-
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-
-import { Button } from "@/components/ui/button";
 import { useProductionReadyAnimals, useProductionRecords, useCreateProduction } from "@/hooks/use-production-hooks";
 import { useAnimals } from "@/hooks/use-animal-hooks";
 import type { ProductionAnimal, CreateProductionData } from "@/lib/types/production";
-import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ProductionTabs } from "@/components/production/ProductionTabs";
 import { AnimalProductionTable } from "@/components/production/animalProductionTable";
@@ -27,7 +23,7 @@ function getInitialState() {
 
 export default function AddProductionPage() {
   const [tab, setTab] = useState<"morning" | "evening">("morning");
-  const { data, isLoading } = useProductionReadyAnimals();
+  const { data } = useProductionReadyAnimals();
   const animals: ProductionAnimal[] = data?.animals || [];
   
   const { data: allAnimalsData, isLoading: allAnimalsLoading } = useAnimals({ 
@@ -46,8 +42,7 @@ export default function AddProductionPage() {
   }, []);
   const { data: prodData, isLoading: prodLoading } = useProductionRecords(1, 1000, { date: today });
   const router = useRouter();
-  
-  // Production creation mutation
+
   const createProductionMutation = useCreateProduction();
   const { toast } = useToast();
 
@@ -69,13 +64,11 @@ export default function AddProductionPage() {
       return;
     }
 
-    // Check if this is a calf or a productive animal
     const isCalf = calves.some(c => c.id === animalId);
     const quantity = parseFloat(animalData.quantity || "0");
     const calfQuantity = parseFloat(animalData.calfQuantity || "0");
 
     if (isCalf) {
-      // For calves, only calf feeding quantity is required
       if (calfQuantity <= 0) {
         toast({
           type: "error",
@@ -85,7 +78,6 @@ export default function AddProductionPage() {
         return;
       }
     } else {
-      // For productive animals, only milk production quantity is required
       if (quantity <= 0) {
         toast({
           type: "error",
@@ -104,17 +96,16 @@ export default function AddProductionPage() {
         date: today,
         type: tab,
         ...(tab === "morning" ? {
-          quantity_am: isCalf ? 0 : quantity, // Calves don't produce milk
-          calf_quantity_fed_am: isCalf ? calfQuantity : 0, // Only send calf feeding data for calves
+          quantity_am: isCalf ? 0 : quantity,
+          calf_quantity_fed_am: isCalf ? calfQuantity : 0,
         } : {
-          quantity_pm: isCalf ? 0 : quantity, // Calves don't produce milk
-          calf_quantity_fed_pm: isCalf ? calfQuantity : 0, // Only send calf feeding data for calves
+          quantity_pm: isCalf ? 0 : quantity,
+          calf_quantity_fed_pm: isCalf ? calfQuantity : 0,
         }),
       };
 
       await createProductionMutation.mutateAsync(productionData);
 
-      // Mark as submitted in local state
       setFormState((prev: any) => {
         const updated = { ...prev[tab] };
         updated[animalId] = { ...updated[animalId], submitted: true };
@@ -170,16 +161,13 @@ export default function AddProductionPage() {
     });
   }, [tab]);
 
-  // Filter records based on current tab and check if they already have data for that session
   const allRecords = prodData?.records || [];
   const animalIdsWithRecord = new Set(
     allRecords
       .filter((rec) => {
-        // For morning tab, check if morning data exists
         if (tab === "morning") {
           return rec.quantity_am !== null || rec.calf_quantity_fed_am !== null;
         }
-        // For evening tab, check if evening data exists
         return rec.quantity_pm !== null || rec.calf_quantity_fed_pm !== null;
       })
       .map((rec) => rec.animalId)
@@ -189,7 +177,6 @@ export default function AddProductionPage() {
     return animalIdsWithRecord.has(animalId) || allHaveRecord;
   };
   
-  // Check if ALL animals AND calves have records submitted for current session
   const allAnimalsHaveRecord = animals.length > 0 && animals.every((a) => animalIdsWithRecord.has(a.id));
   const allCalvesHaveRecord = calves.length === 0 || calves.every((c) => animalIdsWithRecord.has(c.id));
   const allHaveRecord = allAnimalsHaveRecord && allCalvesHaveRecord;

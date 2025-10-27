@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { ServingRecordsList } from "@/components/production/serving-records-list";
 
-// Animation variants
 const fadeInUp: Variants = {
   initial: {
     opacity: 0,

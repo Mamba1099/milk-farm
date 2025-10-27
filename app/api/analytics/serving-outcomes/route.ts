@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get serving outcomes distribution
     const servingOutcomes = await prisma.serving.groupBy({
       by: ['outcome'],
       _count: {
@@ -11,10 +10,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Calculate total servings for percentage calculation
     const totalServings = servingOutcomes.reduce((sum, outcome) => sum + outcome._count.id, 0);
 
-    // Ensure all outcome types are represented
     const allOutcomes = ['SUCCESSFUL', 'FAILED', 'PENDING'] as const;
     const data = allOutcomes.map(outcomeType => {
       const found = servingOutcomes.find(outcome => outcome.outcome === outcomeType);

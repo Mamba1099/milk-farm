@@ -23,10 +23,6 @@ export async function updateAnimalMaturityStatus() {
       },
     });
 
-    console.log(
-      `Found ${animalsToUpdate.length} animals to update maturity status`
-    );
-
     for (const animal of animalsToUpdate) {
       const updates: {
         isMatured: boolean;
@@ -48,10 +44,6 @@ export async function updateAnimalMaturityStatus() {
         where: { id: animal.id },
         data: updates,
       });
-
-      console.log(
-        `Updated animal ${animal.tagNumber}: ${JSON.stringify(updates)}`
-      );
     }
 
     return {
@@ -109,7 +101,6 @@ export async function updateProductionCarryOver() {
     }
 
     const carryOver = todaySummary.final_balance || 0;
-    console.log(`Carry-over for today (final_balance): ${carryOver}L`);
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
     await prisma.productionSummary.upsert({
       where: { date: tomorrow },

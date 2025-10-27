@@ -9,13 +9,15 @@ export const useCurrentUser = () => {
     queryKey: ["user", "current"],
     queryFn: async (): Promise<User | null> => {
       try {
-        console.log("Fetching current user data...");
+        if (typeof window !== 'undefined' && !sessionStorage.getItem("accessToken")) {
+          return null;
+        }
+        
         const response = await apiClient.get<{ user: User }>(
           API_ENDPOINTS.auth.profile
         );
         
         if (response.data && response.data.user) {
-          console.log("User data fetched successfully");
           return response.data.user;
         }
         
@@ -25,7 +27,6 @@ export const useCurrentUser = () => {
           const axiosError = error as { response?: { status?: number } };
           
           if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
-            console.log("User authentication failed - 401/403");
             return null;
           }
         }
@@ -43,8 +44,9 @@ export const useCurrentUser = () => {
       }
       return failureCount < 1;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled: typeof window !== 'undefined' && !!sessionStorage.getItem("accessToken"),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchInterval: false,
@@ -85,7 +87,6 @@ export const useLogoutMutation = () => {
       queryClient.removeQueries({ queryKey: ["user"] });
       queryClient.clear();
       
-      console.log("Logout successful");
     },
     onError: (error) => {
       console.error("Logout failed:", error);

@@ -7,16 +7,13 @@ import { formatDate } from "@/lib/utils";
 import type { ProductionRecord, ProductionRecordsTableProps } from "@/lib/types/production";
 
 export const ProductionRecordsTable: React.FC<ProductionRecordsTableProps> = ({ records, userRole, viewTab = "production" }) => {
-  // Filter records based on viewTab
   const filteredRecords = React.useMemo(() => {
     if (viewTab === "production") {
-      // Production tab: Show records from productive animals (mothers/cows) with milk production
       return records.filter(record => 
         record.animal.type !== "CALF" && 
         ((record.quantity_am && record.quantity_am > 0) || (record.quantity_pm && record.quantity_pm > 0))
       );
     } else {
-      // Calves tab: Show records from calves only (who were fed)
       return records.filter(record => 
         record.animal.type === "CALF" &&
         ((record.calf_quantity_fed_am && record.calf_quantity_fed_am > 0) || 

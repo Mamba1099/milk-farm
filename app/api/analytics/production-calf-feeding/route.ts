@@ -18,8 +18,6 @@ export async function GET(request: NextRequest) {
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-
-    // Get calf feeding data from morning and evening production
     const [morningFeeding, eveningFeeding] = await Promise.all([
       prisma.morningProduction.findMany({
         where: {
@@ -39,7 +37,6 @@ export async function GET(request: NextRequest) {
       })
     ]);
 
-    // Aggregate daily calf feeding data
     const dailyData = new Map();
 
     morningFeeding.forEach(record => {
@@ -63,8 +60,6 @@ export async function GET(request: NextRequest) {
     });
 
     const chartData = Array.from(dailyData.values()).sort((a, b) => a.date.localeCompare(b.date));
-
-    // Calculate summary statistics
     const totalFed = chartData.reduce((sum, day) => sum + day.total, 0);
     const avgDaily = totalFed / Math.max(chartData.length, 1);
 

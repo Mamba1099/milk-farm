@@ -22,10 +22,8 @@ export async function POST(request: NextRequest) {
 
     const targetDate = new Date(date);
     
-    // Calculate the day's balance
     const dayBalance = await calculateDayBalance(targetDate);
     
-    // Update the summary in database
     await updateDaySummary(targetDate);
     
     return createSecureResponse({

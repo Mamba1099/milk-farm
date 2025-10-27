@@ -21,7 +21,7 @@ export function TreatmentExpenseChart() {
       const response = await apiClient.get(API_ENDPOINTS.analytics.treatmentExpense);
       return response.data as TreatmentExpenseData[];
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchInterval: false,

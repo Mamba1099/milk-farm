@@ -3,10 +3,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get treatment expenses for the entire current year
     const currentYear = new Date().getFullYear();
-    const yearStart = new Date(currentYear, 0, 1); // January 1st of current year
-    const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59); // December 31st of current year
+    const yearStart = new Date(currentYear, 0, 1);
+    const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
 
     const treatmentExpenses = await prisma.treatment.findMany({
       where: {
@@ -26,7 +25,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Initialize all 12 months with zero values
     const allMonths = Array.from({ length: 12 }, (_, i) => {
       const date = new Date(currentYear, i, 1);
       const monthKey = `${currentYear}-${String(i + 1).padStart(2, '0')}`;
@@ -41,9 +39,8 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Group by month and calculate totals
     const monthlyExpensesMap = treatmentExpenses.reduce((acc: any, treatment) => {
-      const month = treatment.treatedAt.toISOString().slice(0, 7); // YYYY-MM format
+      const month = treatment.treatedAt.toISOString().slice(0, 7);
 
       if (!acc[month]) {
         acc[month] = {
@@ -58,7 +55,6 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {});
 
-    // Merge actual data with all months template
     const monthlyExpenses = allMonths.map(monthTemplate => {
       const actualData = monthlyExpensesMap[monthTemplate.key];
       

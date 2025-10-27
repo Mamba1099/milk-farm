@@ -3,12 +3,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get current month's sales data (from first day of current month to today)
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-    // Get sales data for current month
     const salesData = await prisma.sales.findMany({
       where: {
         timeRecorded: {
@@ -28,7 +25,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Create array of all days in current month
     const daysInMonth = [];
     for (let day = 1; day <= endOfMonth.getDate(); day++) {
       const currentDate = new Date(now.getFullYear(), now.getMonth(), day);
@@ -47,13 +43,11 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Group data by date
     const revenueByDate = new Map();
     daysInMonth.forEach(day => {
       revenueByDate.set(day.date, day);
     });
 
-    // Process sales data
     salesData.forEach(sale => {
       const dateKey = sale.timeRecorded.toISOString().split('T')[0];
       if (revenueByDate.has(dateKey)) {
@@ -62,7 +56,6 @@ export async function GET(request: NextRequest) {
         entry.totalQuantity += sale.quantity;
         entry.salesCount += 1;
         
-        // Track payment methods
         if (sale.payment_method === 'CASH') {
           entry.cashSales += sale.totalAmount;
         } else if (sale.payment_method === 'MPESA') {
@@ -71,12 +64,11 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Calculate averages and format data
     const data = Array.from(revenueByDate.values()).map(entry => {
       const dayNumber = new Date(entry.date).getDate();
       return {
-        date: dayNumber.toString(), // Just the day number for axis
-        fullDate: entry.displayDate, // Full date for tooltip
+        date: dayNumber.toString(),
+        fullDate: entry.displayDate,
         totalRevenue: Math.round(entry.totalRevenue * 100) / 100,
         totalQuantity: Math.round(entry.totalQuantity * 100) / 100,
         salesCount: entry.salesCount,

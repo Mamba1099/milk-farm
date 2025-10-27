@@ -1,75 +1,43 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
-import {
-  LoginResponse,
-  LoginInput,
-  AuthError,
-  ApiErrorResponse,
-} from "@/lib/types";
-import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
+import type { LoginInput } from "@/lib/types/auth";
 
-export const useLoginMutation = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+interface LoginResponse {
+  message: string;
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    image: string | null;
+  };
+}
 
-  return useMutation<LoginResponse, AuthError, LoginInput>({
+export const useLogin = (onSuccess?: () => void) => {
+  return useMutation<LoginResponse, Error, LoginInput>({
     mutationFn: async (credentials: LoginInput) => {
-      const response = await apiClient.post<LoginResponse>(
-        API_ENDPOINTS.auth.login,
-        credentials
-      );
+      const response = await apiClient.post<LoginResponse>("/auth", credentials);
+      
+      sessionStorage.setItem("accessToken", response.data.accessToken);
+      sessionStorage.setItem("refreshToken", response.data.refreshToken);
+      sessionStorage.setItem("userName", response.data.user.username);
+      
       return response.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["user"] });
-      
-      toast({
-        type: "success",
-        title: "Welcome Back!",
-        description: `Login successful. Welcome, ${data.user.username}!`,
-      });
+      if (onSuccess) onSuccess();
     },
     onError: (error) => {
       console.error("Login failed:", error);
-      if ('response' in error && error.response?.data) {
-        const apiError = error.response.data as ApiErrorResponse;
-        
-        if (apiError.details?.length) {
-          apiError.details.forEach((detail) => {
-            toast({
-              type: "error",
-              title: "Validation Error",
-              description: `${detail.field}: ${detail.message}`,
-            });
-          });
-          return;
-        }
-        
-        toast({
-          type: "error",
-          title: "Login Failed", 
-          description: apiError.error || "Invalid credentials",
-        });
-        return;
-      }
-
-      if ('error' in error) {
-        const directError = error as ApiErrorResponse;
-        toast({
-          type: "error",
-          title: "Login Failed",
-          description: directError.error || "Authentication failed",
-        });
-        return;
-      }
-
-      toast({
-        type: "error",
-        title: "Login Failed",
-        description: error.message || "Please check your credentials and try again.",
-      });
+      sessionStorage.removeItem("accessToken");
+      sessionStorage.removeItem("refreshToken");
+      sessionStorage.removeItem("userName");
     },
   });
 };
+
+export const useLoginMutation = useLogin;
