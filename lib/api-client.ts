@@ -1,7 +1,5 @@
 import axios from "axios";
-
-let handleSessionExpiry: (() => void) | null = null;
-let sessionExpiryNotified = false;
+import { showToast } from "@/lib/toast-manager";
 
 const getBaseURL = () => {
   if (typeof window !== "undefined") {
@@ -16,14 +14,6 @@ const getBaseURL = () => {
 };
 
 const baseURL = getBaseURL();
-
-export const setSessionExpiryHandler = (handler: () => void) => {
-  handleSessionExpiry = handler;
-};
-
-export const resetSessionExpiryNotified = () => {
-  sessionExpiryNotified = false;
-};
 
 export const apiClient = axios.create({
   baseURL: `${baseURL}/api`,
@@ -60,48 +50,54 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     const { status } = error.response || {};
-  
+
+    // We want to handle 401s centrally, but avoid interfering with
+    // auth mutation endpoints like login/logout. Previously we skipped
+    // any request containing `/auth` which also skipped `/auth/me`.
+    // That prevented the client from redirecting when the profile
+    // endpoint returned 401 (expired token). Only skip known
+    // auth mutation endpoints and other explicit paths.
+    const url = originalRequest.url || "";
+    const isAuthMutation = url.includes("/auth") && !url.includes("/auth/me");
     if (
-      originalRequest.url?.includes("/auth") ||
-      originalRequest.url?.includes("/farm-manager-exists") ||
+      isAuthMutation ||
+      url.includes("/farm-manager-exists") ||
       originalRequest._isRetry
     ) {
       return Promise.reject(error);
     }
 
     if (status === 401) {
-      console.log("401 Unauthorized on API endpoint:", originalRequest.url);
-      
-      // For auth/me calls, just return the error - let the auth context handle it naturally
-      if (originalRequest.url?.includes("/auth/me")) {
-        console.log("Session check failed (/auth/me), returning error to auth context");
-        return Promise.reject(error);
-      }
-      
-      // Don't trigger if we're already on login page
-      if (typeof window !== 'undefined' && window.location.pathname === '/login') {
-        console.log("Already on login page, not triggering session expiry");
-        return Promise.reject(error);
-      }
-      
-      // For other API calls, trigger session expiry only once
-      if (!sessionExpiryNotified) {
-        sessionExpiryNotified = true;
-        console.log("Authentication failed on API call - dispatching token expired event");
+      console.log("401 Unauthorized - checking if session expired");
+      if (typeof window !== 'undefined') {
+        // Check if this 401 is from /auth/me (user session check) or contains session expiry info
+        const errorMessage = error.response?.data?.message || '';
+        const isSessionExpiry = url.includes('/auth/me') || 
+                               errorMessage.toLowerCase().includes('session expired') ||
+                               errorMessage.toLowerCase().includes('token expired') ||
+                               errorMessage.toLowerCase().includes('invalid or expired token');
         
-        if (typeof window !== 'undefined') {
-          // Clear auth data immediately
-          localStorage.clear();
-          sessionStorage.clear();
-          document.cookie = "auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          
-          // Dispatch event for auth context to handle the page reload
-          window.dispatchEvent(new CustomEvent('tokenExpired', {
-            detail: { message: 'Your session has expired.' }
-          }));
+        if (isSessionExpiry) {
+          // Show toast notification for session expiry only
+          showToast({
+            type: "warning",
+            title: "Session Expired",
+            description: "Your session has expired. Redirecting to login...",
+            duration: 3000
+          });
         }
+        
+        document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        
+        // Small delay to allow toast to show before redirect (if session expired)
+        const delay = isSessionExpiry ? 1000 : 100;
+        setTimeout(() => {
+          if (window.location.pathname !== '/login') {
+            window.location.replace('/login');
+          }
+        }, delay);
       }
+      
       return Promise.reject(error);
     }
 

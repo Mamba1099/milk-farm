@@ -1,35 +1,27 @@
 /**
- * Utility functions for session and route management
+ * Utility functions for authentication data management
  */
 
-export const isProtectedRoute = (path: string): boolean => {
-  const protectedPaths = [
-    '/dashboard',
-    '/animals',
-    '/production',
-    '/accounts',
-    '/analytics',
-    '/settings',
-    '/sales'
-  ];
-  
-  return protectedPaths.some(protectedPath => path.startsWith(protectedPath));
-};
+import { apiClient, API_ENDPOINTS } from "./api-client";
 
-export const isAuthRoute = (path: string): boolean => {
-  const authPaths = ['/login', '/signup'];
-  return authPaths.includes(path);
-};
-
-export const clearAuthData = (): void => {
-  if (typeof window !== 'undefined') {
-    localStorage.clear();
-    sessionStorage.clear();
-    const cookies = ['auth-token', 'session', 'refresh-token'];
-    cookies.forEach(cookie => {
-      document.cookie = `${cookie}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-      document.cookie = `${cookie}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
-    });
+/**
+ * Clear authentication data and check if user is still authenticated
+ * Returns true if user is still authenticated (shouldn't happen), false if logged out
+ */
+export const clearAuthData = async (): Promise<boolean> => {
+  try {
+    document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    await apiClient.get(API_ENDPOINTS.auth.profile);
+    console.warn("User still authenticated after clearing session cookie");
+    return true;
+    
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      return false;
+    }
+    
+    console.error("Error during auth check:", error);
+    return false;
   }
 };
 
