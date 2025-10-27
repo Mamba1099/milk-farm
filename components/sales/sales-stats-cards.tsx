@@ -13,7 +13,7 @@ const fadeInUp = {
 };
 
 export function SalesStatsCards() {
-  const { data: stats, isLoading, isError } = useSalesStats();
+  const { data: stats, isLoading, isError } = useSalesStats("today");
 
   if (isLoading) {
     return (
@@ -40,10 +40,12 @@ export function SalesStatsCards() {
     );
   }
 
+  const period = "Today";
+  
   const statCards = [
     {
-      title: "Total Production Today",
-      value: `${stats.totalProduction.toFixed(1)} L`,
+      title: `Total Production ${period}`,
+      value: `${(stats?.totalProduction || 0).toFixed(1)} L`,
       icon: Icons.milk,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
@@ -51,8 +53,8 @@ export function SalesStatsCards() {
       description: "Total milk production available"
     },
     {
-      title: "Total Sales Today", 
-      value: `${stats.totalSales.toFixed(1)} L`,
+      title: `Total Sales ${period}`, 
+      value: `${(stats?.totalSales || 0).toFixed(1)} L`,
       icon: Icons.shoppingCart,
       color: "text-green-600",
       bgColor: "bg-green-50", 
@@ -61,7 +63,7 @@ export function SalesStatsCards() {
     },
     {
       title: "Balance Remaining",
-      value: `${stats.balanceRemaining.toFixed(1)} L`,
+      value: `${(stats?.balanceRemaining || 0).toFixed(1)} L`,
       icon: Icons.database,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
@@ -69,8 +71,8 @@ export function SalesStatsCards() {
       description: "Available for sale"
     },
     {
-      title: "Revenue Today",
-      value: `KSh ${stats.revenue.toLocaleString()}`,
+      title: `Revenue ${period}`,
+      value: `KSh ${(stats?.revenue || 0).toLocaleString()}`,
       icon: Icons.dollarSign,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
