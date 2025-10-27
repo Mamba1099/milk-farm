@@ -8,79 +8,68 @@ import {
   AuthError,
   ApiErrorResponse,
 } from "@/lib/types";
-import { useToast } from "@/components/ui/toast";
-import { sessionManager } from "@/lib/session-manager";
+import { useToast } from "@/hooks/use-toast";
 
 export const useLoginMutation = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation<LoginResponse, AuthError, LoginInput>({
-    mutationFn: async (data: LoginInput) => {
+    mutationFn: async (credentials: LoginInput) => {
       const response = await apiClient.post<LoginResponse>(
         API_ENDPOINTS.auth.login,
-        data
+        credentials
       );
-
       return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
-      if (data.session) {
-        sessionManager.setSessionInfo({
-          startTime: data.session.startTime,
-          endTime: data.session.endTime,
-          duration: data.session.duration,
-        });
-      }
-
+      
       toast({
         type: "success",
-        title: "Login Successful",
-        description: `Welcome back, ${data.user.username}!`,
+        title: "Welcome Back!",
+        description: `Login successful. Welcome, ${data.user.username}!`,
       });
     },
     onError: (error) => {
       console.error("Login failed:", error);
-
       if ('response' in error && error.response?.data) {
         const apiError = error.response.data as ApiErrorResponse;
         
-        if (apiError.details && Array.isArray(apiError.details)) {
+        if (apiError.details?.length) {
           apiError.details.forEach((detail) => {
             toast({
               type: "error",
-              title: `Login Error: ${detail.field}`,
-              description: detail.message,
+              title: "Validation Error",
+              description: `${detail.field}: ${detail.message}`,
             });
           });
-        } else {
-          toast({
-            type: "error",
-            title: "Login Failed",
-            description: apiError.error || "Invalid credentials",
-          });
+          return;
         }
-      } else if ('error' in error) {
+        
+        toast({
+          type: "error",
+          title: "Login Failed", 
+          description: apiError.error || "Invalid credentials",
+        });
+        return;
+      }
+
+      if ('error' in error) {
         const directError = error as ApiErrorResponse;
         toast({
           type: "error",
           title: "Login Failed",
-          description: directError.error || "Login failed",
+          description: directError.error || "Authentication failed",
         });
-      } else if ('message' in error && error.message) {
-        toast({
-          type: "error",
-          title: "Login Failed",
-          description: error.message,
-        });
-      } else {
-        toast({
-          type: "error",
-          title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
-        });
+        return;
       }
+
+      toast({
+        type: "error",
+        title: "Login Failed",
+        description: error.message || "Please check your credentials and try again.",
+      });
     },
   });
 };

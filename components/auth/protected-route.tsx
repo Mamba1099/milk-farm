@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode, useEffect } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ProtectedRouteProps, RoleGuardProps } from "@/lib/types";
@@ -9,37 +9,14 @@ import { RingLoader } from "react-spinners";
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredRoles,
-  fallbackPath = "/login",
   showLoading = true,
 }) => {
-  const { isAuthenticated, isLoading, hasRole, user } = useAuth();
+  const { isAuthenticated, isLoading, hasRole } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated) {
-        router.push(fallbackPath);
-        return;
-      }
-
-      if (requiredRoles && !hasRole(requiredRoles)) {
-        router.push("/dashboard");
-        return;
-      }
-    }
-  }, [
-    isAuthenticated,
-    isLoading,
-    hasRole,
-    requiredRoles,
-    router,
-    fallbackPath,
-    user?.role,
-  ]);
 
   if (isLoading) {
     if (!showLoading) return null;
-
+    
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
         <div className="text-center">
@@ -52,14 +29,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (!isAuthenticated) {
+  // Auth context handles authentication redirects globally, so we only need to handle role-based access
+  if (isAuthenticated && requiredRoles && !hasRole(requiredRoles)) {
+    router.replace("/dashboard");
     return null;
   }
 
-  if (requiredRoles && !hasRole(requiredRoles)) {
-    return null;
-  }
-
+  // Auth context will redirect if not authenticated, so we can safely render children
   return <>{children}</>;
 };
 
@@ -67,15 +43,11 @@ export function withAuth<T extends object>(
   Component: React.ComponentType<T>,
   options?: {
     requiredRoles?: string | string[];
-    fallbackPath?: string;
   }
 ) {
   const AuthenticatedComponent = (props: T) => {
     return (
-      <ProtectedRoute
-        requiredRoles={options?.requiredRoles}
-        fallbackPath={options?.fallbackPath}
-      >
+      <ProtectedRoute requiredRoles={options?.requiredRoles}>
         <Component {...props} />
       </ProtectedRoute>
     );

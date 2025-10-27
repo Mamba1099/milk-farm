@@ -36,12 +36,7 @@ export interface LoginResponse {
     email: string;
     role: string;
     image: string | null;
-    image_url: string | null;
-  };
-  session?: {
-    startTime: string;
-    endTime: string;
-    duration: number;
+    createdAt: string;
   };
 }
 
@@ -86,6 +81,7 @@ export interface AuthContextType {
   isEmployee: boolean;
   login: (credentials: LoginInput) => Promise<void>;
   logout: () => Promise<void>;
+  authCheck: () => Promise<any>;
   hasRole: (roles: string | string[]) => boolean;
   hasAnyRole: (roles: string[]) => boolean;
   canEdit: boolean;
@@ -105,7 +101,6 @@ export type AuthError = ApiErrorResponse | ApiError;
 export interface ProtectedRouteProps {
   children: ReactNode;
   requiredRoles?: string | string[];
-  fallbackPath?: string;
   showLoading?: boolean;
 }
 
@@ -128,8 +123,4 @@ export interface AuthErrorBoundaryProps {
 export interface ProfileImageFieldProps {
   onImageChange: (file: File | null) => void;
   imagePreview: string | null;
-}
-
-export interface SessionCheckResponse {
-  user: User;
 }

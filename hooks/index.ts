@@ -1,6 +1,5 @@
 export { useRegisterMutation } from "./use-register";
 export { useLoginMutation } from "./use-login";
-export { useSessionCheck } from "./use-session-check";
 export {
   useCurrentUser,
   useFarmManagerExists,
