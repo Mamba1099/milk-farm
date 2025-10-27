@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Icons } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
-import {
-  useCreateSales,
-  type CreateSalesData,
-} from "@/hooks/use-production-hooks";
+import { useCreateSales } from "@/hooks/use-production-hooks";
+import { CreateSalesData } from "@/lib/types/production";
 import { SalesFormProps } from "@/lib/types/animal";
+import { apiClient } from "@/lib/api-client";
 
 export function SalesForm({
   isOpen,
@@ -23,10 +24,22 @@ export function SalesForm({
     quantity: "",
     pricePerLiter: "",
     customerName: "",
+    paymentMethod: "CASH" as "CASH" | "MPESA",
     notes: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Get available milk for sales validation
+  const { data: availableMilkData } = useQuery({
+    queryKey: ["balance", "available", selectedDate],
+    queryFn: async () => {
+      const response = await apiClient.get(`/balance?type=available&date=${selectedDate}`);
+      return response.data;
+    },
+    enabled: isOpen,
+  });
+
+  const availableMilk = availableMilkData?.availableMilk;
   const createSalesMutation = useCreateSales();
 
   if (!isOpen) return null;
@@ -36,6 +49,11 @@ export function SalesForm({
 
     if (!formData.quantity || parseFloat(formData.quantity) <= 0) {
       newErrors.quantity = "Quantity must be greater than 0";
+    }
+
+    // Check available milk
+    if (availableMilk && parseFloat(formData.quantity) > availableMilk.currentBalance) {
+      newErrors.quantity = `Insufficient milk. Available: ${availableMilk.currentBalance.toFixed(1)}L`;
     }
 
     if (!formData.pricePerLiter || parseFloat(formData.pricePerLiter) <= 0) {
@@ -56,6 +74,7 @@ export function SalesForm({
       quantity: parseFloat(formData.quantity),
       pricePerLiter: parseFloat(formData.pricePerLiter),
       customerName: formData.customerName || undefined,
+      payment_method: formData.paymentMethod,
       notes: formData.notes || undefined,
     };
 
@@ -64,6 +83,7 @@ export function SalesForm({
       toast({
         title: "Success",
         description: "Sales record created successfully",
+        type: "success"
       });
       onSuccess?.();
       onClose();
@@ -76,7 +96,7 @@ export function SalesForm({
       toast({
         title: "Error",
         description: errorMessage,
-        variant: "destructive",
+        type: "error"
       });
     }
   };
@@ -86,6 +106,7 @@ export function SalesForm({
       quantity: "",
       pricePerLiter: "",
       customerName: "",
+      paymentMethod: "CASH",
       notes: "",
     });
     setErrors({});
@@ -116,6 +137,33 @@ export function SalesForm({
         </CardHeader>
 
         <CardContent>
+          {/* Available Milk Display */}
+          {availableMilk && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-blue-800 mb-2">Available Milk</h4>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex justify-between">
+                  <span>Yesterday's Balance:</span>
+                  <Badge variant="outline" className="text-xs">{availableMilk.carryOver.toFixed(1)}L</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span>Today's Net Production:</span>
+                  <Badge variant="outline" className="text-xs text-green-700">+{availableMilk.todayProduction.toFixed(1)}L</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span>Already Sold:</span>
+                  <Badge variant="outline" className="text-xs text-red-700">-{availableMilk.totalSold.toFixed(1)}L</Badge>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>Available Now:</span>
+                  <Badge variant={availableMilk.currentBalance > 0 ? "success" : "destructive"} className="text-xs">
+                    {availableMilk.currentBalance.toFixed(1)}L
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Quantity */}
             <div>
@@ -190,6 +238,27 @@ export function SalesForm({
                   setFormData({ ...formData, customerName: e.target.value })
                 }
               />
+            </div>
+
+            {/* Payment Method */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Payment Method *
+              </label>
+              <select
+                value={formData.paymentMethod}
+                onChange={(e) =>
+                  setFormData({ 
+                    ...formData, 
+                    paymentMethod: e.target.value as "CASH" | "MPESA" 
+                  })
+                }
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                required
+              >
+                <option value="CASH">Cash</option>
+                <option value="MPESA">M-Pesa</option>
+              </select>
             </div>
 
             {/* Notes */}
