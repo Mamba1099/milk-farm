@@ -31,15 +31,6 @@ export function SalesForm() {
 
   const handleInputChange = (field: keyof SalesFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Auto-calculate total amount based on quantity (assuming price per liter = 200 KSh)
-    if (field === "quantity" && value) {
-      const quantity = parseFloat(value);
-      if (!isNaN(quantity)) {
-        const totalAmount = (quantity * 200).toString();
-        setFormData(prev => ({ ...prev, totalAmount }));
-      }
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -195,9 +186,9 @@ export function SalesForm() {
             <div className="flex items-start gap-2">
               <Icons.info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="text-xs text-blue-700">
-                <p className="font-medium mb-1">Pricing Information</p>
-                <p>Current rate: KSh 200 per liter</p>
-                <p>Total amount is calculated automatically</p>
+                <p className="font-medium mb-1">Sales Information</p>
+                <p>Enter quantity and calculate total amount manually</p>
+                <p>Total amount is the final price you want to charge</p>
               </div>
             </div>
           </div>
