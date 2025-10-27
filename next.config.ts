@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
           { key: "Access-Control-Allow-Credentials", value: "true" },
           {
             key: "Access-Control-Allow-Origin",
-            value: `${process.env.API_BASE_URL}`,
+            value: `${process.env.NEXT_API_URL}`,
           },
           {
             key: "Access-Control-Allow-Methods",
