@@ -55,7 +55,7 @@ const cardVariants: Variants = {
 };
 
 export default function ProductionPage() {
-  const { user } = useAuth();
+  const { user, canEdit } = useAuth();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDateRange, setSelectedDateRange] = useState("today");
@@ -130,7 +130,7 @@ export default function ProductionPage() {
               Track daily milk production and calf feeding records
             </p>
           </div>
-          {user?.role === "FARM_MANAGER" && (
+          {canEdit && (
             <Button
               onClick={() => router.push("/production/add")}
               className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 w-full sm:w-auto text-sm sm:text-base"

@@ -170,17 +170,6 @@ export default function AddProductionPage() {
     });
   }, [tab]);
 
-
-
-  // Calves are now fetched separately, no need to filter from animals
-  console.log("🐄 Production Add Page Debug:", {
-    totalAnimals: animals.length,
-    totalCalves: calves.length,
-    isLoadingAnimals: isLoading,
-    isLoadingCalves: allAnimalsLoading,
-    calvesData: calves
-  });
-
   // Filter records based on current tab and check if they already have data for that session
   const allRecords = prodData?.records || [];
   const animalIdsWithRecord = new Set(

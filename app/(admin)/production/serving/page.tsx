@@ -32,7 +32,7 @@ const staggerContainer: Variants = {
 };
 
 export default function ServingRecordsPage() {
-  const { user } = useAuth();
+  const { user, canEdit } = useAuth();
   const router = useRouter();
 
   const handleAdd = () => {
@@ -60,7 +60,7 @@ export default function ServingRecordsPage() {
               Track breeding and serving activities for your animals
             </p>
           </div>
-          {user?.role === "FARM_MANAGER" && (
+          {canEdit && (
             <Button
               onClick={handleAdd}
               className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 w-full sm:w-auto text-sm sm:text-base"
