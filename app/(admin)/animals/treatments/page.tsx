@@ -56,7 +56,7 @@ const staggerContainer = {
 };
 
 export default function TreatmentsPage() {
-  const { user } = useAuth();
+  const { user, canEdit } = useAuth();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [treatmentType, setTreatmentType] = useState("");
@@ -107,7 +107,7 @@ export default function TreatmentsPage() {
               Track treatments and health interventions for your animals
             </p>
           </div>
-          {user?.role === "FARM_MANAGER" && (
+          {canEdit && (
             <Link href="/animals/treatments/add">
               <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 w-full sm:w-auto text-sm sm:text-base">
                 <Plus size={18} className="sm:w-5 sm:h-5" />
@@ -197,7 +197,7 @@ export default function TreatmentsPage() {
                 <p className="text-gray-400 mb-6 text-sm sm:text-base">
                   Start tracking animal health by adding treatment records
                 </p>
-                {user?.role === "FARM_MANAGER" && (
+                {canEdit && (
                   <Link href="/animals/treatments/add">
                     <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base">
                       Add First Treatment

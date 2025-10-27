@@ -38,7 +38,7 @@ const staggerContainer = {
 };
 
 export default function AnimalsPage() {
-  const { user } = useAuth();
+  const { user, canEdit } = useAuth();
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<AnimalFiltersType>({
     searchTerm: "",
@@ -91,8 +91,6 @@ export default function AnimalsPage() {
   const handleEditAnimal = (animal: AnimalWithParents) => {
     setEditingAnimal(animal);
   };
-
-  const canEdit = user?.role === "FARM_MANAGER";
 
   if (isLoading) {
     return (
