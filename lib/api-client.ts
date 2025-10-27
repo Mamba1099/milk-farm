@@ -3,7 +3,19 @@ import axios from "axios";
 let handleSessionExpiry: (() => void) | null = null;
 let sessionExpiryNotified = false;
 
-const baseURL = process.env.NEXT_API_URL || "http://localhost:3000";
+const getBaseURL = () => {
+  if (typeof window !== "undefined") {
+    if (process.env.NODE_ENV === "production") {
+      return `${window.location.protocol}//${window.location.host}`;
+    }
+  }
+  
+  return process.env.NEXT_API_URL?.split(',')[0]?.trim() || 
+         process.env.NEXTAUTH_URL || 
+         "http://localhost:3000";
+};
+
+const baseURL = getBaseURL();
 
 export const setSessionExpiryHandler = (handler: () => void) => {
   handleSessionExpiry = handler;
