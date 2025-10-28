@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import * as bcrypt from "bcryptjs";
+import * as jwt from "jsonwebtoken";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators/auth";
