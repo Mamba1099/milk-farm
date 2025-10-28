@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2025 Sammy Karanja (Mamba)
+ * All rights reserved.
+ * 
+ * This software is proprietary and confidential.
+ * Unauthorized copying, distribution, modification, or use is strictly prohibited.
+ * This code is protected by copyright law and international treaties.
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 
 function getAllowedOrigins(): string[] {
@@ -18,15 +27,14 @@ function getAllowedOrigins(): string[] {
         })
     );
   } else {
-    // Default production origins if ALLOWED_ORIGINS is not set
+    // Fallback origins when ALLOWED_ORIGINS is not set
     if (process.env.NODE_ENV === "production") {
       origins.push("https://milk-farm-pink.vercel.app");
     }
+  }
 
-    // Development origins
-    if (process.env.NODE_ENV === "development") {
-      origins.push("http://localhost:3000", "http://192.168.88.104:3000");
-    }
+  if (process.env.NODE_ENV === "development") {
+    origins.push("http://localhost:3000", "http://192.168.88.104:3000");
   }
 
   return Array.from(new Set(origins));
@@ -118,26 +126,17 @@ export function setSecurityHeaders(response: NextResponse, origin?: string | nul
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
   const allowedOrigins = getAllowedOrigins();
+  
   if (origin && allowedOrigins.includes(origin)) {
     response.headers.set('Access-Control-Allow-Origin', origin);
   } else if (allowedOrigins.length > 0) {
     response.headers.set('Access-Control-Allow-Origin', allowedOrigins[0]);
   }
+
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   response.headers.set('Access-Control-Allow-Credentials', 'true');
-  response.headers.set('Access-Control-Max-Age', '86400');
-  response.headers.set(
-    'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';"
-  );
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set(
-    'Permissions-Policy',
-    'geolocation=(), microphone=(), camera=(), payment=()'
-  );
-  response.headers.set('Cache-Control', 'public, max-age=3600, must-revalidate');
-  response.headers.set('Vary', 'Accept-Encoding, Origin');
+  response.headers.set('Access-Control-Max-Age', '86400'); // 24 hours
 
   return response;
 }
