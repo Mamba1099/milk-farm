@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
         },
         _sum: {
           quantity_am: true,
+          balance_am: true,
         },
       }),
       prisma.eveningProduction.aggregate({
@@ -59,6 +60,7 @@ export async function GET(request: NextRequest) {
         },
         _sum: {
           quantity_pm: true,
+          balance_pm: true,
         },
       }),
     ]);
@@ -76,13 +78,19 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Raw production totals (for display)
     const totalMorningProduction = morningProduction._sum.quantity_am || 0;
     const totalEveningProduction = eveningProduction._sum.quantity_pm || 0;
     const totalProduction = totalMorningProduction + totalEveningProduction;
     
+    // Available balance (after calf feeding - what's actually available for sales)
+    const availableMorning = morningProduction._sum.balance_am || 0;
+    const availableEvening = eveningProduction._sum.balance_pm || 0;
+    const totalAvailableBalance = availableMorning + availableEvening;
+    
     const totalSales = salesAggregation._sum.quantity || 0;
     const revenue = salesAggregation._sum.totalAmount || 0;
-    const balanceRemaining = totalProduction - totalSales;
+    const balanceRemaining = totalAvailableBalance - totalSales;
 
     return createSecureResponse({
       totalProduction,
