@@ -9,9 +9,9 @@ import type { TreatmentStatsSummaryProps } from "@/lib/types/animal";
 
 export const TreatmentStatsSummary: React.FC<TreatmentStatsSummaryProps> = ({ summary }) => {
   return (
-    <div className="flex flex-row flex-wrap gap-4 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
       {/* Total Treatments */}
-      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-cyan-200 to-cyan-400">
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-cyan-200 to-cyan-400 w-full">
         <div className="flex items-center justify-between p-6">
           <div>
             <p className="text-gray-800 text-xs sm:text-sm mb-3">Total Treatments</p>
@@ -23,7 +23,7 @@ export const TreatmentStatsSummary: React.FC<TreatmentStatsSummaryProps> = ({ su
         </div>
       </Card>
       {/* Total Cost */}
-      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-teal-200 to-teal-400">
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-teal-200 to-teal-400 w-full">
         <div className="flex items-center justify-between p-6">
           <div>
             <p className="text-gray-800 text-xs sm:text-sm mb-3">Total Treatment Cost</p>
@@ -35,7 +35,7 @@ export const TreatmentStatsSummary: React.FC<TreatmentStatsSummaryProps> = ({ su
         </div>
       </Card>
       {/* Average Cost */}
-      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-purple-200 to-purple-400">
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-purple-200 to-purple-400 w-full">
         <div className="flex items-center justify-between p-6">
           <div>
             <p className="text-gray-800 text-xs sm:text-sm mb-3">Average Cost per Treatment</p>
@@ -47,7 +47,7 @@ export const TreatmentStatsSummary: React.FC<TreatmentStatsSummaryProps> = ({ su
         </div>
       </Card>
       {/* Most Common Disease */}
-      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-orange-200 to-orange-400">
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-orange-200 to-orange-400 w-full">
         <div className="flex items-center justify-between p-6">
           <div>
             <p className="text-gray-800 text-xs sm:text-sm mb-3">Most Common Disease</p>
@@ -64,7 +64,7 @@ export const TreatmentStatsSummary: React.FC<TreatmentStatsSummaryProps> = ({ su
         </div>
       </Card>
       {/* Most Expensive Disease */}
-      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-red-200 to-red-400">
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-red-200 to-red-400 w-full">
         <div className="flex items-center justify-between p-6">
           <div>
             <p className="text-gray-800 text-xs sm:text-sm mb-3">Most Expensive Disease</p>
@@ -81,7 +81,7 @@ export const TreatmentStatsSummary: React.FC<TreatmentStatsSummaryProps> = ({ su
         </div>
       </Card>
       {/* Health Impact Indicator */}
-      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-yellow-200 to-yellow-400">
+      <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-yellow-200 to-yellow-400 w-full">
         <div className="flex items-center justify-between p-6">
           <div>
             <p className="text-gray-800 text-xs sm:text-sm mb-3">Health Impact</p>
