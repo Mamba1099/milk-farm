@@ -12,9 +12,12 @@ import { NextRequest, NextResponse } from "next/server";
 function getAllowedOrigins(): string[] {
   const origins: string[] = [];
 
-  if (process.env.ALLOWED_ORIGINS) {
+  const allowedOrigins = process.env.ALLOWED_ORIGINS;
+  
+  if (allowedOrigins && allowedOrigins.trim() !== "") {
+    console.log("Configured ALLOWED_ORIGINS:", allowedOrigins);
     origins.push(
-      ...process.env.ALLOWED_ORIGINS.split(",")
+      ...allowedOrigins.split(",")
         .map((o) => o.trim())
         .filter((o) => {
           try {
@@ -26,15 +29,19 @@ function getAllowedOrigins(): string[] {
           }
         })
     );
-  } else {
-    // Fallback origins when ALLOWED_ORIGINS is not set
-    if (process.env.NODE_ENV === "production") {
-      origins.push("https://milk-farm-pink.vercel.app");
-    }
   }
 
   if (process.env.NODE_ENV === "development") {
-    origins.push("http://localhost:3000", "http://192.168.88.104:3000");
+    origins.push("http://localhost:3000");
+  }
+
+  if (process.env.NODE_ENV === "production" && origins.length === 0) {
+    const productionUrl = process.env.NEXT_API_URL;
+    if (productionUrl) {
+      origins.push(productionUrl);
+    } else {
+      console.warn("NEXT_API_URL environment variable not set in production");
+    }
   }
 
   return Array.from(new Set(origins));
@@ -44,9 +51,12 @@ export function validateOrigin(request: NextRequest): NextResponse | null {
   const allowedOrigins = getAllowedOrigins();
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
+  if (allowedOrigins.length === 0) {
+    return null;
+  }
 
   if (origin && !allowedOrigins.includes(origin)) {
-    console.warn(`Unauthorized origin attempted: ${origin}`);
+    console.warn(`Unauthorized origin attempted: ${origin}`, { allowedOrigins });
     return NextResponse.json(
       { success: false, error: "Unauthorized origin" },
       { status: 403 }
@@ -57,7 +67,7 @@ export function validateOrigin(request: NextRequest): NextResponse | null {
     try {
       const refererOrigin = new URL(referer).origin;
       if (!allowedOrigins.includes(refererOrigin)) {
-        console.warn(`Unauthorized referer attempted: ${refererOrigin}`);
+        console.warn(`Unauthorized referer attempted: ${refererOrigin}`, { allowedOrigins });
         return NextResponse.json(
           { success: false, error: "Unauthorized origin" },
           { status: 403 }
@@ -136,7 +146,7 @@ export function setSecurityHeaders(response: NextResponse, origin?: string | nul
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   response.headers.set('Access-Control-Allow-Credentials', 'true');
-  response.headers.set('Access-Control-Max-Age', '86400'); // 24 hours
+  response.headers.set('Access-Control-Max-Age', '86400');
 
   return response;
 }
