@@ -1,18 +1,11 @@
 import axios from "axios";
 
-const getBaseURL = () => {
-  if (typeof window !== "undefined") {
-    if (process.env.NODE_ENV === "production") {
-      return `${window.location.protocol}//${window.location.host}`;
-    }
-  }
-  
-  return process.env.NEXT_API_URL?.split(',')[0]?.trim() || 
-         process.env.NEXTAUTH_URL || 
-         "http://localhost:3000";
-};
+const baseURL = process.env.NEXT_API_URL;
 
-const baseURL = getBaseURL();
+if(!baseURL) {
+  throw new Error("NEXT_API_URL is not defined");
+}
+
 
 export const apiClient = axios.create({
   baseURL: `${baseURL}/api`,
