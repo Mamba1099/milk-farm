@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 function getAllowedOrigins(): string[] {
   const origins: string[] = [];
 
-  const allowedOrigins = process.env.ALLOWED_ORIGINS;
+  const allowedOrigins = "https://milk-farm-pink.vercel.app";
   
   if (allowedOrigins && allowedOrigins.trim() !== "") {
     console.log("Configured ALLOWED_ORIGINS:", allowedOrigins);
