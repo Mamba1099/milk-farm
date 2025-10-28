@@ -16,7 +16,7 @@ const baseURL = getBaseURL();
 
 
 export const apiClient = axios.create({
-  baseURL: `${baseURL}/api`,
+  baseURL: `${baseURL}`,
   timeout: 50000,
   headers: {
     "Content-Type": "application/json",
@@ -85,27 +85,4 @@ apiClient.interceptors.response.use(
   }
 );
 
-export const API_ENDPOINTS = {
-  auth: {
-    register: "/register",
-    login: "/auth",
-    logout: "/auth/logout",
-    profile: "/auth/me",
-    refresh: "/auth/refresh",
-  },
-  analytics: {
-    dailyProduction: "/analytics/daily-production",
-    salesRevenue: "/analytics/sales-revenue",
-    monthlyProduction: "/analytics/monthly-production",
-    monthlySales: "/analytics/monthly-sales",
-    productionCalfFeeding: "/analytics/production-calf-feeding",
-    topProducingCows: "/analytics/top-producing-cows",
-    treatmentCostTrends: "/analytics/treatment-cost-trends",
-    treatmentExpense: "/analytics/treatment-expense",
-    servingOutcomes: "/analytics/serving-outcomes",
-    servingTypes: "/analytics/serving-types",
-    breedingActivity: "/analytics/breeding-activity",
-    calvingIntervals: "/analytics/calving-intervals",
-    seasonalBreeding: "/analytics/seasonal-breeding",
-  },
-} as const;
+

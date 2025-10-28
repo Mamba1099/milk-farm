@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from "@tanstack/react-query";
-import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { ClockLoader } from "react-spinners";
 
 interface TopProducerData {
@@ -18,7 +18,7 @@ export function TopProducingCowsChart() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["analytics", "top-producing-cows"],
     queryFn: async () => {
-      const response = await apiClient.get(API_ENDPOINTS.analytics.topProducingCows);
+      const response = await apiClient.get("/api/analytics/top-producing-cows");
       return response.data as TopProducerData[];
     },
     staleTime: 10 * 60 * 1000,

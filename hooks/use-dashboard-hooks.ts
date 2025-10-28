@@ -23,7 +23,7 @@ export const useAnimalStats = () => {
     queryKey: ["dashboard", "animals"],
     queryFn: async () => {
       try {
-        const response = await apiClient.get("/animals?limit=1000");
+        const response = await apiClient.get("/api/animals?limit=1000");
         const animals: Animal[] = response.data.animals || [];
 
         if (animals.length === 0) {
@@ -104,7 +104,7 @@ export const useProductionStats = () => {
     queryKey: ["dashboard", "production"],
     queryFn: async () => {
       try {
-        const response = await apiClient.get("/production?limit=1000");
+        const response = await apiClient.get("/api/production?limit=1000");
         const { records = [] } = response.data;
 
         const allProductions = (records as ProductionRecord[]).filter((p: ProductionRecord) => p.animal.type !== "CALF");
@@ -236,7 +236,7 @@ export const useUserStats = () => {
     queryKey: ["dashboard", "users"],
     queryFn: async () => {
       try {
-        const response = await apiClient.get("/users?stats=true");
+        const response = await apiClient.get("/api/users?stats=true");
         return response.data.stats;
       } catch (error: any) {
         if (error.response?.status === 401) {
@@ -288,7 +288,7 @@ export const useSystemHealth = () => {
     queryKey: ["dashboard", "systemHealth"],
     queryFn: async () => {
       try {
-        const response = await apiClient.get("/system/health");
+        const response = await apiClient.get("/api/system/health");
         return response.data.health;
       } catch (error) {
         toast({

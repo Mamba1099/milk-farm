@@ -20,7 +20,7 @@ interface LoginResponse {
 export const useLogin = (onSuccess?: () => void) => {
   return useMutation<LoginResponse, Error, LoginInput>({
     mutationFn: async (credentials: LoginInput) => {
-      const response = await apiClient.post<LoginResponse>("/auth", credentials);
+      const response = await apiClient.post<LoginResponse>("/api/auth", credentials);
       
       sessionStorage.setItem("accessToken", response.data.accessToken);
       sessionStorage.setItem("refreshToken", response.data.refreshToken);

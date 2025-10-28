@@ -24,7 +24,7 @@ export function useServings(filters?: ServingFilters) {
       if (filters?.ovaType) params.append('ovaType', filters.ovaType);
       if (filters?.search) params.append('search', filters.search);
       
-      const url = `/servings?${params.toString()}`;
+      const url = `/api/servings?${params.toString()}`;
       
       try {
         const response = await apiClient.get(url);
@@ -41,7 +41,7 @@ export function useServingStats() {
   return useQuery({
     queryKey: ['serving-stats'],
     queryFn: async (): Promise<ServingStats> => {
-      const response = await apiClient.get('/servings/stats');
+      const response = await apiClient.get('/api/servings/stats');
       return response.data;
     },
   });
@@ -54,7 +54,7 @@ export function useCreateServing() {
 
   return useMutation({
   mutationFn: async (data: CreateServingData): Promise<ServingRecord> => {
-      const response = await apiClient.post('/servings', data);
+      const response = await apiClient.post('/api/servings', data);
       return response.data;
     },
     onSuccess: () => {
@@ -84,7 +84,7 @@ export function useUpdateServing() {
 
   return useMutation({
     mutationFn: async (data: UpdateServingData): Promise<ServingRecord> => {
-      const response = await apiClient.put(`/servings/${data.id}`, data);
+      const response = await apiClient.put(`/api/servings/${data.id}`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -113,7 +113,7 @@ export function useDeleteServing() {
 
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      await apiClient.delete(`/servings/${id}`);
+      await apiClient.delete(`/api/servings/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['servings'] });

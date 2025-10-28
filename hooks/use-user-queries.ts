@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { User, AuthError } from "@/lib/types";
 
 export const useCurrentUser = () => {
@@ -13,9 +13,7 @@ export const useCurrentUser = () => {
           return null;
         }
         
-        const response = await apiClient.get<{ user: User }>(
-          API_ENDPOINTS.auth.profile
-        );
+        const response = await apiClient.get<{ user: User }>("/api/auth/me");
         
         if (response.data && response.data.user) {
           return response.data.user;
@@ -60,7 +58,7 @@ export const useFarmManagerExists = () => {
     queryFn: async () => {
       try {
         const response = await apiClient.get<{ exists: boolean }>(
-          "/users/farm-manager-exists"
+          "/api/users/farm-manager-exists"
         );
         return response.data.exists;
       } catch (error) {
@@ -80,7 +78,7 @@ export const useLogoutMutation = () => {
 
   return useMutation<{ message: string }, AuthError, void>({
     mutationFn: async () => {
-      const response = await apiClient.post(API_ENDPOINTS.auth.logout);
+      const response = await apiClient.post("/api/auth/logout");
       return response.data;
     },
     onSuccess: () => {

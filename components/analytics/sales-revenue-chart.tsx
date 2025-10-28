@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from "@tanstack/react-query";
-import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { ClockLoader } from "react-spinners";
 
 interface SalesRevenueData {
@@ -22,7 +22,7 @@ export function SalesRevenueChart() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["analytics", "sales-revenue"],
     queryFn: async () => {
-      const response = await apiClient.get(API_ENDPOINTS.analytics.salesRevenue);
+      const response = await apiClient.get("/api/analytics/sales-revenue");
       return response.data as SalesRevenueData[];
     },
     staleTime: 10 * 60 * 1000,

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useQuery } from "@tanstack/react-query";
-import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { ClockLoader } from "react-spinners";
 
 interface ServingOutcomeData {
@@ -24,7 +24,7 @@ export function ServingOutcomeChart() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["analytics", "serving-outcomes"],
     queryFn: async () => {
-      const response = await apiClient.get(API_ENDPOINTS.analytics.servingOutcomes);
+      const response = await apiClient.get("/api/analytics/serving-outcomes");
       return response.data as ServingOutcomeData[];
     },
     staleTime: 10 * 60 * 1000,

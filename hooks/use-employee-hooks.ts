@@ -17,7 +17,7 @@ export const useUsers = (page: number = 1, limit: number = 10) => {
     queryKey: ["users", page, limit],
     queryFn: async () => {
       const response = await apiClient.get(
-        `/users?page=${page}&limit=${limit}`
+        `/api/users?page=${page}&limit=${limit}`
       );
       return response.data;
     },
@@ -31,7 +31,7 @@ export const useUserStats = () => {
   return useQuery({
     queryKey: ["users", "stats"],
     queryFn: async () => {
-      const response = await apiClient.get("/users?stats=true");
+      const response = await apiClient.get("/api/users?stats=true");
       return response.data;
     },
     retry: 2,
@@ -44,7 +44,7 @@ export const useUser = (id: string) => {
   return useQuery<{ user: Employee }, Error>({
     queryKey: ["users", id],
     queryFn: async () => {
-      const response = await apiClient.get(`/users/${id}`);
+      const response = await apiClient.get(`/api/users/${id}`);
       return response.data;
     },
     retry: 2,
@@ -72,7 +72,7 @@ export const useCreateUser = () => {
           formData.append("role", data.role);
           formData.append("image", data.image);
           
-          response = await apiClient.post("/users", formData, {
+          response = await apiClient.post("/api/users", formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
             },
@@ -123,7 +123,7 @@ export const useCreateEmployeeByFarmManager = () => {
       try {
         formData.set("role", "EMPLOYEE");
         
-        const response = await apiClient.post("/register", formData, {
+        const response = await apiClient.post("/api/register", formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -185,14 +185,14 @@ export const useUpdateUser = () => {
           }
           formData.append("image", data.image);
 
-          const response = await apiClient.put(`/users/${id}`, formData, {
+          const response = await apiClient.put(`/api/users/${id}`, formData, {
             headers: {
               "Content-Type": "multipart/form-data",
             },
           });
           return response.data;
         } else {
-          const response = await apiClient.put(`/users/${id}`, data);
+          const response = await apiClient.put(`/api/users/${id}`, data);
           return response.data;
         }
       } catch (error) {
@@ -228,7 +228,7 @@ export const useDeleteUser = () => {
   return useMutation<void, Error, string>({
     mutationFn: async (id: string) => {
       try {
-        await apiClient.delete(`/users/${id}`);
+        await apiClient.delete(`/api/users/${id}`);
       } catch (error) {
         const apiError = handleApiError(error);
         throw new Error(apiError.message);

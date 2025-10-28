@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 
 interface MonthlyProductionData {
   month: string;
@@ -16,7 +16,7 @@ export function MonthlyProductionChart() {
   const { data: monthlyProduction, isLoading } = useQuery<MonthlyProductionData[]>({
     queryKey: ['monthly-production'],
     queryFn: async () => {
-      const response = await apiClient.get(API_ENDPOINTS.analytics.monthlyProduction);
+      const response = await apiClient.get("/api/analytics/monthly-production");
       return response.data;
     },
   });

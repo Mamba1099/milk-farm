@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { RegisterInput } from "@/lib/validators/auth";
 import {
   RegisterResponse,
@@ -46,7 +46,7 @@ export const useRegisterMutation = () => {
         }
 
         const response = await apiClient.post<RegisterResponse>(
-          API_ENDPOINTS.auth.register,
+          "/api/register",
           formData,
           {
             headers: {

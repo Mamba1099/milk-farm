@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient, API_ENDPOINTS } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -16,7 +16,7 @@ export function MonthlyProductionTotalChart() {
   const { data: monthlyProduction, isLoading } = useQuery<MonthlyProductionData[]>({
     queryKey: ['monthly-production'],
     queryFn: async () => {
-      const response = await apiClient.get(API_ENDPOINTS.analytics.monthlyProduction);
+      const response = await apiClient.get("/api/analytics/monthly-production");
       return response.data;
     },
   });

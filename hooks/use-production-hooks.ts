@@ -9,7 +9,7 @@ export const useProductionReadyAnimals = () => {
   return useQuery<{ animals: ProductionAnimal[]; total: number }, Error>({
     queryKey: ["animals", "production-ready"],
     queryFn: async () => {
-      const response = await apiClient.get("/animals/production-ready");
+      const response = await apiClient.get("/api/animals/production-ready");
       return response.data;
     },
     staleTime: 10 * 60 * 1000,
@@ -55,7 +55,7 @@ export const useProductionRecords = (
     queryKey: ["production", page, limit, filters],
     queryFn: async () => {
       const response = await apiClient.get(
-        `/production?${queryParams.toString()}`
+        `/api/production?${queryParams.toString()}`
       );
       return response.data;
     },
@@ -100,7 +100,7 @@ export const useSalesRecords = (
   >({
     queryKey: ["sales", page, limit, filters],
     queryFn: async () => {
-      const response = await apiClient.get(`/sales?${queryParams.toString()}`);
+      const response = await apiClient.get(`/api/sales?${queryParams.toString()}`);
       return response.data;
     },
     staleTime: 2 * 60 * 1000,
@@ -116,7 +116,7 @@ export const useCreateProduction = () => {
 
   return useMutation<any, Error, CreateProductionData>({
     mutationFn: async (data: CreateProductionData) => {
-      const response = await apiClient.post("/production", data);
+      const response = await apiClient.post("/api/production", data);
       return response.data;
     },
     onSuccess: () => {
@@ -136,7 +136,7 @@ export const useCreateSales = () => {
 
   return useMutation<any, Error, CreateSalesData>({
     mutationFn: async (data: CreateSalesData) => {
-      const response = await apiClient.post("/sales", data);
+      const response = await apiClient.post("/api/sales", data);
       return response.data;
     },
     onSuccess: () => {
@@ -160,7 +160,7 @@ export const useUpdateMaturity = () => {
     { operation: "maturity" | "carry-over" | "both" }
   >({
     mutationFn: async (data) => {
-      const response = await apiClient.post("/system/update-maturity", data);
+      const response = await apiClient.post("/api/system/update-maturity", data);
       return response.data;
     },
     onSuccess: () => {
@@ -318,14 +318,14 @@ export const useProductionStats = () => {
 
       const [todayRes, weekRes, monthRes, animalsRes, salesRes, todaySummaryRes, weekSummaryRes, monthSummaryRes] =
         await Promise.all([
-          apiClient.get(`/production?startDate=${startOfToday.toISOString()}&endDate=${new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000).toISOString()}&limit=1000`),
-          apiClient.get(`/production?startDate=${startOfWeek.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
-          apiClient.get(`/production?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
-          apiClient.get("/animals/production-ready"),
-          apiClient.get(`/sales?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
-          apiClient.get(`/production/summary?date=${startOfToday.toISOString()}`),
-          apiClient.get(`/production/summary?startDate=${startOfWeek.toISOString()}&endDate=${new Date().toISOString()}`),
-          apiClient.get(`/production/summary?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}`),
+          apiClient.get(`/api/production?startDate=${startOfToday.toISOString()}&endDate=${new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000).toISOString()}&limit=1000`),
+          apiClient.get(`/api/production?startDate=${startOfWeek.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
+          apiClient.get(`/api/production?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
+          apiClient.get("/api/animals/production-ready"),
+          apiClient.get(`/api/sales?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
+          apiClient.get(`/api/production/summary?date=${startOfToday.toISOString()}`),
+          apiClient.get(`/api/production/summary?startDate=${startOfWeek.toISOString()}&endDate=${new Date().toISOString()}`),
+          apiClient.get(`/api/production/summary?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}`),
         ]);
 
       const sumQuantities = (records: ProductionRecord[]) =>

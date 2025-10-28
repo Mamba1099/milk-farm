@@ -26,7 +26,7 @@ export function useAnimals(query?: Partial<AnimalQuery>) {
       if (query?.isMatured !== undefined)
         params.set("isMatured", query.isMatured.toString());
 
-      const response = await apiClient.get(`/animals?${params}`);
+      const response = await apiClient.get(`/api/animals?${params}`);
       return response.data;
     },
     staleTime: 5 * 60 * 1000,
@@ -41,7 +41,7 @@ export function useAnimal(id: string) {
   return useQuery({
     queryKey: ["animal", id],
     queryFn: async () => {
-      const response = await apiClient.get(`/animals/${id}`);
+      const response = await apiClient.get(`/api/animals/${id}`);
       return response.data;
     },
     enabled: !!id,
@@ -89,7 +89,7 @@ export function useCreateAnimal() {
         if (imagePath) {
           formData.append("imageUrl", imagePath);
         }
-        const response = await apiClient.post("/animals", formData, {
+        const response = await apiClient.post("/api/animals", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
         return response.data;
@@ -158,7 +158,7 @@ export function useUpdateAnimal() {
           formData.append("imageUrl", imagePath);
         }
         const response = await apiClient.put(
-          `/animals/${data.id}`,
+          `/api/animals/${data.id}`,
           formData,
           {
             headers: { "Content-Type": "multipart/form-data" },
@@ -202,7 +202,7 @@ export function useDeleteAnimal() {
   return useMutation({
     mutationFn: async (id: string) => {
       try {
-        const response = await apiClient.delete(`/animals/${id}`);
+        const response = await apiClient.delete(`/api/animals/${id}`);
         return response.data;
       } catch (error) {
         const apiError = handleApiError(error);
@@ -242,7 +242,7 @@ export function useTreatments(animalId?: string) {
     queryKey: ["treatments", animalId],
     queryFn: async () => {
       const params = animalId ? `?animalId=${animalId}` : "";
-      const response = await apiClient.get(`/treatments${params}`);
+      const response = await apiClient.get(`/api/treatments${params}`);
       return response.data;
     },
   });
@@ -255,7 +255,7 @@ export function useCreateTreatment() {
   return useMutation({
     mutationFn: async (data: CreateTreatmentInput) => {
       try {
-        const response = await apiClient.post("/treatments", data);
+        const response = await apiClient.post("/api/treatments", data);
         return response.data;
       } catch (error) {
         const apiError = handleApiError(error);
@@ -295,7 +295,7 @@ export function useProduction(animalId?: string, date?: string) {
       if (animalId) params.set("animalId", animalId);
       if (date) params.set("date", date);
 
-      const response = await apiClient.get(`/production?${params}`);
+      const response = await apiClient.get(`/api/production?${params}`);
       return response.data;
     },
   });
@@ -306,7 +306,7 @@ export function useCreateProduction() {
 
   return useMutation({
     mutationFn: async (data: CreateProductionInput) => {
-      const response = await apiClient.post("/production", data);
+      const response = await apiClient.post("/api/production", data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -329,7 +329,7 @@ export function useAvailableParents(gender?: "MALE" | "FEMALE") {
       params.set("isMatured", "true");
       params.set("limit", "100");
 
-      const response = await apiClient.get(`/animals?${params}`);
+      const response = await apiClient.get(`/api/animals?${params}`);
       return response.data.animals;
     },
   });
@@ -345,7 +345,7 @@ export function useAvailableProductionAnimals() {
         limit: "100",
       });
 
-      const response = await apiClient.get(`/animals?${params}`);
+      const response = await apiClient.get(`/api/animals?${params}`);
       return response.data.animals;
     },
   });
@@ -355,7 +355,7 @@ export function useTreatmentDiseases() {
   return useQuery({
     queryKey: ["treatment-diseases"],
     queryFn: async () => {
-      const response = await apiClient.get("/treatments?diseases=true");
+      const response = await apiClient.get("/api/treatments?diseases=true");
       return response.data;
     },
   });
@@ -365,7 +365,7 @@ export function useTreatmentStatistics() {
   return useQuery({
     queryKey: ["treatment-statistics"],
     queryFn: async () => {
-      const response = await apiClient.get("/treatments/statistics");
+      const response = await apiClient.get("/api/treatments/statistics");
       return response.data;
     },
     staleTime: 5 * 60 * 1000,

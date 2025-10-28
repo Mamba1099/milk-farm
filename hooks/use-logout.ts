@@ -6,7 +6,7 @@ import { apiClient } from "@/lib/api-client";
 export const useLogout = () => {
   return useMutation<{ message: string }, Error, string>({
     mutationFn: async (userId: string) => {
-      const response = await apiClient.post<{ message: string }>("/auth/logout", { userId });
+      const response = await apiClient.post<{ message: string }>("/api/auth/logout", { userId });
       
       sessionStorage.removeItem("accessToken");
       sessionStorage.removeItem("refreshToken");

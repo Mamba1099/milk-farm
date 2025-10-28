@@ -22,7 +22,7 @@ interface RefreshResponse {
 export const useAutoRefresh = () => {
   return useMutation<RefreshResponse, Error, RefreshRequest>({
     mutationFn: async ({ refreshToken }: RefreshRequest) => {
-      const response = await apiClient.post<RefreshResponse>("/auth/refresh", { refreshToken });
+      const response = await apiClient.post<RefreshResponse>("/api/auth/refresh", { refreshToken });
       sessionStorage.setItem("accessToken", response.data.accessToken);
       
       return response.data;

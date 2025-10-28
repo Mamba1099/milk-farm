@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
 import { getUserFromSession } from "@/lib/auth-session";
-import { uploadUserImage, deleteUserImage } from "@/lib/user-storage";
+import { uploadUserImage, deleteUserImage } from "@/user-storage";
 import { getPublicImageUrl } from "@/supabase/storage/client";
 import bcrypt from "bcryptjs";
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient, API_ENDPOINTS } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -15,7 +15,7 @@ export function MonthlySalesLineChart() {
   const { data: monthlySales, isLoading } = useQuery<MonthlySalesData[]>({
     queryKey: ['monthly-sales'],
     queryFn: async () => {
-      const response = await apiClient.get(API_ENDPOINTS.analytics.monthlySales);
+      const response = await apiClient.get("/api/analytics/monthly-sales");
       return response.data;
     },
   });

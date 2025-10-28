@@ -69,7 +69,7 @@ export const useSales = (dateRange: string = "today", customDate?: Date) => {
   return useQuery<{ sales: Sale[]; total: number }>({
     queryKey: ["sales", dateRange, customDate?.toISOString()],
     queryFn: async () => {
-      const response = await apiClient.get(`/sales?${queryParams.toString()}`);
+      const response = await apiClient.get(`/api/sales?${queryParams.toString()}`);
       return response.data;
     },
     staleTime: 2 * 60 * 1000,
@@ -142,7 +142,7 @@ export const useSalesStats = (dateRange: string = "today", customDate?: Date) =>
   return useQuery<SalesStats>({
     queryKey: ["sales", "stats", dateRange, customDate?.toISOString()],
     queryFn: async () => {
-      const response = await apiClient.get(`/sales/stats?${queryParams.toString()}`);
+      const response = await apiClient.get(`/api/sales/stats?${queryParams.toString()}`);
       return response.data;
     },
     staleTime: 2 * 60 * 1000,
@@ -157,7 +157,7 @@ export const useCreateSale = () => {
 
   return useMutation<Sale, Error, CreateSaleData>({
     mutationFn: async (saleData) => {
-      const response = await apiClient.post("/sales", saleData);
+      const response = await apiClient.post("/api/sales", saleData);
       return response.data;
     },
     onSuccess: () => {

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useQuery } from "@tanstack/react-query";
-import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { ClockLoader } from "react-spinners";
 
 interface ProductionCalfFeedingData {
@@ -18,7 +18,7 @@ export function ProductionCalfFeedingChart() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["analytics", "production-calf-feeding"],
     queryFn: async () => {
-      const response = await apiClient.get(API_ENDPOINTS.analytics.productionCalfFeeding);
+      const response = await apiClient.get("/api/analytics/production-calf-feeding");
       return response.data as ProductionCalfFeedingData[];
     },
     staleTime: 10 * 60 * 1000,

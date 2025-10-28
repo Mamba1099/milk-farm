@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from "@tanstack/react-query";
-import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { ClockLoader } from "react-spinners";
 
 interface TreatmentCostData {
@@ -20,7 +20,7 @@ export function TreatmentCostTrendsChart() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["analytics", "treatment-cost-trends"],
     queryFn: async () => {
-      const response = await apiClient.get(API_ENDPOINTS.analytics.treatmentCostTrends);
+      const response = await apiClient.get("/api/analytics/treatment-cost-trends");
       return response.data as TreatmentCostData[];
     },
     staleTime: 10 * 60 * 1000,
