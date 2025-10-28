@@ -36,11 +36,11 @@ function getAllowedOrigins(): string[] {
   }
 
   if (process.env.NODE_ENV === "production" && origins.length === 0) {
-    const productionUrl = process.env.NEXT_API_URL;
+    const productionUrl = "https://milk-farm-pink.vercel.app";
     if (productionUrl) {
       origins.push(productionUrl);
     } else {
-      console.warn("NEXT_API_URL environment variable not set in production");
+      console.warn("PRODUCTION_URL environment variable not set in production");
     }
   }
 
