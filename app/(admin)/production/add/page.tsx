@@ -210,8 +210,8 @@ export default function AddProductionPage() {
         </div>
       ) : (
         <div className="w-full mx-auto px-2 sm:px-4">
-          {/* Desktop Layout - Side by Side Tables */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 max-w-7xl mx-auto">
+          {/* Desktop Layout - Side by Side Tables (Hidden on mobile and tablet) */}
+          <div className="hidden xl:grid xl:grid-cols-2 gap-6 max-w-7xl mx-auto">
             <AnimalProductionTable
               animals={animals}
               tab={tab}
@@ -232,8 +232,8 @@ export default function AddProductionPage() {
             />
           </div>
 
-          {/* Mobile Layout - Stacked Tables */}
-          <div className="lg:hidden space-y-4 sm:space-y-6">
+          {/* Mobile/Tablet Layout - Stacked Tables (Hidden on desktop) */}
+          <div className="xl:hidden space-y-4 sm:space-y-6">
             <AnimalProductionTable
                 animals={animals}
                 tab={tab}
