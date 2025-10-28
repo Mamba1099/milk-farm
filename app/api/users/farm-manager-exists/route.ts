@@ -6,10 +6,8 @@ import {
 } from "@/lib/security";
 
 export async function GET(request: NextRequest) {
-  const securityError = validateSecurity(request);
-  if (securityError) {
-    return securityError;
-  }
+  // This endpoint should be publicly accessible during signup
+  // No authentication required to check if farm manager exists
 
   try {
     const farmManager = await prisma.user.findFirst({

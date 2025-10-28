@@ -27,13 +27,18 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     if (typeof window !== "undefined") {
-      const accessToken = sessionStorage.getItem("accessToken");
-      if (accessToken && config.headers) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
+      const url = config.url || "";
+      const isPublicEndpoint = url.includes("/farm-manager-exists") || 
+                              url.includes("/register") || 
+                              (url.includes("/auth") && !url.includes("/auth/me"));
+      
+      if (!isPublicEndpoint) {
+        const accessToken = sessionStorage.getItem("accessToken");
+        if (accessToken && config.headers) {
+          config.headers.Authorization = `Bearer ${accessToken}`;
+        }
       }
     }
-
-
 
     return config;
   },
