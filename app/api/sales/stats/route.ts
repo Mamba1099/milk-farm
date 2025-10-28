@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
           }
         },
         _sum: {
-          balance_am: true,
+          quantity_am: true,
         },
       }),
       prisma.eveningProduction.aggregate({
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
           }
         },
         _sum: {
-          balance_pm: true,
+          quantity_pm: true,
         },
       }),
     ]);
@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const totalMorningProduction = morningProduction._sum.balance_am || 0;
-    const totalEveningProduction = eveningProduction._sum.balance_pm || 0;
+    const totalMorningProduction = morningProduction._sum.quantity_am || 0;
+    const totalEveningProduction = eveningProduction._sum.quantity_pm || 0;
     const totalProduction = totalMorningProduction + totalEveningProduction;
     
     const totalSales = salesAggregation._sum.quantity || 0;
