@@ -293,4 +293,13 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+export async function OPTIONS(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
+  }
+  
+  return createSecureResponse({ message: "OK" }, { status: 200 }, request);
+}
+
 

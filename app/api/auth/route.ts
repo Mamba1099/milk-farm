@@ -18,9 +18,7 @@ if (!JWT_SECRET) {
 }
 
 export async function POST(request: NextRequest) {
-  const securityError = validateSecurity(request);
-  if (securityError) return securityError;
-
+  
   try {
     const body = await request.json();
     const validatedData = loginSchema.parse(body);
@@ -130,6 +128,20 @@ export async function GET(request: NextRequest) {
   return createSecureResponse(
     { message: "Login endpoint is working" },
     { status: 200 },
+    request
+  );
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return createSecureResponse(
+    { success: true },
+    {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    },
     request
   );
 }

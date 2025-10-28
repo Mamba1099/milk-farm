@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
 
 export async function GET(request: NextRequest) {
   try {
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+
+    const user = await getUserFromSession(request);
+    if (!user) {
+      return createSecureErrorResponse("Unauthorized", 401, request);
+    }
     const now = new Date();
     const currentYear = now.getFullYear();
     
@@ -53,12 +64,27 @@ export async function GET(request: NextRequest) {
       totalRevenue: Math.round(entry.totalRevenue * 100) / 100,
     }));
 
-    return NextResponse.json(data);
+    return createSecureResponse(data, { status: 200 }, request);
   } catch (error) {
     console.error("Error fetching monthly sales:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch monthly sales data" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to fetch monthly sales data", 500, request);
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
+  }
+  return createSecureResponse(
+    { success: true },
+    {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    },
+    request
+  );
 }

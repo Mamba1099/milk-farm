@@ -220,3 +220,12 @@ export async function POST(request: NextRequest) {
     return createSecureErrorResponse("Failed to create animal", 500, request);
   }
 }
+
+export async function OPTIONS(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
+  }
+  
+  return createSecureResponse({ message: "OK" }, { status: 200 }, request);
+}

@@ -6,8 +6,10 @@ import {
 } from "@/lib/security";
 
 export async function GET(request: NextRequest) {
-  // This endpoint should be publicly accessible during signup
-  // No authentication required to check if farm manager exists
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
+  }
 
   try {
     const farmManager = await prisma.user.findFirst({
@@ -39,16 +41,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
+
 export async function OPTIONS(request: NextRequest) {
-  return createSecureResponse(
-    { success: true },
-    {
-      status: 200,
-      headers: {
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    },
-    request
-  );
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
+  }
+  
+  return createSecureResponse({ message: "OK" }, { status: 200 }, request);
 }

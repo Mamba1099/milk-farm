@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
 import { getUserFromSession } from "@/lib/auth-session";
-import { calculateDayBalance, updateDaySummary } from "@/lib/services/production-balance";
+import { calculateDayBalance, updateDaySummary, addBalanceToMorningProduction } from "@/lib/services/production-balance";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,8 +26,18 @@ export async function POST(request: NextRequest) {
     
     await updateDaySummary(targetDate);
     
+    // Add the final balance to next day's morning production
+    const carryoverResult = await addBalanceToMorningProduction(targetDate);
+    
+    let message = "Day-end summary calculated successfully";
+    if (carryoverResult.success && carryoverResult.balanceAdded > 0) {
+      message += `. ${carryoverResult.balanceAdded}L carried over to next day's morning production`;
+    } else if (!carryoverResult.success) {
+      message += `. Warning: ${carryoverResult.message}`;
+    }
+    
     return createSecureResponse({
-      message: "Day-end summary calculated successfully",
+      message,
       summary: {
         date: dayBalance.date,
         totalProduction: dayBalance.totalProduction,
@@ -36,6 +46,7 @@ export async function POST(request: NextRequest) {
         totalSales: dayBalance.totalSales,
         balanceYesterday: dayBalance.balanceYesterday,
         finalBalance: dayBalance.finalBalance,
+        carryoverResult: carryoverResult
       }
     }, { status: 200 }, request);
 

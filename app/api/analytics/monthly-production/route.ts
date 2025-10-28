@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
 
 export async function GET(request: NextRequest) {
   try {
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+
+    const user = await getUserFromSession(request);
+    if (!user) {
+      return createSecureErrorResponse("Unauthorized", 401, request);
+    }
     const now = new Date();
     const currentYear = now.getFullYear();
     const startOfYear = new Date(currentYear, 0, 1);
@@ -85,12 +96,18 @@ export async function GET(request: NextRequest) {
       totalDailyProduction: Math.round((entry.totalMorningProduction + entry.totalEveningProduction) * 100) / 100,
     }));
 
-    return NextResponse.json(data);
+    return createSecureResponse(data, {}, request);
   } catch (error) {
     console.error("Error fetching monthly production:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch monthly production data" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to fetch monthly production data", 500, request);
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
+  }
+  
+  return createSecureResponse({ message: "OK" }, { status: 200 }, request);
 }

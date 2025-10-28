@@ -11,10 +11,6 @@ import {
 import { getPublicImageUrl } from "@/supabase/storage/client";
 
 export async function POST(request: NextRequest) {
-  const securityError = validateSecurity(request);
-  if (securityError) {
-    return securityError;
-  }
 
   try {
     const contentType = request.headers.get("content-type") || "";
@@ -160,19 +156,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
+
 export async function OPTIONS(request: NextRequest) {
-  return createSecureResponse(
-    { success: true },
-    {
-      status: 200,
-      headers: {
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    },
-    request
-  );
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
+  }
+  
+  return createSecureResponse({ message: "OK" }, { status: 200 }, request);
 }
+
 
 export async function GET(request: NextRequest) {
   return createSecureResponse(

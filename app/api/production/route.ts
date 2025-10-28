@@ -1,12 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { productionSchema } from "@/lib/validators/animal";
-import {
-  calculateBalanceMorning,
-  calculateBalanceEvening,
-  calculateTotalMorning,
-  calculateTotalEvening
-} from "@/lib/services/production-calculations";
 import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
 import { getUserFromSession } from "@/lib/auth-session";
 import { updateDaySummary } from "@/lib/services/production-balance";

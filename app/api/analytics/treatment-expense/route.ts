@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateSecurity, createSecureResponse, createSecureErrorResponse } from "@/lib/security";
+import { getUserFromSession } from "@/lib/auth-session";
 
 export async function GET(request: NextRequest) {
   try {
+    const securityError = validateSecurity(request);
+    if (securityError) {
+      return securityError;
+    }
+
+    const user = await getUserFromSession(request);
+    if (!user) {
+      return createSecureErrorResponse("Unauthorized", 401, request);
+    }
     const currentYear = new Date().getFullYear();
     const yearStart = new Date(currentYear, 0, 1);
     const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
@@ -71,12 +82,27 @@ export async function GET(request: NextRequest) {
       return monthTemplate;
     });
 
-    return NextResponse.json(monthlyExpenses);
+    return createSecureResponse(monthlyExpenses, { status: 200 }, request);
   } catch (error) {
     console.error("Error fetching treatment expenses:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch treatment expenses" },
-      { status: 500 }
-    );
+    return createSecureErrorResponse("Failed to fetch treatment expenses", 500, request);
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const securityError = validateSecurity(request);
+  if (securityError) {
+    return securityError;
+  }
+  return createSecureResponse(
+    { success: true },
+    {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    },
+    request
+  );
 }

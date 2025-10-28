@@ -17,10 +17,16 @@ function getAllowedOrigins(): string[] {
           }
         })
     );
-  }
+  } else {
+    // Default production origins if ALLOWED_ORIGINS is not set
+    if (process.env.NODE_ENV === "production") {
+      origins.push("https://milk-farm-pink.vercel.app");
+    }
 
-  if (process.env.NODE_ENV === "development") {
-    origins.push("http://localhost:3000", "http://192.168.88.104:3000");
+    // Development origins
+    if (process.env.NODE_ENV === "development") {
+      origins.push("http://localhost:3000", "http://192.168.88.104:3000");
+    }
   }
 
   return Array.from(new Set(origins));

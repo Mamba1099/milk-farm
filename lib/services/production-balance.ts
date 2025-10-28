@@ -120,30 +120,71 @@ export async function getAvailableMilkForSales(date: Date): Promise<{
 }
 
 /**
+ * Update the morning production calculation logic to include yesterday's balance
+ * This function ensures yesterday's final balance is automatically included in today's available milk
+ */
+export async function addBalanceToMorningProduction(date: Date): Promise<{
+  success: boolean;
+  balanceAdded: number;
+  message: string;
+}> {
+  try {
+    const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const yesterday = new Date(startOfDay);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const yesterdaySummary = await prisma.productionSummary.findUnique({
+      where: { date: yesterday },
+    });
+
+    const finalBalance = yesterdaySummary?.final_balance || 0;
+
+    if (finalBalance <= 0) {
+      return {
+        success: true,
+        balanceAdded: 0,
+        message: "No balance to carry over (previous day's final balance is zero or negative)",
+      };
+    }
+
+    return {
+      success: true,
+      balanceAdded: finalBalance,
+      message: `${finalBalance}L will be included in today's morning production total (calculated, no DB record created)`,
+    };
+
+  } catch (error) {
+    console.error("Error processing balance carryover:", error);
+    return {
+      success: false,
+      balanceAdded: 0,
+      message: `Failed to process balance carryover: ${error}`
+    };
+  }
+}
+
+/**
  * Get morning production total including yesterday's balance
  */
 export async function getMorningTotalWithBalance(date: Date): Promise<number> {
   const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  
-  const yesterday = new Date(startOfDay);
-  yesterday.setDate(yesterday.getDate() - 1);
-  
-  const yesterdaySummary = await prisma.productionSummary.findUnique({
-    where: { date: yesterday }
-  });
-  const balanceYesterday = yesterdaySummary?.final_balance || 0;
-
   const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
   const morningProductions = await prisma.morningProduction.findMany({
     where: {
       date: { gte: startOfDay, lt: endOfDay },
-      animal: { type: { not: "CALF" } }
-    }
+      animal: { type: { not: "CALF" } },
+    },
   });
 
   const morningTotal = morningProductions.reduce((sum, record) => sum + (record.quantity_am || 0), 0);
   const morningCalfFed = morningProductions.reduce((sum, record) => sum + (record.calf_quantity_fed_am || 0), 0);
   const morningNet = morningTotal - morningCalfFed;
 
-  return balanceYesterday + morningNet;
+  const yesterday = new Date(startOfDay);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdaySummary = await prisma.productionSummary.findUnique({ where: { date: yesterday } });
+  const balanceYesterday = yesterdaySummary?.final_balance || 0;
+
+  return morningNet + balanceYesterday;
 }
