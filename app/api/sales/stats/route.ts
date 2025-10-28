@@ -28,6 +28,20 @@ export async function GET(request: NextRequest) {
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
+    console.log("📊 Sales Stats Debug:", { 
+      requestedDate: date, 
+      startOfDay: startOfDay.toISOString(), 
+      endOfDay: endOfDay.toISOString() 
+    });
+
+    // Check if we have ANY production records at all
+    const totalMorningRecords = await prisma.morningProduction.count();
+    const totalEveningRecords = await prisma.eveningProduction.count();
+    console.log("📊 Total production records in DB:", { 
+      morning: totalMorningRecords, 
+      evening: totalEveningRecords 
+    });
+
     const [morningProduction, eveningProduction] = await Promise.all([
       prisma.morningProduction.aggregate({
         where: {
@@ -65,6 +79,11 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
+    console.log("📊 Production query results:", {
+      morning: morningProduction._sum,
+      evening: eveningProduction._sum
+    });
+
     const salesAggregation = await prisma.sales.aggregate({
       where: {
         timeRecorded: {
@@ -92,12 +111,24 @@ export async function GET(request: NextRequest) {
     const revenue = salesAggregation._sum.totalAmount || 0;
     const balanceRemaining = totalAvailableBalance - totalSales;
 
-    return createSecureResponse({
+    const responseData = {
       totalProduction,
       totalSales,
       balanceRemaining: Math.max(0, balanceRemaining),
       revenue,
-    }, {}, request);
+    };
+
+    console.log("Sales Stats API Response:", {
+      date,
+      startOfDay: startOfDay.toISOString(),
+      endOfDay: endOfDay.toISOString(),
+      morningProduction: morningProduction._sum,
+      eveningProduction: eveningProduction._sum,
+      salesAggregation: salesAggregation._sum,
+      responseData
+    });
+
+    return createSecureResponse(responseData, {}, request);
   } catch (error) {
     console.error("Error fetching sales stats:", error);
     return createSecureErrorResponse("Failed to fetch sales statistics", 500, request);

@@ -142,7 +142,10 @@ export const useSalesStats = (dateRange: string = "today", customDate?: Date) =>
   return useQuery<SalesStats>({
     queryKey: ["sales", "stats", dateRange, customDate?.toISOString()],
     queryFn: async () => {
-      const response = await apiClient.get(`/api/sales/stats?${queryParams.toString()}`);
+      const url = `/api/sales/stats?${queryParams.toString()}`;
+      console.log("Fetching sales stats from:", url, "with params:", Object.fromEntries(queryParams));
+      const response = await apiClient.get(url);
+      console.log("Sales stats response:", response.data);
       return response.data;
     },
     staleTime: 2 * 60 * 1000,

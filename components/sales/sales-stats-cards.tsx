@@ -15,6 +15,15 @@ const fadeInUp = {
 export function SalesStatsCards() {
   const { data: stats, isLoading, isError } = useSalesStats("today");
 
+  // Debug logging
+  console.log("SalesStatsCards Debug:", {
+    isLoading,
+    isError,
+    stats,
+    statsType: typeof stats,
+    statsKeys: stats ? Object.keys(stats) : null
+  });
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
