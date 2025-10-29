@@ -34,7 +34,10 @@ export function ServingForm({ onCancel, onClose, onSuccess }: ServingFormProps):
     bullName: "",
     servingType: "AI",
     ovaType: "NORMAL", 
-    dateServed: new Date().toISOString().split('T')[0],
+    dateServed: (() => {
+      const today = new Date();
+      return new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())).toISOString().split('T')[0];
+    })(),
     servedBy: "",
     notes: "",
   });
@@ -52,14 +55,14 @@ export function ServingForm({ onCancel, onClose, onSuccess }: ServingFormProps):
     const selectedDate = formData.dateServed;
     const now = new Date();
     const [year, month, day] = selectedDate.split('-');
-    const isoDateTime = new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    now.getHours(),
-    now.getMinutes(),
-    now.getSeconds()
-    ).toISOString();
+    const isoDateTime = new Date(Date.UTC(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      now.getUTCHours(),
+      now.getUTCMinutes(),
+      now.getUTCSeconds()
+    )).toISOString();
     
     if (!formData.femaleId) {
       alert("Please select a female animal");

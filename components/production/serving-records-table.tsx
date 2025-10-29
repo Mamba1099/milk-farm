@@ -50,8 +50,15 @@ export const ServingRecordsTable: React.FC<ServingRecordsTableProps> = ({ servin
               </TableRow>
             ) : (
               servings.map((serving: ServingRecord) => {
-                const timerEndDate = new Date(serving.dateServed);
-                timerEndDate.setMinutes(timerEndDate.getMinutes() + 5);
+                const servedDate = new Date(serving.dateServed);
+                const timerEndDate = new Date(Date.UTC(
+                  servedDate.getUTCFullYear(),
+                  servedDate.getUTCMonth(),
+                  servedDate.getUTCDate() + 21,
+                  servedDate.getUTCHours(),
+                  servedDate.getUTCMinutes(),
+                  servedDate.getUTCSeconds()
+                ));
                 const now = new Date();
                 const isExpired = now >= timerEndDate;
                 return (
