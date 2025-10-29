@@ -14,6 +14,8 @@ import { SalesDataTable } from "@/components/sales/sales-data-table";
 import { DayEndTimer } from "@/components/production/day-end-timer";
 
 function SalesPageContent() {
+  const [dateFilter, setDateFilter] = useState("today");
+  const [customDate, setCustomDate] = useState<Date | undefined>();
   return (
     <div className="relative">
       {/* Day-end timer (runs in background for all users) */}
@@ -77,7 +79,10 @@ function SalesPageContent() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="w-full min-w-0"
             >
-              <SalesStatsCards />
+              <SalesStatsCards 
+                dateFilter={dateFilter}
+                customDate={customDate}
+              />
             </motion.div>
 
             {/* Main Content Grid */}
@@ -94,7 +99,12 @@ function SalesPageContent() {
 
               {/* Sales Data Table - Larger Width */}
               <div className="order-2 lg:order-2 lg:col-span-2 min-w-0">
-                <SalesDataTable />
+                <SalesDataTable 
+                  dateFilter={dateFilter}
+                  setDateFilter={setDateFilter}
+                  customDate={customDate}
+                  setCustomDate={setCustomDate}
+                />
               </div>
             </motion.div>
           </div>

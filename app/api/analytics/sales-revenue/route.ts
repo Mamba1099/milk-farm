@@ -14,9 +14,13 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return createSecureErrorResponse("Unauthorized", 401, request);
     }
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    const { searchParams } = new URL(request.url);
+    const month = parseInt(searchParams.get("month") || (new Date().getMonth() + 1).toString());
+    const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
+
+    const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
+    const endOfMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59));
     const salesData = await prisma.sales.findMany({
       where: {
         timeRecorded: {
@@ -37,8 +41,9 @@ export async function GET(request: NextRequest) {
     });
 
     const daysInMonth = [];
-    for (let day = 1; day <= endOfMonth.getDate(); day++) {
-      const currentDate = new Date(now.getFullYear(), now.getMonth(), day);
+    const totalDays = new Date(year, month, 0).getDate();
+    for (let day = 1; day <= totalDays; day++) {
+      const currentDate = new Date(Date.UTC(year, month - 1, day));
       daysInMonth.push({
         date: currentDate.toISOString().split('T')[0],
         displayDate: currentDate.toLocaleDateString('en-US', { 

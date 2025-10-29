@@ -4,6 +4,7 @@ import React, { Suspense } from "react";
 import { Icons } from "@/components/icons";
 import { ClockLoader } from "react-spinners";
 import { DailyProductionChart } from "@/components/analytics/daily-production-chart";
+import DailyBalanceChart from "@/components/analytics/daily-balance-chart";
 import { SalesRevenueChart } from "@/components/analytics/sales-revenue-chart";
 import { MonthlyProductionTotalChart } from "@/components/analytics/monthly-production-total-chart";
 import { MonthlyProductionComboChart } from "@/components/analytics/monthly-production-combo-chart";
@@ -43,6 +44,11 @@ const AnalyticsPageContent = React.memo(() => {
         {/* Second Row: Daily Revenue - Full Width */}
         <div className="grid grid-cols-1 gap-4 sm:gap-6">
           <SalesRevenueChart />
+        </div>
+        
+        {/* Third Row: Daily Balance - Full Width */}
+        <div className="grid grid-cols-1 gap-4 sm:gap-6">
+          <DailyBalanceChart />
         </div>
       </section>
 

@@ -14,11 +14,12 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return createSecureErrorResponse("Unauthorized", 401, request);
     }
-    const now = new Date();
-    const currentYear = now.getFullYear();
+
+    const { searchParams } = new URL(request.url);
+    const selectedYear = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
     
-    const startOfYear = new Date(currentYear, 0, 1);
-    const endOfYear = new Date(currentYear, 11, 31);
+    const startOfYear = new Date(Date.UTC(selectedYear, 0, 1));
+    const endOfYear = new Date(Date.UTC(selectedYear, 11, 31, 23, 59, 59));
     const salesData = await prisma.sales.findMany({
       where: {
         timeRecorded: {
