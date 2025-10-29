@@ -91,9 +91,10 @@ export const useSales = (dateRange: string = "today", customDate?: Date) => {
       }
       return failureCount < 2;
     },
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    staleTime: 0, // Consider data stale immediately for real-time updates
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnMount: true, // Always refetch when component mounts
   });
 };
 
@@ -128,8 +129,10 @@ export const useSalesStats = (
       }
       return failureCount < 2;
     },
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
+    staleTime: 0, // Consider data stale immediately for real-time updates
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnMount: true, // Always refetch when component mounts
   });
 };
 
@@ -143,7 +146,13 @@ export const useCreateSale = () => {
       return response.data;
     },
     onSuccess: () => {
+      // Invalidate sales queries
       queryClient.invalidateQueries({ queryKey: ["sales"] });
+      queryClient.invalidateQueries({ queryKey: ["salesStats"] });
+      
+      // Also invalidate production stats as sales affect available balance
+      queryClient.invalidateQueries({ queryKey: ["production", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["production", "morning-total-with-balance"] });
       
       toast({
         title: "Success",
