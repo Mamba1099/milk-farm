@@ -5,7 +5,7 @@ import { X, Heart, Activity, Calendar, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getHealthStatusColor, getAnimalTypeColor } from "@/lib/utils";
-import { calculateAge, formatDate, calculateDaysRemaining } from "@/lib/date-utils";
+import { calculateExactAge, formatDisplayDate, calculateDaysRemaining } from "@/lib/date-utils";
 import { AnimalDetailsDialogProps } from "@/lib/types/animal";
 import { RobustImage } from "@/components/ui/robust-image";
 
@@ -16,7 +16,19 @@ export function AnimalDetailsDialog({
 }: AnimalDetailsDialogProps) {
   if (!isOpen) return null;
 
-  const age = calculateAge(animal.birthDate);
+  const birth = typeof animal.birthDate === "string" ? new Date(animal.birthDate) : animal.birthDate;
+  const { years, months } = calculateExactAge(birth);
+  const age = `${years} year${years !== 1 ? "s" : ""}${
+    months > 0 ? `, ${months} month${months !== 1 ? "s" : ""}` : ""
+  }`;
+
+  const formatDate = (date: string | Date) => {
+    return formatDisplayDate(date, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

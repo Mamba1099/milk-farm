@@ -37,7 +37,10 @@ export function AnimalAddForm({ onSuccess, onCancel }: AnimalAddFormProps) {
       name: "",
       type: "COW",
       gender: "FEMALE",
-      birthDate: new Date().toISOString().split("T")[0],
+      birthDate: (() => {
+        const now = new Date();
+        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString().split("T")[0];
+      })(),
       expectedMaturityDate: "",
       motherName: "",
       fatherName: "",
