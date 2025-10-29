@@ -29,23 +29,54 @@ export async function GET(request: NextRequest) {
     const where: Prisma.SalesWhereInput = {};
 
     if (date) {
-      const dateObj = new Date(date);
+      let startOfDay: Date;
+      let endOfDay: Date;
+      
+      if (date.includes('T')) {
+        const dateObj = new Date(date);
+        startOfDay = new Date(Date.UTC(
+          dateObj.getUTCFullYear(),
+          dateObj.getUTCMonth(),
+          dateObj.getUTCDate(),
+          0, 0, 0, 0
+        ));
+        endOfDay = new Date(Date.UTC(
+          dateObj.getUTCFullYear(),
+          dateObj.getUTCMonth(),
+          dateObj.getUTCDate(),
+          23, 59, 59, 999
+        ));
+      } else {
+        const [year, month, day] = date.split('-').map(Number);
+        startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+        endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+      }
+
       where.timeRecorded = {
-        gte: new Date(
-          dateObj.getFullYear(),
-          dateObj.getMonth(),
-          dateObj.getDate()
-        ),
-        lt: new Date(
-          dateObj.getFullYear(),
-          dateObj.getMonth(),
-          dateObj.getDate() + 1
-        ),
+        gte: startOfDay,
+        lte: endOfDay,
       };
     } else if (startDate && endDate) {
+      let gteDate: Date;
+      let lteDate: Date;
+      
+      if (startDate.includes('T')) {
+        gteDate = new Date(startDate);
+      } else {
+        const [year, month, day] = startDate.split('-').map(Number);
+        gteDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+      }
+      
+      if (endDate.includes('T')) {
+        lteDate = new Date(endDate);
+      } else {
+        const [year, month, day] = endDate.split('-').map(Number);
+        lteDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+      }
+
       where.timeRecorded = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+        gte: gteDate,
+        lte: lteDate,
       };
     }
 
