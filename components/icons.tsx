@@ -44,6 +44,8 @@ import {
   TrendingUp,
   Coins,
   Smartphone,
+  Percent,
+  RefreshCw,
 } from "lucide-react";
 
 export const Icons = {
@@ -93,4 +95,7 @@ export const Icons = {
   trendingUp: TrendingUp,
   coins: Coins,
   smartphone: Smartphone,
+  percent: Percent,
+  refreshCw: RefreshCw,
+  droplets: Droplet,
 };
