@@ -61,6 +61,7 @@ export function ProductionFilters({
           onChange={(e) => handleDateFilterChange(e.target.value)}
           className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
         >
+          <option value="yesterday">Yesterday</option>
           <option value="today">Today</option>
           <option value="all">All Time</option>
           <option value="custom">Custom Date</option>
