@@ -3,52 +3,59 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-context";
 import type { Sale, SalesStats, CreateSaleData } from "@/lib/types/sales";
 
 export const useSales = (dateRange: string = "today", customDate?: Date) => {
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+
   const getDateFilter = () => {
-    const today = new Date();
-    const startOfToday = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
+    const nowUTC = new Date();
+    const todayUTC = new Date();
+
+    const localToday = new Date();
+    const todayLocal = new Date(Date.UTC(
+      localToday.getFullYear(),
+      localToday.getMonth(),
+      localToday.getDate()
+    ));
 
     switch (dateRange) {
       case "today":
         return {
-          date: startOfToday.toISOString().split('T')[0]
+          date: todayLocal.toISOString().split('T')[0]
         };
       case "yesterday":
-        const yesterday = new Date(startOfToday);
-        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayLocal = new Date(todayLocal);
+        yesterdayLocal.setUTCDate(yesterdayLocal.getUTCDate() - 1);
         return {
-          date: yesterday.toISOString().split('T')[0]
+          date: yesterdayLocal.toISOString().split('T')[0]
         };
       case "custom":
         if (customDate) {
-          const customStartOfDay = new Date(
-            customDate.getFullYear(),
-            customDate.getMonth(),
-            customDate.getDate()
-          );
+          const customUTC = new Date(Date.UTC(
+            customDate.getUTCFullYear(),
+            customDate.getUTCMonth(),
+            customDate.getUTCDate()
+          ));
           return {
-            date: customStartOfDay.toISOString().split('T')[0]
+            date: customUTC.toISOString().split('T')[0]
           };
         }
         return {};
       case "week":
-        const startOfWeek = new Date(startOfToday);
-        startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+        const weekAgoLocal = new Date(todayLocal);
+        weekAgoLocal.setUTCDate(weekAgoLocal.getUTCDate() - 7);
         return {
-          startDate: startOfWeek.toISOString(),
-          endDate: new Date().toISOString(),
+          startDate: weekAgoLocal.toISOString().split('T')[0],
+          endDate: todayLocal.toISOString().split('T')[0]
         };
       case "month":
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthAgoLocal = new Date(todayLocal);
+        monthAgoLocal.setUTCMonth(monthAgoLocal.getUTCMonth() - 1);
         return {
-          startDate: startOfMonth.toISOString(),
-          endDate: new Date().toISOString(),
+          startDate: monthAgoLocal.toISOString().split('T')[0],
+          endDate: todayLocal.toISOString().split('T')[0]
         };
       case "all":
       default:
@@ -69,8 +76,20 @@ export const useSales = (dateRange: string = "today", customDate?: Date) => {
   return useQuery<{ sales: Sale[]; total: number }>({
     queryKey: ["sales", dateRange, customDate?.toISOString()],
     queryFn: async () => {
+      const accessToken = sessionStorage.getItem("accessToken");
+      if (!accessToken || !user) {
+        throw new Error("Not authenticated");
+      }
+
       const response = await apiClient.get(`/api/sales?${queryParams.toString()}`);
       return response.data;
+    },
+    enabled: isAuthenticated && !authLoading && user !== null,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      return failureCount < 2;
     },
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -78,78 +97,38 @@ export const useSales = (dateRange: string = "today", customDate?: Date) => {
   });
 };
 
-export const useSalesStats = (dateRange: string = "today", customDate?: Date) => {
-  const getDateFilter = () => {
-    const today = new Date();
-    const startOfToday = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
+export const useSalesStats = (
+  timeframe: 'today' | 'week' | 'month' = 'today',
+  specificDate?: string
+) => {
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
-    switch (dateRange) {
-      case "today":
-        return {
-          date: startOfToday.toISOString().split('T')[0]
-        };
-      case "yesterday":
-        const yesterday = new Date(startOfToday);
-        yesterday.setDate(yesterday.getDate() - 1);
-        return {
-          date: yesterday.toISOString().split('T')[0]
-        };
-      case "custom":
-        if (customDate) {
-          const customStartOfDay = new Date(
-            customDate.getFullYear(),
-            customDate.getMonth(),
-            customDate.getDate()
-          );
-          return {
-            date: customStartOfDay.toISOString().split('T')[0]
-          };
-        }
-        return {};
-      case "week":
-        const startOfWeek = new Date(startOfToday);
-        startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
-        return {
-          startDate: startOfWeek.toISOString(),
-          endDate: new Date().toISOString(),
-        };
-      case "month":
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        return {
-          startDate: startOfMonth.toISOString(),
-          endDate: new Date().toISOString(),
-        };
-      case "all":
-      default:
-        return {};
-    }
-  };
-
-  const filters = getDateFilter();
-  const queryParams = new URLSearchParams();
-  
-  if (filters.date) {
-    queryParams.append('date', filters.date);
-  } else if (filters.startDate && filters.endDate) {
-    queryParams.append('startDate', filters.startDate);
-    queryParams.append('endDate', filters.endDate);
-  }
-  
-  return useQuery<SalesStats>({
-    queryKey: ["sales", "stats", dateRange, customDate?.toISOString()],
+  return useQuery({
+    queryKey: ['salesStats', timeframe, specificDate],
     queryFn: async () => {
-      const url = `/api/sales/stats?${queryParams.toString()}`;
-      console.log("Fetching sales stats from:", url, "with params:", Object.fromEntries(queryParams));
-      const response = await apiClient.get(url);
-      console.log("Sales stats response:", response.data);
+      const accessToken = sessionStorage.getItem("accessToken");
+      if (!accessToken || !user) {
+        throw new Error("Not authenticated");
+      }
+
+      const params = new URLSearchParams();
+      if (specificDate) {
+        params.append('date', specificDate);
+      } else {
+        params.append('timeframe', timeframe);
+      }
+
+      const response = await apiClient.get(`/api/sales/stats?${params.toString()}`);
       return response.data;
     },
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    enabled: isAuthenticated && !authLoading && user !== null,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
   });
 };

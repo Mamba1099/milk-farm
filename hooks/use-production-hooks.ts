@@ -121,6 +121,7 @@ export const useCreateProduction = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["production"] });
+      queryClient.invalidateQueries({ queryKey: ["production", "stats"] });
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
@@ -142,6 +143,7 @@ export const useCreateSales = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["production"] });
+      queryClient.invalidateQueries({ queryKey: ["production", "stats"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
@@ -173,53 +175,53 @@ export const useUpdateMaturity = () => {
 
 export const useProductionData = (dateRange: string = "today", customDate?: Date) => {
   const getDateFilter = () => {
-    const today = new Date();
-    const startOfToday = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
+    const localToday = new Date();
+    const todayLocal = new Date(Date.UTC(
+      localToday.getFullYear(),
+      localToday.getMonth(),
+      localToday.getDate()
+    ));
 
     switch (dateRange) {
+      case "yesterday":
+        const yesterdayLocal = new Date(todayLocal);
+        yesterdayLocal.setUTCDate(yesterdayLocal.getUTCDate() - 1);
+        return {
+          date: yesterdayLocal.toISOString().split('T')[0]
+        };
       case "today":
         return {
-          startDate: startOfToday.toISOString(),
-          endDate: new Date(
-            startOfToday.getTime() + 24 * 60 * 60 * 1000
-          ).toISOString(),
+          date: todayLocal.toISOString().split('T')[0]
         };
       case "week":
-        const startOfWeek = new Date(startOfToday);
-        startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+        const startOfWeekLocal = new Date(todayLocal);
+        startOfWeekLocal.setUTCDate(todayLocal.getUTCDate() - todayLocal.getUTCDay());
         return {
-          startDate: startOfWeek.toISOString(),
-          endDate: new Date().toISOString(),
+          startDate: startOfWeekLocal.toISOString().split('T')[0],
+          endDate: todayLocal.toISOString().split('T')[0],
         };
       case "month":
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const startOfMonthLocal = new Date(Date.UTC(localToday.getFullYear(), localToday.getMonth(), 1));
         return {
-          startDate: startOfMonth.toISOString(),
-          endDate: new Date().toISOString(),
+          startDate: startOfMonthLocal.toISOString().split('T')[0],
+           endDate: todayLocal.toISOString().split('T')[0],
         };
       case "quarter":
-        const quarter = Math.floor(today.getMonth() / 3);
-        const startOfQuarter = new Date(today.getFullYear(), quarter * 3, 1);
+        const quarter = Math.floor(localToday.getMonth() / 3);
+        const startOfQuarterLocal = new Date(Date.UTC(localToday.getFullYear(), quarter * 3, 1));
         return {
-          startDate: startOfQuarter.toISOString(),
-          endDate: new Date().toISOString(),
+          startDate: startOfQuarterLocal.toISOString().split('T')[0],
+          endDate: todayLocal.toISOString().split('T')[0],
         };
       case "custom":
         if (customDate) {
-          const startOfCustomDay = new Date(
-            customDate.getFullYear(),
-            customDate.getMonth(),
-            customDate.getDate()
-          );
+          const customUTC = new Date(Date.UTC(
+            customDate.getUTCFullYear(),
+            customDate.getUTCMonth(),
+            customDate.getUTCDate()
+          ));
           return {
-            startDate: startOfCustomDay.toISOString(),
-            endDate: new Date(
-              startOfCustomDay.getTime() + 24 * 60 * 60 * 1000
-            ).toISOString(),
+            date: customUTC.toISOString().split('T')[0]
           };
         }
         return {};
@@ -241,40 +243,49 @@ export const useProductionData = (dateRange: string = "today", customDate?: Date
 
 export const useSalesData = (dateRange: string = "today") => {
   const getDateFilter = () => {
-    const today = new Date();
-    const startOfToday = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
+    const nowUTC = new Date();
+    const startOfTodayUTC = new Date(Date.UTC(
+      nowUTC.getUTCFullYear(),
+      nowUTC.getUTCMonth(),
+      nowUTC.getUTCDate()
+    ));
 
     switch (dateRange) {
+      case "yesterday":
+        const yesterdayUTC = new Date(startOfTodayUTC);
+        yesterdayUTC.setUTCDate(yesterdayUTC.getUTCDate() - 1);
+        return {
+          startDate: yesterdayUTC.toISOString(),
+          endDate: new Date(
+            yesterdayUTC.getTime() + 24 * 60 * 60 * 1000
+          ).toISOString(),
+        };
       case "today":
         return {
-          startDate: startOfToday.toISOString(),
+          startDate: startOfTodayUTC.toISOString(),
           endDate: new Date(
-            startOfToday.getTime() + 24 * 60 * 60 * 1000
+            startOfTodayUTC.getTime() + 24 * 60 * 60 * 1000
           ).toISOString(),
         };
       case "week":
-        const startOfWeek = new Date(startOfToday);
-        startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+        const startOfWeekUTC = new Date(startOfTodayUTC);
+        startOfWeekUTC.setUTCDate(startOfTodayUTC.getUTCDate() - startOfTodayUTC.getUTCDay());
         return {
-          startDate: startOfWeek.toISOString(),
-          endDate: new Date().toISOString(),
+          startDate: startOfWeekUTC.toISOString(),
+          endDate: nowUTC.toISOString(),
         };
       case "month":
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const startOfMonthUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), 1));
         return {
-          startDate: startOfMonth.toISOString(),
-          endDate: new Date().toISOString(),
+          startDate: startOfMonthUTC.toISOString(),
+          endDate: nowUTC.toISOString(),
         };
       case "quarter":
-        const quarter = Math.floor(today.getMonth() / 3);
-        const startOfQuarter = new Date(today.getFullYear(), quarter * 3, 1);
+        const quarter = Math.floor(nowUTC.getUTCMonth() / 3);
+        const startOfQuarterUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), quarter * 3, 1));
         return {
-          startDate: startOfQuarter.toISOString(),
-          endDate: new Date().toISOString(),
+          startDate: startOfQuarterUTC.toISOString(),
+          endDate: nowUTC.toISOString(),
         };
       default:
         return {};
@@ -310,22 +321,26 @@ export const useProductionStats = () => {
   >({
     queryKey: ["production", "stats"],
     queryFn: async () => {
-      const today = new Date();
-      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const startOfWeek = new Date(startOfToday);
-      startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const nowUTC = new Date();
+      const startOfTodayUTC = new Date(Date.UTC(
+        nowUTC.getUTCFullYear(),
+        nowUTC.getUTCMonth(),
+        nowUTC.getUTCDate()
+      ));
+      const startOfWeekUTC = new Date(startOfTodayUTC);
+      startOfWeekUTC.setUTCDate(startOfTodayUTC.getUTCDate() - startOfTodayUTC.getUTCDay());
+      const startOfMonthUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), 1));
 
       const [todayRes, weekRes, monthRes, animalsRes, salesRes, todaySummaryRes, weekSummaryRes, monthSummaryRes] =
         await Promise.all([
-          apiClient.get(`/api/production?startDate=${startOfToday.toISOString()}&endDate=${new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000).toISOString()}&limit=1000`),
-          apiClient.get(`/api/production?startDate=${startOfWeek.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
-          apiClient.get(`/api/production?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
+          apiClient.get(`/api/production?startDate=${startOfTodayUTC.toISOString()}&endDate=${new Date(startOfTodayUTC.getTime() + 24 * 60 * 60 * 1000).toISOString()}&limit=1000`),
+          apiClient.get(`/api/production?startDate=${startOfWeekUTC.toISOString()}&endDate=${nowUTC.toISOString()}&limit=1000`),
+          apiClient.get(`/api/production?startDate=${startOfMonthUTC.toISOString()}&endDate=${nowUTC.toISOString()}&limit=1000`),
           apiClient.get("/api/animals/production-ready"),
-          apiClient.get(`/api/sales?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}&limit=1000`),
-          apiClient.get(`/api/production/summary?date=${startOfToday.toISOString()}`),
-          apiClient.get(`/api/production/summary?startDate=${startOfWeek.toISOString()}&endDate=${new Date().toISOString()}`),
-          apiClient.get(`/api/production/summary?startDate=${startOfMonth.toISOString()}&endDate=${new Date().toISOString()}`),
+          apiClient.get(`/api/sales?startDate=${startOfMonthUTC.toISOString()}&endDate=${nowUTC.toISOString()}&limit=1000`),
+          apiClient.get(`/api/production/summary?date=${startOfTodayUTC.toISOString()}`),
+          apiClient.get(`/api/production/summary?startDate=${startOfWeekUTC.toISOString()}&endDate=${nowUTC.toISOString()}`),
+          apiClient.get(`/api/production/summary?startDate=${startOfMonthUTC.toISOString()}&endDate=${nowUTC.toISOString()}`),
         ]);
 
       const sumQuantities = (records: ProductionRecord[]) =>
@@ -376,6 +391,22 @@ export const useProductionStats = () => {
     },
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+  });
+};
+
+/**
+ * Hook to get morning total with yesterday's balance included
+ */
+export const useMorningTotalWithBalance = () => {
+  return useQuery<number, Error>({
+    queryKey: ["production", "morning-total-with-balance"],
+    queryFn: async () => {
+      const response = await apiClient.get("/api/production/morning-total-with-balance");
+      return response.data.morningTotalWithBalance;
+    },
+    staleTime: 1 * 60 * 1000, 
+    gcTime: 3 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 

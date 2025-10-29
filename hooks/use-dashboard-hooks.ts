@@ -17,12 +17,17 @@ import { isSameDay } from "date-fns";
 
 export const useAnimalStats = () => {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<DashboardStats["animals"], Error>({
     queryKey: ["dashboard", "animals"],
     queryFn: async () => {
       try {
+        const accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken || !user) {
+          throw new Error("Not authenticated");
+        }
+
         const response = await apiClient.get("/api/animals?limit=1000");
         const animals: Animal[] = response.data.animals || [];
 
@@ -72,7 +77,7 @@ export const useAnimalStats = () => {
         throw new Error("Failed to fetch animal statistics");
       }
     },
-    enabled: isAuthenticated && !authLoading,
+    enabled: isAuthenticated && !authLoading && user !== null,
     retry: (failureCount, error: any) => {
       if (error?.response?.status === 401) {
         return false;
@@ -82,7 +87,7 @@ export const useAnimalStats = () => {
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: "always",
+    refetchOnMount: false,
     placeholderData: {
       total: 0,
       cows: 0,
@@ -98,16 +103,37 @@ export const useAnimalStats = () => {
 
 export const useProductionStats = () => {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<DashboardStats["production"], Error>({
     queryKey: ["dashboard", "production"],
     queryFn: async () => {
       try {
-        const response = await apiClient.get("/api/production?limit=1000");
-        const { records = [] } = response.data;
+        const accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken || !user) {
+          throw new Error("Not authenticated");
+        }
 
-        const allProductions = (records as ProductionRecord[]).filter((p: ProductionRecord) => p.animal.type !== "CALF");
+        const localToday = new Date();
+        const todayLocal = new Date(Date.UTC(
+          localToday.getFullYear(),
+          localToday.getMonth(),
+          localToday.getDate()
+        ));
+        const weekAgoLocal = new Date(todayLocal.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const monthAgoLocal = new Date(todayLocal.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        const todayString = todayLocal.toISOString().split('T')[0];
+        const weekAgoString = weekAgoLocal.toISOString();
+        const monthAgoString = monthAgoLocal.toISOString();
+
+        const todayResponse = await apiClient.get(`/api/production?date=${todayString}&limit=1000`);
+        const todayRecords = todayResponse.data.records || [];
+        const todayProductions = todayRecords.filter((p: ProductionRecord) => p.animal.type !== "CALF");
+  
+        const allResponse = await apiClient.get("/api/production?limit=1000");
+        const allRecords = allResponse.data.records || [];
+        const allProductions = allRecords.filter((p: ProductionRecord) => p.animal.type !== "CALF");
 
         if (allProductions.length === 0) {
           return {
@@ -123,20 +149,15 @@ export const useProductionStats = () => {
           };
         }
 
-        const now = new Date();
-        const today = now.toISOString().split("T")[0];
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-        const todayProductions = allProductions.filter((p: ProductionRecord) =>
-          isSameDay(new Date(p.date), now)
-        );
-        const weeklyProductions = allProductions.filter(
-          (p: ProductionRecord) => new Date(p.date) >= weekAgo
-        );
-        const monthlyProductions = allProductions.filter(
-          (p: ProductionRecord) => new Date(p.date) >= monthAgo
-        );
+        const weeklyProductions = allProductions.filter((p: ProductionRecord) => {
+          const recordDate = new Date(p.date);
+          return recordDate >= weekAgoLocal;
+        });
+        
+        const monthlyProductions = allProductions.filter((p: ProductionRecord) => {
+          const recordDate = new Date(p.date);
+          return recordDate >= monthAgoLocal;
+        });
 
         const todayQuantity = todayProductions.reduce(
           (sum: number, p: ProductionRecord) => sum + ((p.quantity_am || 0) + (p.quantity_pm || 0)),
@@ -202,7 +223,7 @@ export const useProductionStats = () => {
         throw new Error("Failed to fetch production statistics");
       }
     },
-    enabled: isAuthenticated && !authLoading,
+    enabled: isAuthenticated && !authLoading && user !== null,
     retry: (failureCount, error: any) => {
       if (error?.response?.status === 401) {
         return false;
@@ -212,7 +233,7 @@ export const useProductionStats = () => {
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: "always",
+    refetchOnMount: false,
     placeholderData: {
       totalRecords: 0,
       todayQuantity: 0,
@@ -230,12 +251,17 @@ export const useProductionStats = () => {
 
 export const useUserStats = () => {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<UserStats, Error>({
     queryKey: ["dashboard", "users"],
     queryFn: async () => {
       try {
+        const accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken || !user) {
+          throw new Error("Not authenticated");
+        }
+
         const response = await apiClient.get("/api/users?stats=true");
         return response.data.stats;
       } catch (error: any) {
@@ -259,7 +285,7 @@ export const useUserStats = () => {
         };
       }
     },
-    enabled: isAuthenticated && !authLoading,
+    enabled: isAuthenticated && !authLoading && user !== null,
     retry: (failureCount, error: any) => {
       if (error?.response?.status === 401) {
         return false;
@@ -282,12 +308,17 @@ export const useUserStats = () => {
 
 export const useSystemHealth = () => {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<SystemHealth, Error>({
     queryKey: ["dashboard", "systemHealth"],
     queryFn: async () => {
       try {
+        const accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken || !user) {
+          throw new Error("Not authenticated");
+        }
+
         const response = await apiClient.get("/api/system/health");
         return response.data.health;
       } catch (error) {
@@ -316,7 +347,7 @@ export const useSystemHealth = () => {
         };
       }
     },
-    enabled: isAuthenticated && !authLoading,
+    enabled: isAuthenticated && !authLoading && user !== null,
     retry: (failureCount, error: any) => {
       if (error?.response?.status === 401) {
         return false;
