@@ -14,9 +14,12 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return createSecureErrorResponse("Unauthorized", 401, request);
     }
-    const now = new Date();
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+
+    const { searchParams } = new URL(request.url);
+    const selectedYear = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
+    
+    const startOfYear = new Date(Date.UTC(selectedYear, 0, 1));
+    const endOfYear = new Date(Date.UTC(selectedYear, 11, 31, 23, 59, 59));
 
     const treatmentData = await prisma.treatment.findMany({
       where: {
@@ -37,8 +40,12 @@ export async function GET(request: NextRequest) {
     });
 
     const monthsInYear = [];
-    for (let month = 0; month <= now.getMonth(); month++) {
-      const currentMonth = new Date(now.getFullYear(), month, 1);
+    const currentDate = new Date();
+    const isCurrentYear = selectedYear === currentDate.getFullYear();
+    const maxMonth = isCurrentYear ? currentDate.getMonth() : 11;
+    
+    for (let month = 0; month <= maxMonth; month++) {
+      const currentMonth = new Date(selectedYear, month, 1);
       monthsInYear.push({
         monthKey: currentMonth.toISOString().slice(0, 7),
         month: currentMonth.toLocaleDateString('en-US', { 
