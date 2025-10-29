@@ -34,6 +34,10 @@ export function useServings(filters?: ServingFilters) {
         throw error;
       }
     },
+    staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnMount: true, // Always refetch when component mounts
   });
 }
 
@@ -44,10 +48,14 @@ export function useServingStats() {
       const response = await apiClient.get('/api/servings/stats');
       return response.data;
     },
+    staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes  
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnMount: true, // Always refetch when component mounts
   });
 }
 
-export function useCreateServing() {
+export function useCreateServing(options?: { skipRedirect?: boolean }) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { toast } = useToast();
@@ -58,14 +66,31 @@ export function useCreateServing() {
       return response.data;
     },
     onSuccess: () => {
+      // Invalidate all serving-related queries to ensure immediate updates
       queryClient.invalidateQueries({ queryKey: ['servings'] });
       queryClient.invalidateQueries({ queryKey: ['serving-stats'] });
+      
+      // Invalidate animal-related queries as servings affect animal status
+      queryClient.invalidateQueries({ queryKey: ['animals'] });
+      queryClient.invalidateQueries({ queryKey: ['animals', 'production-ready'] });
+      
+      // Invalidate production stats as servings affect active animals count
+      queryClient.invalidateQueries({ queryKey: ['production'] });
+      queryClient.invalidateQueries({ queryKey: ['production', 'stats'] });
+      
+      // Invalidate dashboard as serving affects animal stats
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'animals'] });
+      
       toast({
         type: 'success',
         title: 'Success',
         description: 'Serving record created successfully',
       });
-      router.push('/production/serving');
+      // Only redirect if not disabled
+      if (!options?.skipRedirect) {
+        router.push('/production/serving');
+      }
     },
     onError: (error: any) => {
       const message = error?.response?.data?.message || 'Failed to create serving record';
@@ -88,8 +113,22 @@ export function useUpdateServing() {
       return response.data;
     },
     onSuccess: () => {
+      // Invalidate all serving-related queries
       queryClient.invalidateQueries({ queryKey: ['servings'] });
       queryClient.invalidateQueries({ queryKey: ['serving-stats'] });
+      
+      // Invalidate animal-related queries as servings affect animal status
+      queryClient.invalidateQueries({ queryKey: ['animals'] });
+      queryClient.invalidateQueries({ queryKey: ['animals', 'production-ready'] });
+      
+      // Invalidate production stats as servings affect active animals count
+      queryClient.invalidateQueries({ queryKey: ['production'] });
+      queryClient.invalidateQueries({ queryKey: ['production', 'stats'] });
+      
+      // Invalidate dashboard as serving affects animal stats
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'animals'] });
+      
       toast({
         type: 'success',
         title: 'Success',
@@ -116,8 +155,22 @@ export function useDeleteServing() {
       await apiClient.delete(`/api/servings/${id}`);
     },
     onSuccess: () => {
+      // Invalidate all serving-related queries
       queryClient.invalidateQueries({ queryKey: ['servings'] });
       queryClient.invalidateQueries({ queryKey: ['serving-stats'] });
+      
+      // Invalidate animal-related queries as servings affect animal status
+      queryClient.invalidateQueries({ queryKey: ['animals'] });
+      queryClient.invalidateQueries({ queryKey: ['animals', 'production-ready'] });
+      
+      // Invalidate production stats as servings affect active animals count
+      queryClient.invalidateQueries({ queryKey: ['production'] });
+      queryClient.invalidateQueries({ queryKey: ['production', 'stats'] });
+      
+      // Invalidate dashboard as serving affects animal stats
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'animals'] });
+      
       toast({
         type: 'success',
         title: 'Success',
