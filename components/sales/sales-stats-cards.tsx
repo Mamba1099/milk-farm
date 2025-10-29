@@ -12,17 +12,56 @@ const fadeInUp = {
   transition: { duration: 0.5 }
 };
 
-export function SalesStatsCards() {
-  const { data: stats, isLoading, isError } = useSalesStats("today");
+interface SalesStatsCardsProps {
+  dateFilter: string;
+  customDate?: Date;
+}
 
-  // Debug logging
-  console.log("SalesStatsCards Debug:", {
-    isLoading,
-    isError,
-    stats,
-    statsType: typeof stats,
-    statsKeys: stats ? Object.keys(stats) : null
-  });
+export function SalesStatsCards({ dateFilter, customDate }: SalesStatsCardsProps) {
+  const getSpecificDate = () => {
+    const localToday = new Date();
+    const todayLocal = new Date(Date.UTC(
+      localToday.getFullYear(),
+      localToday.getMonth(),
+      localToday.getDate()
+    ));
+
+    switch (dateFilter) {
+      case "yesterday":
+        const yesterday = new Date(todayLocal);
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+        return yesterday.toISOString().split('T')[0];
+      case "custom":
+        return customDate ? new Date(Date.UTC(
+          customDate.getFullYear(),
+          customDate.getMonth(),
+          customDate.getDate()
+        )).toISOString().split('T')[0] : undefined;
+      case "today":
+        return todayLocal.toISOString().split('T')[0];
+      default:
+        return undefined;
+    }
+  };
+
+  const getTimeframe = () => {
+    switch (dateFilter) {
+      case "week":
+        return "week";
+      case "month":
+        return "month";
+      default:
+        return "today";
+    }
+  };
+
+  const specificDate = getSpecificDate();
+  const timeframe = getTimeframe() as 'today' | 'week' | 'month';
+  
+  const { data: stats, isLoading, isError } = useSalesStats(
+    timeframe, 
+    specificDate
+  );
 
   if (isLoading) {
     return (

@@ -14,10 +14,20 @@ import { ClockLoader } from "react-spinners";
 import { format } from "date-fns";
 import { Search, Filter, Calendar as CalendarIcon } from "lucide-react";
 
-export function SalesDataTable() {
+interface SalesDataTableProps {
+  dateFilter: string;
+  setDateFilter: (filter: string) => void;
+  customDate?: Date;
+  setCustomDate: (date: Date | undefined) => void;
+}
+
+export function SalesDataTable({ 
+  dateFilter, 
+  setDateFilter, 
+  customDate, 
+  setCustomDate 
+}: SalesDataTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState("today");
-  const [customDate, setCustomDate] = useState<Date | undefined>();
   const [showCustomDate, setShowCustomDate] = useState(false);
 
   const { data, isLoading, isError } = useSales(dateFilter, customDate);
