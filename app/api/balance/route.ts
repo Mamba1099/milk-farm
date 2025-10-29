@@ -21,6 +21,19 @@ export async function GET(request: NextRequest) {
     
     if (type === "available") {
       const availableMilk = await getAvailableMilkForSales(targetDate);
+      
+      // Debug logging for balance API
+      console.log("=== BALANCE API DEBUG ===");
+      console.log(`Target Date: ${targetDate.toISOString().split('T')[0]}`);
+      console.log(`Available Milk Data:`, JSON.stringify(availableMilk, null, 2));
+      console.log(`Balance Breakdown:`);
+      console.log(`  - Carry Over (Yesterday): ${availableMilk.balanceYesterday}L`);
+      console.log(`  - Today Production: ${availableMilk.todayNetProduction}L`);
+      console.log(`  - Total Available: ${availableMilk.totalAvailable}L`);
+      console.log(`  - Total Sold: ${availableMilk.totalSold}L`);
+      console.log(`  - Current Balance: ${availableMilk.remainingBalance}L`);
+      console.log("=========================");
+      
       return createSecureResponse({ 
         availableMilk: {
           carryOver: availableMilk.balanceYesterday,
