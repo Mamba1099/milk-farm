@@ -18,7 +18,7 @@ export function DayEndTimer({
   const triggerDayEndSummary = useCallback(async () => {
     try {
       
-      const response = await apiClient.post("/production/day-end-summary", {
+      const response = await apiClient.post("/api/production/day-end-summary", {
         date: new Date().toISOString()
       });
 

@@ -29,11 +29,60 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
     success: boolean;
     timestamp: Date;
     message: string;
+    date: string;
   } | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isEnabled, setIsEnabled] = useState(false);
 
   const { toast } = useToast();
+
+  const getTodayDateString = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  const loadTriggerResult = () => {
+    try {
+      const stored = localStorage.getItem('dayEndSummaryResult');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.date === getTodayDateString()) {
+          return {
+            ...parsed,
+            timestamp: new Date(parsed.timestamp)
+          };
+        } else {
+          localStorage.removeItem('dayEndSummaryResult');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading trigger result from localStorage:', error);
+      localStorage.removeItem('dayEndSummaryResult');
+    }
+    return null;
+  };
+
+  const saveTriggerResult = (result: {
+    success: boolean;
+    timestamp: Date;
+    message: string;
+  }) => {
+    try {
+      const resultWithDate = {
+        ...result,
+        date: getTodayDateString(),
+        timestamp: result.timestamp.toISOString()
+      };
+      localStorage.setItem('dayEndSummaryResult', JSON.stringify(resultWithDate));
+      
+      setLastTriggerResult({
+        ...result,
+        date: getTodayDateString()
+      });
+    } catch (error) {
+      console.error('Error saving trigger result to localStorage:', error);
+    }
+  };
 
   const isAfter10PM = () => {
     const now = new Date();
@@ -73,6 +122,22 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const storedResult = loadTriggerResult();
+    if (storedResult) {
+      setLastTriggerResult(storedResult);
+      
+      if (storedResult.success) {
+        toast({
+          title: "✅ Day-End Summary Complete",
+          description: `${storedResult.message} (Previously completed today)`,
+          type: "success",
+          duration: 5000,
+        });
+      }
+    }
+  }, [toast]);
+
   const showLastResultToast = () => {
     if (!lastTriggerResult) return;
     
@@ -104,27 +169,27 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
     setIsTriggering(true);
     try {
       
-      const response = await apiClient.post("/production/day-end-summary", {
+      const response = await apiClient.post("/api/production/day-end-summary", {
         date: new Date().toISOString()
       });
 
       if (response.status === 200 || response.status === 201) {
+        const finalBalance = response.data?.summary?.finalBalance;
+        const message = finalBalance !== undefined 
+          ? `Summary complete! Final balance: ${finalBalance}L`
+          : response.data.message || "Day-end summary completed successfully";
+        
         const result = {
           success: true,
           timestamp: new Date(),
-          message: response.data.message || "Day-end summary completed successfully"
+          message: message
         };
         
-        setLastTriggerResult(result);
-        
-        const finalBalance = response.data?.summary?.finalBalance;
-        const description = finalBalance !== undefined 
-          ? `Summary complete! Final balance: ${finalBalance}L` 
-          : result.message;
+        saveTriggerResult(result);
         
         toast({
           title: "✅ Day-End Summary Complete",
-          description: description,
+          description: message,
           type: "success"
         });
       }
@@ -135,7 +200,7 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
         message: error?.response?.data?.error || error?.message || "Failed to calculate day-end summary"
       };
       
-      setLastTriggerResult(result);
+      saveTriggerResult(result);
       
       toast({
         title: "❌ Day-End Summary Failed",
@@ -183,7 +248,21 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
       transition={{ duration: 0.5 }}
       className={className}
     >
-      <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50">
+      <Card className={`border-amber-200 ${
+        lastTriggerResult?.success && lastTriggerResult?.date === getTodayDateString()
+          ? "bg-gradient-to-br from-green-50 to-emerald-50"
+          : "bg-gradient-to-br from-amber-50 to-orange-50"
+      }`}>
+        {/* Success Banner */}
+        {lastTriggerResult?.success && lastTriggerResult?.date === getTodayDateString() && (
+          <div className="bg-green-600 text-white px-4 py-2 text-sm font-medium rounded-t-lg">
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle2 className="h-4 w-4" />
+              Day-End Summary Completed Today at {lastTriggerResult.timestamp.toLocaleTimeString()}
+            </div>
+          </div>
+        )}
+        
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
@@ -193,12 +272,15 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
               </CardTitle>
               <CardDescription className="text-amber-700 mt-1">
                 Manual trigger for daily production & sales summary
-                {!isEnabled && (
+                {lastTriggerResult?.success && lastTriggerResult?.date === getTodayDateString() ? (
+                  <Badge variant="default" className="ml-2 text-xs bg-green-700">
+                    ✅ Completed Today
+                  </Badge>
+                ) : !isEnabled ? (
                   <Badge variant="secondary" className="ml-2 text-xs">
                     Available after 10 PM
                   </Badge>
-                )}
-                {isEnabled && (
+                ) : (
                   <Badge variant="default" className="ml-2 text-xs bg-green-600">
                     Available Now
                   </Badge>
@@ -219,9 +301,11 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
           <div className="flex flex-col gap-3">
             <Button
               onClick={triggerDayEndSummary}
-              disabled={isTriggering || !isEnabled}
+              disabled={isTriggering || !isEnabled || (lastTriggerResult?.success && lastTriggerResult?.date === getTodayDateString())}
               className={`w-full font-medium py-2.5 transition-all duration-200 ${
-                isEnabled 
+                lastTriggerResult?.success && lastTriggerResult?.date === getTodayDateString()
+                  ? "bg-green-600 hover:bg-green-700 text-white" 
+                  : isEnabled 
                   ? "bg-amber-600 hover:bg-amber-700 text-white" 
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
@@ -231,6 +315,11 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Calculating Summary...
+                </>
+              ) : lastTriggerResult?.success && lastTriggerResult?.date === getTodayDateString() ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Already Completed Today
                 </>
               ) : !isEnabled ? (
                 <>
