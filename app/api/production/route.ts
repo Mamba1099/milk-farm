@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get("date");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
+    const all = searchParams.get("all") === "true";
 
     const where: {
       animalId?: string;
@@ -38,26 +39,70 @@ export async function GET(request: NextRequest) {
     }
 
     if (date) {
-      const targetDate = new Date(date);
-      const startOfDay = new Date(
-        targetDate.getFullYear(),
-        targetDate.getMonth(),
-        targetDate.getDate()
-      );
-      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+      let startOfDay: Date;
+      let endOfDay: Date;
+      
+      if (date.includes('T')) {
+        const dateObj = new Date(date);
+        startOfDay = new Date(Date.UTC(
+          dateObj.getUTCFullYear(),
+          dateObj.getUTCMonth(),
+          dateObj.getUTCDate(),
+          0, 0, 0, 0
+        ));
+        endOfDay = new Date(Date.UTC(
+          dateObj.getUTCFullYear(),
+          dateObj.getUTCMonth(),
+          dateObj.getUTCDate(),
+          23, 59, 59, 999
+        ));
+      } else {
+        const [year, month, day] = date.split('-').map(Number);
+        startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+        endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+      }
 
       where.date = {
         gte: startOfDay,
-        lt: endOfDay,
+        lte: endOfDay,
       };
     } else if (startDate || endDate) {
       where.date = {};
       if (startDate) {
-        where.date.gte = new Date(startDate);
+        if (startDate.includes('T')) {
+          where.date.gte = new Date(startDate);
+        } else {
+          const [year, month, day] = startDate.split('-').map(Number);
+          where.date.gte = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+        }
       }
-      if (endDate) {
-        where.date.lte = new Date(endDate);
+      if (endDate) { 
+        if (endDate.includes('T')) {
+          where.date.lte = new Date(endDate);
+        } else {
+          const [year, month, day] = endDate.split('-').map(Number);
+          where.date.lte = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+        }
       }
+    } else if (!all) {
+      const today = new Date();
+      const startOfToday = new Date(Date.UTC(
+        today.getUTCFullYear(),
+        today.getUTCMonth(),
+        today.getUTCDate(),
+        0, 0, 0, 0
+      ));
+      const endOfToday = new Date(Date.UTC(
+        today.getUTCFullYear(),
+        today.getUTCMonth(),
+        today.getUTCDate(),
+        23, 59, 59, 999
+      ));
+
+      where.date = {
+        gte: startOfToday,
+        lte: endOfToday,
+      };
     }
 
     const [morningProductions, morningTotal] = await Promise.all([
@@ -190,8 +235,18 @@ export async function POST(request: NextRequest) {
       }
       
       const targetDate = new Date(date);
-      const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+      const startOfDay = new Date(Date.UTC(
+        targetDate.getUTCFullYear(),
+        targetDate.getUTCMonth(),
+        targetDate.getUTCDate(),
+        0, 0, 0, 0
+      ));
+      const endOfDay = new Date(Date.UTC(
+        targetDate.getUTCFullYear(),
+        targetDate.getUTCMonth(),
+        targetDate.getUTCDate(),
+        23, 59, 59, 999
+      ));
       const existingRecord = await prisma.morningProduction.findFirst({
         where: { animalId, date: { gte: startOfDay, lt: endOfDay } },
       });
@@ -294,8 +349,18 @@ export async function POST(request: NextRequest) {
       }
       
       const targetDate = new Date(date);
-      const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+      const startOfDay = new Date(Date.UTC(
+        targetDate.getUTCFullYear(),
+        targetDate.getUTCMonth(),
+        targetDate.getUTCDate(),
+        0, 0, 0, 0
+      ));
+      const endOfDay = new Date(Date.UTC(
+        targetDate.getUTCFullYear(),
+        targetDate.getUTCMonth(),
+        targetDate.getUTCDate(),
+        23, 59, 59, 999
+      ));
       const existingRecord = await prisma.eveningProduction.findFirst({
         where: { animalId, date: { gte: startOfDay, lt: endOfDay } },
       });
