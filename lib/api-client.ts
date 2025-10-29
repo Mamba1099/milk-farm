@@ -84,7 +84,6 @@ apiClient.interceptors.response.use(
             }
             
             if (authCheckResponse.status === 401) {
-              console.log('User authentication expired - logging out');
               sessionStorage.removeItem("accessToken");
               sessionStorage.removeItem("refreshToken");
               sessionStorage.removeItem("userName");
@@ -99,7 +98,6 @@ apiClient.interceptors.response.use(
           }
         } else if (url.includes("/auth/me")) {
 
-          console.log('Auth endpoint returned 401 - user is unauthenticated');
           sessionStorage.removeItem("accessToken");
           sessionStorage.removeItem("refreshToken");
           sessionStorage.removeItem("userName");
