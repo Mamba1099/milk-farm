@@ -67,7 +67,39 @@ apiClient.interceptors.response.use(
       if (typeof window !== 'undefined') {
         const hasToken = sessionStorage.getItem("accessToken");
         
-        if (hasToken) {
+        if (hasToken && !url.includes("/auth/me")) {
+
+          try {
+            const authCheckResponse = await fetch(`${baseURL}/api/auth/me`, {
+              headers: {
+                'Authorization': `Bearer ${hasToken}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+            });
+            
+            if (authCheckResponse.ok) {
+              console.warn('401 error but user is still authenticated - likely network issue');
+              return Promise.reject(error);
+            }
+            
+            if (authCheckResponse.status === 401) {
+              console.log('User authentication expired - logging out');
+              sessionStorage.removeItem("accessToken");
+              sessionStorage.removeItem("refreshToken");
+              sessionStorage.removeItem("userName");
+              
+              if (window.location.pathname !== '/login') {
+                window.location.replace('/login');
+              }
+            }
+          } catch (authCheckError) {
+            console.warn('Could not verify authentication status - network issue?', authCheckError);
+            return Promise.reject(error);
+          }
+        } else if (url.includes("/auth/me")) {
+
+          console.log('Auth endpoint returned 401 - user is unauthenticated');
           sessionStorage.removeItem("accessToken");
           sessionStorage.removeItem("refreshToken");
           sessionStorage.removeItem("userName");
