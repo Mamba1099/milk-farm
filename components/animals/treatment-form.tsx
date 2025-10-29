@@ -58,7 +58,10 @@ export function TreatmentForm({
       dosage: "",
       treatment: "",
       cost: 0,
-      treatedAt: new Date().toISOString().split("T")[0],
+      treatedAt: (() => {
+        const now = new Date();
+        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString().split("T")[0];
+      })(),
       treatedBy: "",
       notes: "",
     },
