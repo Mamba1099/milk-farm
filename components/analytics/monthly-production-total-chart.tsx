@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface MonthlyProductionData {
@@ -13,10 +14,15 @@ interface MonthlyProductionData {
 }
 
 export function MonthlyProductionTotalChart() {
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
   const { data: monthlyProduction, isLoading } = useQuery<MonthlyProductionData[]>({
-    queryKey: ['monthly-production'],
+    queryKey: ['monthly-production', selectedYear],
     queryFn: async () => {
-      const response = await apiClient.get("/api/analytics/monthly-production");
+      const response = await apiClient.get(`/api/analytics/monthly-production?year=${selectedYear}`);
       return response.data;
     },
   });
@@ -25,7 +31,21 @@ export function MonthlyProductionTotalChart() {
     return (
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Monthly Total Production</CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle>Monthly Total Production ({selectedYear})</CardTitle>
+            <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex justify-center items-center h-80">
@@ -40,7 +60,21 @@ export function MonthlyProductionTotalChart() {
     return (
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Monthly Total Production</CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle>Monthly Total Production ({selectedYear})</CardTitle>
+            <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex justify-center items-center h-80">
@@ -57,7 +91,21 @@ export function MonthlyProductionTotalChart() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-base sm:text-lg">Monthly Total Production ({new Date().getFullYear()})</CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardTitle className="text-base sm:text-lg">Monthly Total Production ({selectedYear})</CardTitle>
+          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Select year" />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="p-2 sm:p-6">
         {/* Mobile: Horizontal scroll container */}

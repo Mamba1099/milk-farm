@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Icons } from "@/components/icons";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from "@tanstack/react-query";
@@ -19,10 +21,31 @@ interface SalesRevenueData {
 }
 
 export function SalesRevenueChart() {
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+
+  const years = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - i);
+
+  const months = [
+    { value: 1, label: "January" },
+    { value: 2, label: "February" },
+    { value: 3, label: "March" },
+    { value: 4, label: "April" },
+    { value: 5, label: "May" },
+    { value: 6, label: "June" },
+    { value: 7, label: "July" },
+    { value: 8, label: "August" },
+    { value: 9, label: "September" },
+    { value: 10, label: "October" },
+    { value: 11, label: "November" },
+    { value: 12, label: "December" },
+  ];
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["analytics", "sales-revenue"],
+    queryKey: ["analytics", "sales-revenue", selectedMonth, selectedYear],
     queryFn: async () => {
-      const response = await apiClient.get("/api/analytics/sales-revenue");
+      const response = await apiClient.get(`/api/analytics/sales-revenue?month=${selectedMonth}&year=${selectedYear}`);
       return response.data as SalesRevenueData[];
     },
     staleTime: 10 * 60 * 1000,
@@ -71,10 +94,38 @@ export function SalesRevenueChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-          <Icons.dollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-          <span className="truncate">Daily Sales Revenue - {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
-        </CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+            <Icons.dollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+            <span className="truncate">Daily Sales Revenue - {months.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>
+          </CardTitle>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Select month" />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month) => (
+                  <SelectItem key={month.value} value={month.value.toString()}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="p-2 sm:p-6">
         {/* Mobile: Horizontal scroll container */}

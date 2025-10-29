@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Icons } from "@/components/icons";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from "@tanstack/react-query";
@@ -15,10 +17,15 @@ interface TreatmentExpenseData {
 }
 
 export function TreatmentExpenseChart() {
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["analytics", "treatment-expense"],
+    queryKey: ["analytics", "treatment-expense", selectedYear],
     queryFn: async () => {
-      const response = await apiClient.get("/api/analytics/treatment-expense");
+      const response = await apiClient.get(`/api/analytics/treatment-expense?year=${selectedYear}`);
       return response.data as TreatmentExpenseData[];
     },
     staleTime: 10 * 60 * 1000,
@@ -67,10 +74,24 @@ export function TreatmentExpenseChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-          <Icons.dollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
-          <span className="truncate">Monthly Treatment Expenses</span>
-        </CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+            <Icons.dollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+            <span className="truncate">Monthly Treatment Expenses ({selectedYear})</span>
+          </CardTitle>
+          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Select year" />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="p-2 sm:p-6">
         {/* Mobile: Horizontal scroll container */}
