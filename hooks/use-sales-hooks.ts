@@ -91,10 +91,10 @@ export const useSales = (dateRange: string = "today", customDate?: Date) => {
       }
       return failureCount < 2;
     },
-    staleTime: 0, // Consider data stale immediately for real-time updates
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    refetchOnWindowFocus: true, // Refetch when window gains focus
-    refetchOnMount: true, // Always refetch when component mounts
+    staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 };
 
@@ -129,8 +129,8 @@ export const useSalesStats = (
       }
       return failureCount < 2;
     },
-    staleTime: 0, // Consider data stale immediately for real-time updates
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnWindowFocus: true, // Refetch when window gains focus
     refetchOnMount: true, // Always refetch when component mounts
   });
@@ -146,13 +146,22 @@ export const useCreateSale = () => {
       return response.data;
     },
     onSuccess: () => {
-      // Invalidate sales queries
+      // Invalidate all sales-related queries
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["salesStats"] });
       
-      // Also invalidate production stats as sales affect available balance
+      // Invalidate production-related queries as sales affect available balance
+      queryClient.invalidateQueries({ queryKey: ["production"] });
       queryClient.invalidateQueries({ queryKey: ["production", "stats"] });
       queryClient.invalidateQueries({ queryKey: ["production", "morning-total-with-balance"] });
+      
+      // Invalidate dashboard and analytics as sales affect overall stats
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["daily-balance"] });
+      
+      // Invalidate balance API as sales change available balance
+      queryClient.invalidateQueries({ queryKey: ["balance"] });
       
       toast({
         title: "Success",
