@@ -144,6 +144,14 @@ export async function POST(request: NextRequest) {
     const availableMilk = await getAvailableMilkForSales(salesDate);
     const requestedQuantity = validatedData.quantity;
     
+    // Debug logging for sales balance calculation
+    console.log("=== SALES BALANCE DEBUG ===");
+    console.log(`Sales Date: ${salesDate.toISOString().split('T')[0]}`);
+    console.log(`Available Milk Data:`, JSON.stringify(availableMilk, null, 2));
+    console.log(`Requested Quantity: ${requestedQuantity}L`);
+    console.log(`Balance Calculation: ${availableMilk.balanceYesterday}L (yesterday) + ${availableMilk.todayNetProduction}L (today net) - ${availableMilk.totalSold}L (sold) = ${availableMilk.remainingBalance}L (available)`);
+    console.log("==========================");
+    
     if (requestedQuantity > availableMilk.remainingBalance) {
       return createSecureErrorResponse(
         `Insufficient milk available. Available: ${availableMilk.remainingBalance}L (Yesterday's balance: ${availableMilk.balanceYesterday}L + Today's net production: ${availableMilk.todayNetProduction}L - Already sold: ${availableMilk.totalSold}L)`, 
