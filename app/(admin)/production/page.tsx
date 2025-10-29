@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   useProductionData,
   useProductionStats,
+  useMorningTotalWithBalance,
 } from "@/hooks/use-production-hooks";
 import { useAnimals } from "@/hooks/use-animal-hooks";
 import { ProductionRecordsList } from "@/components/production/production-records-list";
@@ -67,14 +68,18 @@ export default function ProductionPage() {
     refetch: refetchProduction,
   } = useProductionData(selectedDateRange, customDate);
   const { data: stats, isLoading: statsLoading } = useProductionStats();
+  const { data: morningTotalWithBalance, isLoading: balanceLoading } = useMorningTotalWithBalance();
   
   const { data: calvesData, isLoading: calvesLoading } = useAnimals({ 
     limit: 1000, 
     type: "CALF" 
   });
 
-  const morningTotal = records?.filter(record => record.animal.type !== "CALF").reduce((sum: number, record: any) => sum + (record.quantity_am || 0), 0) || 0;
-  const eveningTotal = records?.filter(record => record.animal.type !== "CALF").reduce((sum: number, record: any) => sum + (record.quantity_pm || 0), 0) || 0;
+  // Calculate filtered production totals
+  const nonCalfRecords = records?.filter(record => record.animal.type !== "CALF") || [];
+  const currentMorningTotal = nonCalfRecords.reduce((sum: number, record: any) => sum + (record.quantity_am || 0), 0);
+  const currentEveningTotal = nonCalfRecords.reduce((sum: number, record: any) => sum + (record.quantity_pm || 0), 0);
+  const currentTotalProduction = currentMorningTotal + currentEveningTotal;
 
   const allProductions = records || [];
   const calves = calvesData?.animals || [];
@@ -85,13 +90,17 @@ export default function ProductionPage() {
       record.animal.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Stats object with filtered and unfiltered data
   const productionStats = {
-    todayProduction: stats?.todayProduction || 0,
+    // These adjust with date filter (filtered data)
+    todayProduction: currentTotalProduction,
+    morningTotal: selectedDateRange === "today" ? (morningTotalWithBalance || 0) : currentMorningTotal,
+    eveningTotal: currentEveningTotal,
+    
+    // These remain constant (unfiltered accumulation data)
     weekProduction: stats?.weekProduction || 0,
     monthProduction: stats?.monthProduction || 0,
     activeAnimals: stats?.activeAnimals || 0,
-    morningTotal,
-    eveningTotal,
   };
 
   const handleClearFilters = () => {

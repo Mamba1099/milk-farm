@@ -38,7 +38,8 @@ export default function AddProductionPage() {
   const [formState, setFormState] = useState(getInitialState());
   const today = useMemo(() => {
     const d = new Date();
-    return d.toISOString().slice(0, 10);
+    // Use UTC to ensure consistency across timezones
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString().split('T')[0];
   }, []);
   const { data: prodData, isLoading: prodLoading } = useProductionRecords(1, 1000, { date: today });
   const router = useRouter();
