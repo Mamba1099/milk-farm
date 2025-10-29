@@ -15,7 +15,6 @@ function getAllowedOrigins(): string[] {
   const allowedOrigins = "https://milk-farm-pink.vercel.app";
   
   if (allowedOrigins && allowedOrigins.trim() !== "") {
-    console.log("Configured ALLOWED_ORIGINS:", allowedOrigins);
     origins.push(
       ...allowedOrigins.split(",")
         .map((o) => o.trim())

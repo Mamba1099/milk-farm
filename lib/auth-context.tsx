@@ -42,6 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateAuthState = useCallback(async () => {
     try {
+      setIsLoading(true);
+      setError(null);
+
       const accessToken = sessionStorage.getItem("accessToken");
       const refreshToken = sessionStorage.getItem("refreshToken");
       const name = sessionStorage.getItem("userName");

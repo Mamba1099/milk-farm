@@ -65,11 +65,17 @@ apiClient.interceptors.response.use(
 
     if (status === 401) {
       if (typeof window !== 'undefined') {
-        sessionStorage.removeItem("accessToken");
-        sessionStorage.removeItem("refreshToken");
-        sessionStorage.removeItem("userName");
+        const hasToken = sessionStorage.getItem("accessToken");
         
-        if (window.location.pathname !== '/login') {
+        if (hasToken) {
+          sessionStorage.removeItem("accessToken");
+          sessionStorage.removeItem("refreshToken");
+          sessionStorage.removeItem("userName");
+          
+          if (window.location.pathname !== '/login') {
+            window.location.replace('/login');
+          }
+        } else {
           window.location.replace('/login');
         }
       }
