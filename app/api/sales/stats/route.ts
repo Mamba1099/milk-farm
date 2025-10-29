@@ -6,6 +6,7 @@ import {
   createSecureErrorResponse 
 } from "@/lib/security";
 import { getUserFromSession } from "@/lib/auth-session";
+import { getMorningTotalWithBalance } from "@/lib/services/production-balance";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,27 +21,13 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get("date") || new Date().toISOString().split('T')[0];
+    const date = searchParams.get("date") || (() => {
+      const localToday = new Date();
+      return new Date(Date.UTC(localToday.getFullYear(), localToday.getMonth(), localToday.getDate())).toISOString().split('T')[0];
+    })();
     
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    console.log("📊 Sales Stats Debug:", { 
-      requestedDate: date, 
-      startOfDay: startOfDay.toISOString(), 
-      endOfDay: endOfDay.toISOString() 
-    });
-
-    // Check if we have ANY production records at all
-    const totalMorningRecords = await prisma.morningProduction.count();
-    const totalEveningRecords = await prisma.eveningProduction.count();
-    console.log("📊 Total production records in DB:", { 
-      morning: totalMorningRecords, 
-      evening: totalEveningRecords 
-    });
+    const startOfDay = new Date(date + 'T00:00:00.000Z');
+    const endOfDay = new Date(date + 'T23:59:59.999Z');
 
     const [morningProduction, eveningProduction] = await Promise.all([
       prisma.morningProduction.aggregate({
@@ -79,11 +66,6 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    console.log("📊 Production query results:", {
-      morning: morningProduction._sum,
-      evening: eveningProduction._sum
-    });
-
     const salesAggregation = await prisma.sales.aggregate({
       where: {
         timeRecorded: {
@@ -97,15 +79,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Raw production totals (for display)
     const totalMorningProduction = morningProduction._sum.quantity_am || 0;
     const totalEveningProduction = eveningProduction._sum.quantity_pm || 0;
     const totalProduction = totalMorningProduction + totalEveningProduction;
     
-    // Available balance (after calf feeding - what's actually available for sales)
-    const availableMorning = morningProduction._sum.balance_am || 0;
+    // Get morning total with yesterday's balance included
+    const morningTotalWithBalance = await getMorningTotalWithBalance(startOfDay);
     const availableEvening = eveningProduction._sum.balance_pm || 0;
-    const totalAvailableBalance = availableMorning + availableEvening;
+    const totalAvailableBalance = morningTotalWithBalance + availableEvening;
     
     const totalSales = salesAggregation._sum.quantity || 0;
     const revenue = salesAggregation._sum.totalAmount || 0;
@@ -117,16 +98,6 @@ export async function GET(request: NextRequest) {
       balanceRemaining: Math.max(0, balanceRemaining),
       revenue,
     };
-
-    console.log("Sales Stats API Response:", {
-      date,
-      startOfDay: startOfDay.toISOString(),
-      endOfDay: endOfDay.toISOString(),
-      morningProduction: morningProduction._sum,
-      eveningProduction: eveningProduction._sum,
-      salesAggregation: salesAggregation._sum,
-      responseData
-    });
 
     return createSecureResponse(responseData, {}, request);
   } catch (error) {
