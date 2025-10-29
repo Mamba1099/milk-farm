@@ -19,8 +19,8 @@ export interface DayBalance {
  * Calculate daily balance using existing ProductionSummary
  */
 export async function calculateDayBalance(date: Date): Promise<DayBalance> {
-  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+  const startOfDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
+  const endOfDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
 
   const [morningProductions, eveningProductions] = await Promise.all([
     prisma.morningProduction.findMany({
@@ -55,8 +55,7 @@ export async function calculateDayBalance(date: Date): Promise<DayBalance> {
   });
   const totalSales = salesTotal._sum.quantity || 0;
 
-  const yesterday = new Date(startOfDay);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterday = new Date(startOfDay.getTime() - 24 * 60 * 60 * 1000);
   
   const yesterdaySummary = await prisma.productionSummary.findUnique({
     where: { date: yesterday }
@@ -81,7 +80,7 @@ export async function calculateDayBalance(date: Date): Promise<DayBalance> {
  */
 export async function updateDaySummary(date: Date): Promise<void> {
   const dayBalance = await calculateDayBalance(date);
-  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const startOfDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
 
   await prisma.productionSummary.upsert({
     where: { date: startOfDay },
@@ -129,10 +128,9 @@ export async function addBalanceToMorningProduction(date: Date): Promise<{
   message: string;
 }> {
   try {
-    const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const startOfDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
 
-    const yesterday = new Date(startOfDay);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterday = new Date(startOfDay.getTime() - 24 * 60 * 60 * 1000);
 
     const yesterdaySummary = await prisma.productionSummary.findUnique({
       where: { date: yesterday },
@@ -168,8 +166,8 @@ export async function addBalanceToMorningProduction(date: Date): Promise<{
  * Get morning production total including yesterday's balance
  */
 export async function getMorningTotalWithBalance(date: Date): Promise<number> {
-  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+  const startOfDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
+  const endOfDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
   const morningProductions = await prisma.morningProduction.findMany({
     where: {
       date: { gte: startOfDay, lt: endOfDay },
@@ -181,10 +179,22 @@ export async function getMorningTotalWithBalance(date: Date): Promise<number> {
   const morningCalfFed = morningProductions.reduce((sum, record) => sum + (record.calf_quantity_fed_am || 0), 0);
   const morningNet = morningTotal - morningCalfFed;
 
-  const yesterday = new Date(startOfDay);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdaySummary = await prisma.productionSummary.findUnique({ where: { date: yesterday } });
-  const balanceYesterday = yesterdaySummary?.final_balance || 0;
+  const yesterday = new Date(startOfDay.getTime() - 24 * 60 * 60 * 1000);
+
+  let balanceYesterday = 0;
+  let yesterdaySummary = await prisma.productionSummary.findUnique({ where: { date: yesterday } });
+
+  if (!yesterdaySummary) {
+    try {
+      const computed = await calculateDayBalance(yesterday);
+      balanceYesterday = computed.finalBalance || 0;
+    } catch (err) {
+      console.error("Failed to compute yesterday's balance on the fly:", err);
+      balanceYesterday = 0;
+    }
+  } else {
+    balanceYesterday = yesterdaySummary.final_balance || 0;
+  }
 
   return morningNet + balanceYesterday;
 }
