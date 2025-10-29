@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { ServingRecordsList } from "@/components/production/serving-records-list";
+import { useServings } from "@/hooks/use-serving-hooks";
 
 const fadeInUp: Variants = {
   initial: {
@@ -33,9 +34,14 @@ const staggerContainer: Variants = {
 export default function ServingRecordsPage() {
   const { user, canEdit } = useAuth();
   const router = useRouter();
+  const { refetch: refetchServings, isRefetching } = useServings();
 
   const handleAdd = () => {
     router.push("/production/serving/add");
+  };
+
+  const handleRefresh = async () => {
+    await refetchServings();
   };
 
   return (
@@ -59,15 +65,26 @@ export default function ServingRecordsPage() {
               Track breeding and serving activities for your animals
             </p>
           </div>
-          {canEdit && (
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button
-              onClick={handleAdd}
-              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 w-full sm:w-auto text-sm sm:text-base"
+              onClick={handleRefresh}
+              disabled={isRefetching}
+              variant="outline"
+              className="flex items-center gap-2 text-sm sm:text-base"
             >
-              <Plus size={18} className="sm:w-5 sm:h-5" />
-              Add Serving Record
+              <RefreshCw size={18} className={`sm:w-5 sm:h-5 ${isRefetching ? 'animate-spin' : ''}`} />
+              {isRefetching ? 'Refreshing...' : 'Refresh'}
             </Button>
-          )}
+            {canEdit && (
+              <Button
+                onClick={handleAdd}
+                className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 text-sm sm:text-base"
+              >
+                <Plus size={18} className="sm:w-5 sm:h-5" />
+                Add Serving Record
+              </Button>
+            )}
+          </div>
         </motion.div>
 
         {/* Serving Records List */}
