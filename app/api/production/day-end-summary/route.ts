@@ -25,8 +25,6 @@ export async function POST(request: NextRequest) {
     const dayBalance = await calculateDayBalance(targetDate);
     
     await updateDaySummary(targetDate);
-    
-    // Add the final balance to next day's morning production
     const carryoverResult = await addBalanceToMorningProduction(targetDate);
     
     let message = "Day-end summary calculated successfully";
