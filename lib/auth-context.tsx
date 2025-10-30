@@ -85,6 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.removeItem("userName");
       setUser(null);
       setError(error instanceof Error ? error : new Error("Auth error"));
+      toast({
+        type: "error",
+        title: "Authentication Error",
+        description: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       setIsLoading(false);
       if (!isInitialized) setIsInitialized(true);
