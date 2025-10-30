@@ -16,7 +16,7 @@ import { ProductionRecord } from "@/lib/types/production";
 import { isSameDay } from "date-fns";
 
 export const useAnimalStats = () => {
-  const { toast } = useToast();
+  const { toast, isToastActive } = useToast();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<DashboardStats["animals"], Error>({
@@ -69,11 +69,15 @@ export const useAnimalStats = () => {
           };
         }
         
-        toast({
-          title: "Error",
-          description: "Failed to fetch animal statistics",
-          type: "error",
-        });
+        const toastId = "animal-stats-error";
+        if (!isToastActive || !isToastActive(toastId)) {
+          toast({
+            id: toastId,
+            title: "Error",
+            description: "Failed to fetch animal statistics",
+            type: "error",
+          });
+        }
         throw new Error("Failed to fetch animal statistics");
       }
     },
@@ -102,7 +106,7 @@ export const useAnimalStats = () => {
 };
 
 export const useProductionStats = () => {
-  const { toast } = useToast();
+  const { toast, isToastActive } = useToast();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<DashboardStats["production"], Error>({
@@ -216,11 +220,15 @@ export const useProductionStats = () => {
           };
         }
         
-        toast({
-          title: "Error",
-          description: "Failed to fetch production statistics",
-          type: "error",
-        });
+        const toastId = "production-stats-error";
+        if (!isToastActive || !isToastActive(toastId)) {
+          toast({
+            id: toastId,
+            title: "Error",
+            description: "Failed to fetch production statistics",
+            type: "error",
+          });
+        }
         throw new Error("Failed to fetch production statistics");
       }
     },
@@ -308,7 +316,7 @@ export const useUserStats = () => {
 };
 
 export const useSystemHealth = () => {
-  const { toast } = useToast();
+  const { toast, isToastActive } = useToast();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<SystemHealth, Error>({
@@ -323,11 +331,15 @@ export const useSystemHealth = () => {
         const response = await apiClient.get("/api/system/health");
         return response.data.health;
       } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch system health",
-          type: "error",
-        });
+        const toastId = "system-health-error";
+        if (!isToastActive(toastId)) {
+          toast({
+            id: toastId,
+            title: "Error",
+            description: "Failed to fetch system health",
+            type: "error",
+          });
+        }
         return {
           environment: process.env.NODE_ENV || "development",
           database: {
