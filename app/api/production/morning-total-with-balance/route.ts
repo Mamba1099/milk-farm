@@ -17,16 +17,25 @@ export async function GET(request: NextRequest) {
       return createSecureErrorResponse("Unauthorized", 401, request);
     }
 
-    // Get today's date in UTC
-    const today = new Date();
-    
-    // Get morning total including yesterday's balance
-    const morningTotalWithBalance = await getMorningTotalWithBalance(today);
+    // Get date from query param, fallback to today
+    const { searchParams } = new URL(request.url);
+    const dateParam = searchParams.get("date");
+    let date: Date;
+    if (dateParam) {
+      date = new Date(dateParam);
+      if (isNaN(date.getTime())) {
+        return createSecureErrorResponse("Invalid date format", 400, request);
+      }
+    } else {
+      date = new Date();
+    }
+
+    const morningTotalWithBalance = await getMorningTotalWithBalance(date);
 
     return createSecureResponse(
       { 
         morningTotalWithBalance,
-        date: today.toISOString().split('T')[0] 
+        date: date.toISOString().split('T')[0] 
       }, 
       {}, 
       request

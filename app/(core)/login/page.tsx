@@ -80,10 +80,10 @@ export default function LoginPage() {
             <div className="mx-auto mb-6 h-16 w-16 rounded-full bg-[#2d5523] flex items-center justify-center">
               <Icons.user className="h-8 w-8 text-white" />
             </div>
-            <CardTitle className="text-4xl font-bold text-[#2d5523] mb-2">
+            <CardTitle className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#2d5523] mb-2">
               Welcome Back
             </CardTitle>
-            <CardDescription className="text-lg text-[#4a6b3d]">
+            <CardDescription className="text-sm sm:text-base md:text-lg text-[#4a6b3d]">
               Sign in to your dairy farm management account
             </CardDescription>
           </CardHeader>
@@ -93,7 +93,7 @@ export default function LoginPage() {
               <div className="space-y-3">
                 <label
                   htmlFor="email"
-                  className="text-lg font-semibold text-[#2d5523]"
+                  className="text-sm sm:text-base md:text-lg font-semibold text-[#2d5523]"
                 >
                   Email Address
                 </label>
@@ -105,7 +105,7 @@ export default function LoginPage() {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 h-12 sm:h-14 text-sm sm:text-base md:text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                 </div>
@@ -113,7 +113,7 @@ export default function LoginPage() {
               <div className="space-y-3">
                 <label
                   htmlFor="password"
-                  className="text-lg font-semibold text-[#2d5523]"
+                  className="text-sm sm:text-base md:text-lg font-semibold text-[#2d5523]"
                 >
                   Password
                 </label>
@@ -125,7 +125,7 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-12 pr-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 pr-12 h-12 sm:h-14 text-sm sm:text-base md:text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                   <button
@@ -144,7 +144,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#2d5523] hover:bg-[#1e3a1a] text-white font-semibold py-4 text-lg transition-colors mt-8"
+                className="w-full bg-[#2d5523] hover:bg-[#1e3a1a] text-white font-semibold py-3 sm:py-4 text-sm sm:text-base md:text-lg transition-colors mt-8"
               >
                 {isLoading ? (
                   <>
@@ -166,11 +166,11 @@ export default function LoginPage() {
               </div>
             </form>
 
-            <div className="mt-8 text-center text-lg text-[#4a6b3d]">
+            <div className="mt-8 text-center text-sm sm:text-base md:text-lg text-[#4a6b3d]">
               Don&apos;t have an account?{" "}
               <Link
                 href="/signup"
-                className="text-[#2d5523] hover:text-[#1e3a1a] font-semibold hover:underline text-lg"
+                className="text-[#2d5523] hover:text-[#1e3a1a] font-semibold hover:underline text-sm sm:text-base md:text-lg"
               >
                 Sign up here
               </Link>

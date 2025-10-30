@@ -19,11 +19,20 @@ import {
   RefreshCw
 } from "lucide-react";
 
+
+// Helper to get today's date string in YYYY-MM-DD
+const getTodayDateString = () => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+};
+
 interface DayEndSummaryTriggerProps {
   className?: string;
 }
 
 export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
+  // Track the last date seen to detect day change
+  const [lastDate, setLastDate] = useState(getTodayDateString());
   const [isTriggering, setIsTriggering] = useState(false);
   const [lastTriggerResult, setLastTriggerResult] = useState<{
     success: boolean;
@@ -36,10 +45,7 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
 
   const { toast } = useToast();
 
-  const getTodayDateString = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  };
+  // (moved above)
 
   const loadTriggerResult = () => {
     try {
@@ -114,13 +120,17 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
       const now = new Date();
       setCurrentTime(now);
       setIsEnabled(isAfter10PM());
+      const todayString = getTodayDateString();
+      if (todayString !== lastDate) {
+        setLastDate(todayString);
+        localStorage.removeItem('dayEndSummaryResult');
+        setLastTriggerResult(null);
+      }
     };
-
     updateTime();
     const interval = setInterval(updateTime, 60000);
-
     return () => clearInterval(interval);
-  }, []);
+  }, [lastDate]);
 
   useEffect(() => {
     const storedResult = loadTriggerResult();

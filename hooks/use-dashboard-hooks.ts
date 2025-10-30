@@ -106,7 +106,11 @@ export const useProductionStats = () => {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<DashboardStats["production"], Error>({
-    queryKey: ["dashboard", "production"],
+    // Always use UTC for today, week, and month calculations
+    queryKey: ["dashboard", "production", (() => {
+      const now = new Date();
+      return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString().split('T')[0];
+    })()],
     queryFn: async () => {
       try {
         const accessToken = sessionStorage.getItem("accessToken");
@@ -114,18 +118,15 @@ export const useProductionStats = () => {
           throw new Error("Not authenticated");
         }
 
-        const localToday = new Date();
-        const todayLocal = new Date(Date.UTC(
-          localToday.getFullYear(),
-          localToday.getMonth(),
-          localToday.getDate()
-        ));
-        const weekAgoLocal = new Date(todayLocal.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const monthAgoLocal = new Date(todayLocal.getTime() - 30 * 24 * 60 * 60 * 1000);
+        // Always use UTC for today
+        const now = new Date();
+        const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        const weekAgoUTC = new Date(todayUTC.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const monthAgoUTC = new Date(todayUTC.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-        const todayString = todayLocal.toISOString().split('T')[0];
-        const weekAgoString = weekAgoLocal.toISOString();
-        const monthAgoString = monthAgoLocal.toISOString();
+        const todayString = todayUTC.toISOString().split('T')[0];
+        const weekAgoString = weekAgoUTC.toISOString();
+        const monthAgoString = monthAgoUTC.toISOString();
 
         const todayResponse = await apiClient.get(`/api/production?date=${todayString}&limit=1000`);
         const todayRecords = todayResponse.data.records || [];
@@ -151,12 +152,12 @@ export const useProductionStats = () => {
 
         const weeklyProductions = allProductions.filter((p: ProductionRecord) => {
           const recordDate = new Date(p.date);
-          return recordDate >= weekAgoLocal;
+          return recordDate >= weekAgoUTC;
         });
         
         const monthlyProductions = allProductions.filter((p: ProductionRecord) => {
           const recordDate = new Date(p.date);
-          return recordDate >= monthAgoLocal;
+          return recordDate >= monthAgoUTC;
         });
 
         const todayQuantity = todayProductions.reduce(

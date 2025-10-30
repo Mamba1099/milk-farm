@@ -1,5 +1,7 @@
+
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion, type Variants } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
@@ -19,6 +21,23 @@ export function FarmSummaryCard() {
   const animalsData = animals.data;
   const productionData = production.data;
   const userData = users.data;
+  // Refetch stats if the day changes
+  const [lastDate, setLastDate] = useState(() => {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+  });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const today = new Date().toISOString().split('T')[0];
+      if (today !== lastDate && production.refetch) {
+        setLastDate(today);
+        production.refetch();
+        animals.refetch && animals.refetch();
+        users.refetch && users.refetch();
+      }
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [lastDate, production, animals, users]);
 
   return (
     <motion.div variants={fadeInUp}>

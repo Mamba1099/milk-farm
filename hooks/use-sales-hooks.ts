@@ -151,12 +151,14 @@ export const useCreateSale = () => {
       queryClient.invalidateQueries({ queryKey: ["salesStats"] });
       
       // Invalidate production-related queries as sales affect available balance
-      queryClient.invalidateQueries({ queryKey: ["production"] });
-      queryClient.invalidateQueries({ queryKey: ["production", "stats"] });
-      queryClient.invalidateQueries({ queryKey: ["production", "morning-total-with-balance"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === "production"
+      });
       
       // Invalidate dashboard and analytics as sales affect overall stats
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === "dashboard"
+      });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
       queryClient.invalidateQueries({ queryKey: ["daily-balance"] });
       

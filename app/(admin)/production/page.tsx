@@ -9,7 +9,6 @@ import { useAuth } from "@/lib/auth-context";
 import {
   useProductionData,
   useProductionStats,
-  useMorningTotalWithBalance,
 } from "@/hooks/use-production-hooks";
 import { useAnimals } from "@/hooks/use-animal-hooks";
 import { ProductionRecordsList } from "@/components/production/production-records-list";
@@ -68,18 +67,40 @@ export default function ProductionPage() {
     refetch: refetchProduction,
   } = useProductionData(selectedDateRange, customDate);
   const { data: stats, isLoading: statsLoading } = useProductionStats();
-  const { data: morningTotalWithBalance, isLoading: balanceLoading } = useMorningTotalWithBalance();
-  
-  const { data: calvesData, isLoading: calvesLoading } = useAnimals({ 
-    limit: 1000, 
-    type: "CALF" 
-  });
-
-  // Calculate filtered production totals
+  // filterDate logic is no longer needed for morning stat
   const nonCalfRecords = records?.filter(record => record.animal.type !== "CALF") || [];
   const currentMorningTotal = nonCalfRecords.reduce((sum: number, record: any) => sum + (record.quantity_am || 0), 0);
   const currentEveningTotal = nonCalfRecords.reduce((sum: number, record: any) => sum + (record.quantity_pm || 0), 0);
   const currentTotalProduction = currentMorningTotal + currentEveningTotal;
+
+
+  // If you still need yesterdayBalance, use selectedDateRange/customDate logic
+  // Example: for 'custom', use customDate; otherwise, use today
+  let yesterdayBalance = 0;
+  let selectedDay: Date | undefined = undefined;
+  if (selectedDateRange === "custom" && customDate) {
+    selectedDay = new Date(Date.UTC(customDate.getUTCFullYear(), customDate.getUTCMonth(), customDate.getUTCDate()));
+  } else {
+    const now = new Date();
+    selectedDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  }
+  if (records && records.length > 0 && selectedDay) {
+    const yesterday = new Date(selectedDay.getTime() - 24 * 60 * 60 * 1000);
+    const yesterdayRecords = records.filter(record => {
+      const recordDate = new Date(record.date);
+      return recordDate.getUTCFullYear() === yesterday.getUTCFullYear() &&
+        recordDate.getUTCMonth() === yesterday.getUTCMonth() &&
+        recordDate.getUTCDate() === yesterday.getUTCDate();
+    });
+    yesterdayBalance = yesterdayRecords.reduce((sum, record) => sum + (record.balance_pm || 0), 0);
+  }
+
+
+
+  const { data: calvesData, isLoading: calvesLoading } = useAnimals({ 
+    limit: 1000, 
+    type: "CALF" 
+  });
 
   const allProductions = records || [];
   const calves = calvesData?.animals || [];
@@ -94,9 +115,8 @@ export default function ProductionPage() {
   const productionStats = {
     // These adjust with date filter (filtered data)
     todayProduction: currentTotalProduction,
-    morningTotal: selectedDateRange === "today" ? (morningTotalWithBalance || 0) : currentMorningTotal,
+    morningTotal: currentMorningTotal,
     eveningTotal: currentEveningTotal,
-    
     // These remain constant (unfiltered accumulation data)
     weekProduction: stats?.weekProduction || 0,
     monthProduction: stats?.monthProduction || 0,
@@ -117,18 +137,9 @@ export default function ProductionPage() {
         triggerMinutesBefore={60}
         isActive={true}
       />
-      
-      <motion.div
-        className="mx-2"
-        initial="initial"
-        animate="animate"
-        variants={staggerContainer}
-      >
+      <motion.div className="mx-2" initial="initial" animate="animate" variants={staggerContainer}>
         {/* Header */}
-        <motion.div
-          className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4"
-          variants={fadeInUp}
-        >
+        <motion.div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4" variants={fadeInUp}>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               Production Management
@@ -148,7 +159,7 @@ export default function ProductionPage() {
           )}
         </motion.div>
 
-          {/* Production Filters */}
+        {/* Production Filters */}
         <motion.div variants={fadeInUp}>
           <ProductionFilters
             searchTerm={searchTerm}
@@ -161,18 +172,18 @@ export default function ProductionPage() {
           />
         </motion.div>
 
-      {/* Production Statistics & Records */}
-      <ProductionRecordsList
-        records={filteredProductionData}
-        stats={productionStats}
-        userRole={user?.role}
-        showStats={true}
-        title="Production Records"
-        viewTab={viewTab}
-        setViewTab={setViewTab}
-        calvesCount={calves.length}
-      />
-    </motion.div>
+        {/* Production Statistics & Records */}
+        <ProductionRecordsList
+          records={filteredProductionData}
+          stats={productionStats}
+          userRole={user?.role}
+          showStats={true}
+          title="Production Records"
+          viewTab={viewTab}
+          setViewTab={setViewTab}
+          calvesCount={calves.length}
+        />
+      </motion.div>
     </div>
   );
 }

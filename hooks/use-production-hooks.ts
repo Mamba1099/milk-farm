@@ -120,10 +120,14 @@ export const useCreateProduction = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["production"] });
-      queryClient.invalidateQueries({ queryKey: ["production", "stats"] });
+      // Invalidate all production queries regardless of date
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === "production"
+      });
       queryClient.invalidateQueries({ queryKey: ["sales"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === "dashboard"
+      });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
@@ -142,9 +146,13 @@ export const useCreateSales = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
-      queryClient.invalidateQueries({ queryKey: ["production"] });
-      queryClient.invalidateQueries({ queryKey: ["production", "stats"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      // Invalidate all production queries regardless of date
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === "production"
+      });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === "dashboard"
+      });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
@@ -319,7 +327,7 @@ export const useProductionStats = () => {
     },
     Error
   >({
-    queryKey: ["production", "stats"],
+    queryKey: ["production", "stats", new Date().toDateString()],
     queryFn: async () => {
       const nowUTC = new Date();
       const startOfTodayUTC = new Date(Date.UTC(
@@ -397,11 +405,19 @@ export const useProductionStats = () => {
 /**
  * Hook to get morning total with yesterday's balance included
  */
-export const useMorningTotalWithBalance = () => {
+export const useMorningTotalWithBalance = (date?: Date) => {
+  // Always send the date as a UTC YYYY-MM-DD string
+  let dateString: string;
+  if (date) {
+    dateString = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())).toISOString().split('T')[0];
+  } else {
+    const now = new Date();
+    dateString = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString().split('T')[0];
+  }
   return useQuery<number, Error>({
-    queryKey: ["production", "morning-total-with-balance"],
+    queryKey: ["production", "morning-total-with-balance", dateString],
     queryFn: async () => {
-      const response = await apiClient.get("/api/production/morning-total-with-balance");
+      const response = await apiClient.get(`/api/production/morning-total-with-balance?date=${dateString}`);
       return response.data.morningTotalWithBalance;
     },
     staleTime: 1 * 60 * 1000, 

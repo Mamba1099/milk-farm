@@ -142,10 +142,10 @@ export default function SignUpPage() {
             <div className="mx-auto mb-6 h-16 w-16 rounded-full bg-[#2d5523] flex items-center justify-center">
               <Icons.userPlus className="h-8 w-8 text-white" />
             </div>
-            <CardTitle className="text-4xl font-bold text-[#2d5523] mb-2">
+            <CardTitle className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#2d5523] mb-2">
               Create Account
             </CardTitle>
-            <CardDescription className="text-lg text-[#4a6b3d]">
+            <CardDescription className="text-sm sm:text-base md:text-lg text-[#4a6b3d]">
               Join our dairy farm management platform
             </CardDescription>
           </CardHeader>
@@ -155,7 +155,7 @@ export default function SignUpPage() {
               <div className="space-y-3">
                 <label
                   htmlFor="username"
-                  className="text-lg font-semibold text-[#2d5523]"
+                  className="text-sm sm:text-base md:text-lg font-semibold text-[#2d5523]"
                 >
                   Username
                 </label>
@@ -167,7 +167,7 @@ export default function SignUpPage() {
                     placeholder="Choose a username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="pl-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 h-12 sm:h-14 text-sm sm:text-base md:text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                 </div>
@@ -181,7 +181,7 @@ export default function SignUpPage() {
               <div className="space-y-3">
                 <label
                   htmlFor="email"
-                  className="text-lg font-semibold text-[#2d5523]"
+                  className="text-sm sm:text-base md:text-lg font-semibold text-[#2d5523]"
                 >
                   Email Address
                 </label>
@@ -193,7 +193,7 @@ export default function SignUpPage() {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 h-12 sm:h-14 text-sm sm:text-base md:text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                 </div>
@@ -202,7 +202,7 @@ export default function SignUpPage() {
               <div className="space-y-3">
                 <label
                   htmlFor="role"
-                  className="text-lg font-semibold text-[#2d5523]"
+                  className="text-sm sm:text-base md:text-lg font-semibold text-[#2d5523]"
                 >
                   Role
                 </label>
@@ -213,7 +213,7 @@ export default function SignUpPage() {
                     value={role}
                     onChange={(e) => setRole(e.target.value as Role)}
                     disabled={checkingManager || farmManagerExists}
-                    className="w-full pl-12 pr-4 py-4 text-lg border border-[#4a6b3d]/20 rounded-md focus:border-[#2d5523] focus:ring-[#2d5523]/20 focus:outline-none bg-white text-[#2d5523] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base md:text-lg border border-[#4a6b3d]/20 rounded-md focus:border-[#2d5523] focus:ring-[#2d5523]/20 focus:outline-none bg-white text-[#2d5523] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     required
                   >
                     {roleOptions.map((option) => (
@@ -236,7 +236,7 @@ export default function SignUpPage() {
               <div className="space-y-3">
                 <label
                   htmlFor="password"
-                  className="text-lg font-semibold text-[#2d5523]"
+                  className="text-sm sm:text-base md:text-lg font-semibold text-[#2d5523]"
                 >
                   Password
                 </label>
@@ -248,7 +248,7 @@ export default function SignUpPage() {
                     placeholder="Create a password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-12 pr-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 pr-12 h-12 sm:h-14 text-sm sm:text-base md:text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                   <button
@@ -268,7 +268,7 @@ export default function SignUpPage() {
               <div className="space-y-3">
                 <label
                   htmlFor="confirmPassword"
-                  className="text-lg font-semibold text-[#2d5523]"
+                  className="text-sm sm:text-base md:text-lg font-semibold text-[#2d5523]"
                 >
                   Confirm Password
                 </label>
@@ -280,7 +280,7 @@ export default function SignUpPage() {
                     placeholder="Confirm your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-12 pr-12 h-14 text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
+                    className="pl-12 pr-12 h-12 sm:h-14 text-sm sm:text-base md:text-lg border-[#4a6b3d]/20 focus:border-[#2d5523] focus:ring-[#2d5523]/20"
                     required
                   />
                   <button
@@ -309,7 +309,7 @@ export default function SignUpPage() {
                 disabled={
                   isRegistering || password !== confirmPassword
                 }
-                className="w-full bg-[#2d5523] hover:bg-[#1e3a1a] text-white font-semibold py-4 text-lg transition-colors disabled:opacity-50 mt-8"
+                className="w-full bg-[#2d5523] hover:bg-[#1e3a1a] text-white font-semibold py-3 sm:py-4 text-sm sm:text-base md:text-lg transition-colors disabled:opacity-50 mt-8"
               >
                 {isRegistering ? (
                   <>
@@ -334,11 +334,11 @@ export default function SignUpPage() {
               <div className="grid grid-cols-2 gap-3"></div>
             </form>
 
-            <div className="mt-8 text-center text-lg text-[#4a6b3d]">
+            <div className="mt-8 text-center text-sm sm:text-base md:text-lg text-[#4a6b3d]">
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="text-[#2d5523] hover:text-[#1e3a1a] font-semibold hover:underline text-lg"
+                className="text-[#2d5523] hover:text-[#1e3a1a] font-semibold hover:underline text-sm sm:text-base md:text-lg"
               >
                 Log In
               </Link>
