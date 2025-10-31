@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { ProductionTabs } from "@/components/production/ProductionTabs";
 import { AnimalProductionTable } from "@/components/production/animalProductionTable";
 import { CalfProductionTable } from "@/components/production/calfProductionTable";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 
 
 const STORAGE_KEY = "milk-farm-production-form-state";
@@ -38,14 +38,12 @@ export default function AddProductionPage() {
   const [formState, setFormState] = useState(getInitialState());
   const today = useMemo(() => {
     const d = new Date();
-    // Use UTC to ensure consistency across timezones
     return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString().split('T')[0];
   }, []);
   const { data: prodData, isLoading: prodLoading } = useProductionRecords(1, 1000, { date: today });
   const router = useRouter();
 
   const createProductionMutation = useCreateProduction();
-  const { toast } = useToast();
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(formState));
@@ -55,13 +53,9 @@ export default function AddProductionPage() {
   
   const handleAnimalSubmit = useCallback(async (animalId: string) => {
     const animalData = formState[tab]?.[animalId];
-    
+
     if (!animalData) {
-      toast({
-        type: "error",
-        title: "No Data",
-        description: "Please enter production data before submitting."
-      });
+      toast.error("Please enter production data before submitting.");
       return;
     }
 
@@ -71,20 +65,12 @@ export default function AddProductionPage() {
 
     if (isCalf) {
       if (calfQuantity <= 0) {
-        toast({
-          type: "error",
-          title: "Invalid Data",
-          description: "Please enter a valid feeding quantity for the calf."
-        });
+        toast.error("Please enter a valid feeding quantity for the calf.");
         return;
       }
     } else {
       if (quantity <= 0) {
-        toast({
-          type: "error",
-          title: "Invalid Data",
-          description: "Please enter a valid milk production quantity."
-        });
+        toast.error("Please enter a valid milk production quantity.");
         return;
       }
     }
@@ -113,19 +99,11 @@ export default function AddProductionPage() {
         return { ...prev, [tab]: updated };
       });
 
-      toast({
-        type: "success",
-        title: "Success",
-        description: `${isCalf ? "Calf feeding" : (tab === "morning" ? "Morning" : "Evening") + " production"} recorded successfully.`
-      });
+      toast.success(`${isCalf ? "Calf feeding" : (tab === "morning" ? "Morning" : "Evening") + " production"} recorded successfully.`);
 
     } catch (error) {
       console.error("Failed to save production:", error);
-      toast({
-        type: "error",
-        title: "Save Failed",
-        description: "Failed to save production data. Please try again."
-      });
+      toast.error("Failed to save production data. Please try again.");
     } finally {
       setSubmitting((prev) => ({ ...prev, [animalId]: false }));
     }
@@ -163,23 +141,35 @@ export default function AddProductionPage() {
   }, [tab]);
 
   const allRecords = prodData?.records || [];
-  const animalIdsWithRecord = new Set(
+
+  const animalIdsWithMorningRecord = new Set(
     allRecords
-      .filter((rec) => {
-        if (tab === "morning") {
-          return rec.quantity_am !== null || rec.calf_quantity_fed_am !== null;
-        }
-        return rec.quantity_pm !== null || rec.calf_quantity_fed_pm !== null;
-      })
+      .filter((rec) => rec.quantity_am !== null || rec.calf_quantity_fed_am !== null)
       .map((rec) => rec.animalId)
   );
-  
+  const animalIdsWithEveningRecord = new Set(
+    allRecords
+      .filter((rec) => rec.quantity_pm !== null || rec.calf_quantity_fed_pm !== null)
+      .map((rec) => rec.animalId)
+  );
+
   const isCardDisabled = (animalId: string) => {
-    return animalIdsWithRecord.has(animalId) || allHaveRecord;
+    if (tab === "morning") {
+      return animalIdsWithMorningRecord.has(animalId) || allHaveRecord;
+    }
+    return animalIdsWithEveningRecord.has(animalId) || allHaveRecord;
   };
-  
-  const allAnimalsHaveRecord = animals.length > 0 && animals.every((a) => animalIdsWithRecord.has(a.id));
-  const allCalvesHaveRecord = calves.length === 0 || calves.every((c) => animalIdsWithRecord.has(c.id));
+
+  const allAnimalsHaveRecord = animals.length > 0 && (
+    tab === "morning"
+      ? animals.every((a) => animalIdsWithMorningRecord.has(a.id))
+      : animals.every((a) => animalIdsWithEveningRecord.has(a.id))
+  );
+  const allCalvesHaveRecord = calves.length === 0 || (
+    tab === "morning"
+      ? calves.every((c) => animalIdsWithMorningRecord.has(c.id))
+      : calves.every((c) => animalIdsWithEveningRecord.has(c.id))
+  );
   const allHaveRecord = allAnimalsHaveRecord && allCalvesHaveRecord;
 
   const now = useMemo(() => Date.now(), []);
