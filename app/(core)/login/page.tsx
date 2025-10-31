@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Icons } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
-import { useToast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/sonner";
 import Link from "next/link";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { RingLoader } from "react-spinners";
@@ -24,17 +24,13 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { login } = useAuth();
-  const { toast } = useToast();
+  // toast from sonner
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email || !password) {
-      toast({
-        type: "error",
-        title: "Missing Fields",
-        description: "Please fill in all fields",
-      });
+      toast.error("Please fill in all fields");
       return;
     }
 

@@ -14,7 +14,7 @@ import { Icons } from "@/components/icons";
 import Link from "next/link";
 import { useRegisterMutation, useFarmManagerExists } from "@/hooks";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/sonner";
 import { ProfileImageField } from "@/components/auth/profile-image-field";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { Role } from "@/lib/types";
@@ -23,7 +23,7 @@ import { RingLoader } from "react-spinners";
 export default function SignUpPage() {
   const router = useRouter();
   const registerMutation = useRegisterMutation();
-  const { toast } = useToast();
+  // toast from sonner
   const { data: farmManagerExists, isLoading: checkingManager } = useFarmManagerExists();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -41,11 +41,7 @@ export default function SignUpPage() {
     
     if (farmManagerExists) {
       setRole("EMPLOYEE");
-      toast({
-        type: "info",
-        title: "Role Automatically Set",
-        description: "Since a farm manager already exists, you'll be registered as an employee.",
-      });
+      toast.info("Since a farm manager already exists, you'll be registered as an employee.");
     } else {
       setRole("FARM_MANAGER");
     }
@@ -67,11 +63,7 @@ export default function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast({
-        type: "error",
-        title: "Password Mismatch",
-        description: "Passwords do not match!",
-      });
+      toast.error("Passwords do not match!");
       return;
     }
 
