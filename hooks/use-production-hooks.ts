@@ -1,8 +1,10 @@
 "use client";
 
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { ProductionAnimal, ProductionRecord, SalesRecord, CreateProductionData, CreateSalesData } from "@/lib/types/production";
+import { toast } from "@/components/ui/sonner";
 
 
 export const useProductionReadyAnimals = () => {
@@ -120,7 +122,6 @@ export const useCreateProduction = () => {
       return response.data;
     },
     onSuccess: () => {
-      // Invalidate all production queries regardless of date
       queryClient.invalidateQueries({ 
         predicate: (query) => query.queryKey[0] === "production"
       });
@@ -129,6 +130,10 @@ export const useCreateProduction = () => {
         predicate: (query) => query.queryKey[0] === "dashboard"
       });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast.success("Production record created successfully");
+    },
+    onError: (error) => {
+  toast.error("We couldn't save the production record. Please check your input or try again later.");
     },
   });
 };
@@ -146,7 +151,6 @@ export const useCreateSales = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
-      // Invalidate all production queries regardless of date
       queryClient.invalidateQueries({ 
         predicate: (query) => query.queryKey[0] === "production"
       });
@@ -154,6 +158,10 @@ export const useCreateSales = () => {
         predicate: (query) => query.queryKey[0] === "dashboard"
       });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast.success("Sales record created successfully");
+    },
+    onError: (error) => {
+  toast.error("We couldn't save the sales record. Please check your input or try again later.");
     },
   });
 };
@@ -173,10 +181,14 @@ export const useUpdateMaturity = () => {
       const response = await apiClient.post("/api/system/update-maturity", data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["animals"] });
       queryClient.invalidateQueries({ queryKey: ["production"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success(data.message || "System maturity updated successfully");
+    },
+    onError: (error) => {
+  toast.error("We couldn't update the system maturity. Please try again or contact support.");
     },
   });
 };

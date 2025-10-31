@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { handleApiError } from "@/lib/error-handler";
-import { useToast } from "@/hooks";
+import { toast } from "@/components/ui/sonner";
 import { uploadImage } from "@/supabase/storage/client";
 import type {
   CreateAnimalInput,
@@ -56,7 +56,7 @@ export function useAnimal(id: string) {
 export function useCreateAnimal() {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { toast } = useToast();
+
 
   return useMutation({
     mutationFn: async (data: CreateAnimalInput) => {
@@ -106,26 +106,18 @@ export function useCreateAnimal() {
       });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
-      toast({
-        type: "success",
-        title: "Success",
-        description: `Animal ${data.tagNumber} added successfully`,
-      });
+      toast.success(`Animal ${data.tagNumber} added successfully`);
       router.push("/animals");
     },
     onError: (error: Error) => {
-      toast({
-        type: "error",
-        title: "Error",
-        description: error.message || "Failed to add animal",
-      });
+  toast.error("We couldn't add the animal. Please check your input or try again later.");
     },
   });
 }
 
 export function useUpdateAnimal() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+
 
   return useMutation({
     mutationFn: async (data: UpdateAnimalInput) => {
@@ -179,25 +171,17 @@ export function useUpdateAnimal() {
       });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
-      toast({
-        type: "success",
-        title: "Success",
-        description: `Animal ${data.tagNumber} updated successfully`,
-      });
+      toast.success(`Animal ${data.tagNumber} updated successfully`);
     },
     onError: (error: Error) => {
-      toast({
-        type: "error",
-        title: "Error",
-        description: error.message || "Failed to update animal",
-      });
+  toast.error("We couldn't update the animal. Please check your input or try again later.");
     },
   });
 }
 
 export function useDeleteAnimal() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -221,18 +205,10 @@ export function useDeleteAnimal() {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
 
-      toast({
-        type: "success",
-        title: "Success",
-        description: "Animal deleted successfully",
-      });
+      toast.success("Animal deleted successfully");
     },
     onError: (error: Error) => {
-      toast({
-        type: "error",
-        title: "Error",
-        description: error.message || "Failed to delete animal",
-      });
+  toast.error("We couldn't delete the animal. Please try again or contact support if the problem continues.");
     },
   });
 }
@@ -250,7 +226,7 @@ export function useTreatments(animalId?: string) {
 
 export function useCreateTreatment() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+
 
   return useMutation({
     mutationFn: async (data: CreateTreatmentInput) => {
@@ -271,18 +247,10 @@ export function useCreateTreatment() {
       queryClient.invalidateQueries({ queryKey: ["treatment-statistics"] });
       
       
-      toast({
-        type: "success",
-        title: "Success",
-        description: "Treatment record created successfully",
-      });
+      toast.success("Treatment record created successfully");
     },
     onError: (error: Error) => {
-      toast({
-        type: "error",
-        title: "Error",
-        description: error.message || "Failed to create treatment record",
-      });
+  toast.error("We couldn't save the treatment record. Please check your input or try again later.");
     },
   });
 }

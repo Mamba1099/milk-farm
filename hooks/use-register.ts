@@ -8,12 +8,11 @@ import {
   AuthError,
   ApiErrorResponse,
 } from "@/lib/types";
-import { useToast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/sonner";
 import { uploadImage } from "@/supabase/storage/client";
 
 export const useRegisterMutation = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation<RegisterResponse, AuthError, RegisterInput>({
     mutationFn: async (data: RegisterInput) => {
@@ -63,17 +62,9 @@ export const useRegisterMutation = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
-      toast({
-        type: "success",
-        title: "Account Created",
-        description: data.message,
-      });
+      toast.success(data.message);
       if (data.roleChanged) {
-        toast({
-          type: "warning",
-          title: "Role Changed",
-          description: `You were registered as ${data.assignedRole} instead of ${data.originalRole}`,
-        });
+        toast.warning(`You were registered as ${data.assignedRole} instead of ${data.originalRole}`);
         console.warn(
           `Role changed: ${data.originalRole} → ${data.assignedRole}`
         );
@@ -87,48 +78,24 @@ export const useRegisterMutation = () => {
 
         if (apiError.details && Array.isArray(apiError.details)) {
           apiError.details.forEach((detail) => {
-            toast({
-              type: "error",
-              title: `Validation Error: ${detail.field}`,
-              description: detail.message,
-            });
+            toast.error(`${detail.field}: ${detail.message}`);
           });
         } else {
-          toast({
-            type: "error",
-            title: "Registration Failed",
-            description: apiError.error || "Unknown error occurred",
-          });
+          toast.error(apiError.error || "Unknown error occurred");
         }
       } else if ('error' in error) {
         const directError = error as ApiErrorResponse;
         if (directError.details && Array.isArray(directError.details)) {
           directError.details.forEach((detail) => {
-            toast({
-              type: "error",
-              title: `Validation Error: ${detail.field}`,
-              description: detail.message,
-            });
+            toast.error(`${detail.field}: ${detail.message}`);
           });
         } else {
-          toast({
-            type: "error",
-            title: "Registration Failed",
-            description: directError.error || "Registration failed",
-          });
+          toast.error(directError.error || "Registration failed");
         }
       } else if ('message' in error && error.message) {
-        toast({
-          type: "error",
-          title: "Registration Failed",
-          description: error.message,
-        });
+        toast.error(error.message);
       } else {
-        toast({
-          type: "error",
-          title: "Unexpected Error",
-          description: "An unexpected error occurred. Please try again.",
-        });
+        toast.error("An unexpected error occurred. Please try again.");
       }
     },
   });

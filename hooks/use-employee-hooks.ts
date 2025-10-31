@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { handleApiError } from "@/lib/error-handler";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { 
   Employee, 
   UpdateEmployeeInput, 
@@ -57,7 +57,7 @@ export const useUser = (id: string) => {
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { toast } = useToast();
+  // toast from sonner
 
   return useMutation<{ user: Employee }, Error, RegisterInput>({
     mutationFn: async (data: RegisterInput) => {
@@ -94,20 +94,12 @@ export const useCreateUser = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       
-      toast({
-        type: "success",
-        title: "Success",
-        description: `Employee ${data.user.username} created successfully`,
-      });
+      toast.success(`Employee ${data.user.username} created successfully`);
       
       router.push("/accounts");
     },
     onError: (error: Error) => {
-      toast({
-        type: "error",
-        title: "Error",
-        description: error.message || "Failed to create employee",
-      });
+  toast.error("We couldn't add the employee. Please check your input or try again later.");
     },
   });
 };
@@ -116,7 +108,7 @@ export const useCreateUser = () => {
 export const useCreateEmployeeByFarmManager = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { toast } = useToast();
+  // toast from sonner
 
   return useMutation<{ user: Employee }, Error, FormData>({
     mutationFn: async (formData: FormData) => {
@@ -140,32 +132,27 @@ export const useCreateEmployeeByFarmManager = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       
-      toast({
-        type: "success",
-        title: "Success",
-        description: `Employee ${data.user.username} created successfully`,
-      });
+      toast.success(`Employee ${data.user.username} created successfully`);
       
       router.push("/accounts");
     },
     onError: (error: Error) => {
-      toast({
-        type: "error",
-        title: "Error",
-        description: error.message || "Failed to create employee",
-      });
+  toast.error("We couldn't add the employee. Please check your input or try again later.");
     },
   });
 };
 
+import { useAuth } from "@/lib/auth-context";
+
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  // toast from sonner
+  const { user: currentUser, setUser } = useAuth();
 
   return useMutation<
     { user: Employee },
     Error,
-    { id: string; data: UpdateEmployeeInput }
+    { id: string; data: UpdateEmployeeInput; onCurrentUserUpdate?: (user: Employee) => void }
   >({
     mutationFn: async ({ id, data }) => {
       try {
@@ -200,30 +187,30 @@ export const useUpdateUser = () => {
         throw new Error(apiError.message);
       }
     },
-    onSuccess: (data, { id }) => {
+    onSuccess: (data, { id, onCurrentUserUpdate }) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["users", id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", "users"] });
-      
-      toast({
-        type: "success",
-        title: "Success",
-        description: `Employee ${data.user.username} updated successfully`,
-      });
+
+      if (currentUser && data.user.id === currentUser.id) {
+        setUser?.(data.user);
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("userName", data.user.username);
+        }
+        if (onCurrentUserUpdate) onCurrentUserUpdate(data.user);
+      }
+
+      toast.success(`User ${data.user.username} updated successfully`);
     },
     onError: (error: Error) => {
-      toast({
-        type: "error",
-        title: "Error",
-        description: error.message || "Failed to update employee",
-      });
+  toast.error("We couldn't update the user. Please check your input or try again later.");
     },
   });
 };
 
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  // toast from sonner
 
   return useMutation<void, Error, string>({
     mutationFn: async (id: string) => {
@@ -238,18 +225,10 @@ export const useDeleteUser = () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", "users"] });
       
-      toast({
-        type: "success",
-        title: "Success",
-        description: "Employee deleted successfully",
-      });
+      toast.success("Employee deleted successfully");
     },
     onError: (error: Error) => {
-      toast({
-        type: "error",
-        title: "Error",
-        description: error.message || "Failed to delete employee",
-      });
+  toast.error("We couldn't delete the employee. Please try again or contact support if the problem continues.");
     },
   });
 };

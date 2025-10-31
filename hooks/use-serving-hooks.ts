@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useToast } from './use-toast';
+import { toast } from '@/components/ui/sonner';
 import { apiClient } from '@/lib/api-client';
 import type { 
   ServingRecord, 
@@ -58,7 +58,7 @@ export function useServingStats() {
 export function useCreateServing(options?: { skipRedirect?: boolean }) {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { toast } = useToast();
+  // toast from sonner
 
   return useMutation({
   mutationFn: async (data: CreateServingData): Promise<ServingRecord> => {
@@ -82,11 +82,7 @@ export function useCreateServing(options?: { skipRedirect?: boolean }) {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'animals'] });
       
-      toast({
-        type: 'success',
-        title: 'Success',
-        description: 'Serving record created successfully',
-      });
+      toast.success('Serving record created successfully');
       // Only redirect if not disabled
       if (!options?.skipRedirect) {
         router.push('/production/serving');
@@ -94,18 +90,14 @@ export function useCreateServing(options?: { skipRedirect?: boolean }) {
     },
     onError: (error: any) => {
       const message = error?.response?.data?.message || 'Failed to create serving record';
-      toast({
-        type: 'error',
-        title: 'Error',
-        description: message,
-      });
+  toast.error("We couldn't save the serving record. Please check your input or try again later.");
     },
   });
 }
 
 export function useUpdateServing() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  // toast from sonner
 
   return useMutation({
     mutationFn: async (data: UpdateServingData): Promise<ServingRecord> => {
@@ -129,26 +121,18 @@ export function useUpdateServing() {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'animals'] });
       
-      toast({
-        type: 'success',
-        title: 'Success',
-        description: 'Serving record updated successfully',
-      });
+      toast.success('Serving record updated successfully');
     },
     onError: (error: any) => {
       const message = error?.response?.data?.message || 'Failed to update serving record';
-      toast({
-        type: 'error',
-        title: 'Error',
-        description: message,
-      });
+  toast.error("We couldn't update the serving record. Please check your input or try again later.");
     },
   });
 }
 
 export function useDeleteServing() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  // toast from sonner
 
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
@@ -171,19 +155,11 @@ export function useDeleteServing() {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'animals'] });
       
-      toast({
-        type: 'success',
-        title: 'Success',
-        description: 'Serving record deleted successfully',
-      });
+      toast.success('Serving record deleted successfully');
     },
     onError: (error: any) => {
       const message = error?.response?.data?.message || 'Failed to delete serving record';
-      toast({
-        type: 'error',
-        title: 'Error',
-        description: message,
-      });
+  toast.error("We couldn't delete the serving record. Please try again or contact support if the problem continues.");
     },
   });
 }

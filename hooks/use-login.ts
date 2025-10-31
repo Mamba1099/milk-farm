@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { toast } from "@/components/ui/sonner";
 import { apiClient } from "@/lib/api-client";
 import type { LoginInput } from "@/lib/types/auth";
 
@@ -29,6 +30,7 @@ export const useLogin = (onSuccess?: () => void) => {
       return response.data;
     },
     onSuccess: (data) => {
+      toast.success(data.message || "Login successful");
       if (onSuccess) onSuccess();
     },
     onError: (error) => {
@@ -36,6 +38,7 @@ export const useLogin = (onSuccess?: () => void) => {
       sessionStorage.removeItem("accessToken");
       sessionStorage.removeItem("refreshToken");
       sessionStorage.removeItem("userName");
+  toast.error("We couldn't log you in. Please check your credentials and try again.");
     },
   });
 };

@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/lib/auth-context";
 import {
   Animal,
@@ -16,7 +16,7 @@ import { ProductionRecord } from "@/lib/types/production";
 import { isSameDay } from "date-fns";
 
 export const useAnimalStats = () => {
-  const { toast, isToastActive } = useToast();
+  // toast from sonner
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<DashboardStats["animals"], Error>({
@@ -69,15 +69,7 @@ export const useAnimalStats = () => {
           };
         }
         
-        const toastId = "animal-stats-error";
-        if (!isToastActive || !isToastActive(toastId)) {
-          toast({
-            id: toastId,
-            title: "Error",
-            description: "Failed to fetch animal statistics",
-            type: "error",
-          });
-        }
+  toast.error("We couldn't load animal statistics. Please refresh or try again later.");
         throw new Error("Failed to fetch animal statistics");
       }
     },
@@ -106,7 +98,7 @@ export const useAnimalStats = () => {
 };
 
 export const useProductionStats = () => {
-  const { toast, isToastActive } = useToast();
+  // toast from sonner
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<DashboardStats["production"], Error>({
@@ -220,15 +212,7 @@ export const useProductionStats = () => {
           };
         }
         
-        const toastId = "production-stats-error";
-        if (!isToastActive || !isToastActive(toastId)) {
-          toast({
-            id: toastId,
-            title: "Error",
-            description: "Failed to fetch production statistics",
-            type: "error",
-          });
-        }
+  toast.error("We couldn't load production statistics. Please refresh or try again later.");
         throw new Error("Failed to fetch production statistics");
       }
     },
@@ -259,7 +243,7 @@ export const useProductionStats = () => {
 
 
 export const useUserStats = () => {
-  const { toast } = useToast();
+  // toast from sonner
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<UserStats, Error>({
@@ -277,11 +261,7 @@ export const useUserStats = () => {
         if (error.response?.status === 401) {
           console.warn("Authentication required for user stats - returning fallback data");
         } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch user statistics",
-            type: "error",
-          });
+    toast.error("We couldn't load user statistics. Please refresh or try again later.");
         }
         
         return {
@@ -316,7 +296,7 @@ export const useUserStats = () => {
 };
 
 export const useSystemHealth = () => {
-  const { toast, isToastActive } = useToast();
+  // toast from sonner
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   return useQuery<SystemHealth, Error>({
@@ -331,15 +311,7 @@ export const useSystemHealth = () => {
         const response = await apiClient.get("/api/system/health");
         return response.data.health;
       } catch (error) {
-        const toastId = "system-health-error";
-        if (!isToastActive(toastId)) {
-          toast({
-            id: toastId,
-            title: "Error",
-            description: "Failed to fetch system health",
-            type: "error",
-          });
-        }
+  toast.error("We couldn't load system health data. Please refresh or try again later.");
         return {
           environment: process.env.NODE_ENV || "development",
           database: {

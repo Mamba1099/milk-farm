@@ -1,7 +1,9 @@
 "use client";
 
+
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { toast } from "@/components/ui/sonner";
 
 export const useLogout = () => {
   return useMutation<{ message: string }, Error, string>({
@@ -14,13 +16,15 @@ export const useLogout = () => {
       
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      toast.success(data.message || "Logged out successfully");
     },
     onError: (error) => {
       console.error("Logout failed:", error);
       sessionStorage.removeItem("accessToken");
       sessionStorage.removeItem("refreshToken"); 
       sessionStorage.removeItem("userName");
+  toast.error("We couldn't log you out. Please refresh the page or try again later.");
     },
   });
 };

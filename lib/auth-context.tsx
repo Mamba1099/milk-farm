@@ -13,7 +13,7 @@ import { useLogin } from "@/hooks/use-login";
 import { useLogout } from "@/hooks/use-logout";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { jwtDecode } from "jwt-decode";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import type { TokenPayload, AuthUser, AuthContextType, LoginInput } from "@/lib/types/auth";
 
 const AuthContext = createContext<AuthContextType>(null!);
@@ -24,14 +24,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const router = useRouter();
-  const { toast } = useToast();
+  // toast from sonner
 
   const handleSessionExpiry = useCallback(() => {
-    toast({
-      type: "warning",
-      title: "Session Expired",
-      description: "Your session has expired. Please log in again.",
-    });
+    toast.warning("Your session has expired. Please log in again.");
     sessionStorage.removeItem("accessToken");
     sessionStorage.removeItem("refreshToken");
     sessionStorage.removeItem("userName");
@@ -85,11 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.removeItem("userName");
       setUser(null);
       setError(error instanceof Error ? error : new Error("Auth error"));
-      toast({
-        type: "error",
-        title: "Authentication Error",
-        description: error instanceof Error ? error.message : String(error),
-      });
+      toast.error(error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoading(false);
       if (!isInitialized) setIsInitialized(true);
@@ -125,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        setUser, // Expose setUser for instant update after profile edit
         login: async (data: LoginInput) => {
           try {
             clearError();

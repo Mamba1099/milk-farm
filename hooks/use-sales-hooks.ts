@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/lib/auth-context";
 import type { Sale, SalesStats, CreateSaleData } from "@/lib/types/sales";
 
@@ -138,7 +138,7 @@ export const useSalesStats = (
 
 export const useCreateSale = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  // toast from sonner
 
   return useMutation<Sale, Error, CreateSaleData>({
     mutationFn: async (saleData) => {
@@ -165,20 +165,12 @@ export const useCreateSale = () => {
       // Invalidate balance API as sales change available balance
       queryClient.invalidateQueries({ queryKey: ["balance"] });
       
-      toast({
-        title: "Success",
-        description: "Sale recorded successfully",
-        type: "success",
-      });
+      toast.success("Sale recorded successfully");
     },
     onError: (error) => {
       console.error("Error creating sale:", error);
       
-      toast({
-        title: "Error", 
-        description: "Failed to record sale. Please try again.",
-        type: "error",
-      });
+  toast.error("We couldn't record the sale. Please check your input or try again later.");
     },
   });
 };
