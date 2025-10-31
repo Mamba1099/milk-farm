@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Icons } from "@/components/icons";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { useCreateSales } from "@/hooks/use-production-hooks";
 import { CreateSalesData } from "@/lib/types/production";
 import { SalesFormProps } from "@/lib/types/animal";
@@ -19,7 +19,7 @@ export function SalesForm({
   onSuccess,
   selectedDate,
 }: SalesFormProps) {
-  const { toast } = useToast();
+  // toast from sonner
   const [formData, setFormData] = useState({
     quantity: "",
     pricePerLiter: "",
@@ -78,11 +78,7 @@ export function SalesForm({
 
     try {
       await createSalesMutation.mutateAsync(salesData);
-      toast({
-        title: "Success",
-        description: "Sales record created successfully",
-        type: "success"
-      });
+      toast.success("Sales record created successfully");
       onSuccess?.();
       onClose();
       resetForm();
@@ -91,11 +87,7 @@ export function SalesForm({
         error instanceof Error
           ? error.message
           : "Failed to create sales record";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        type: "error"
-      });
+      toast.error(errorMessage);
     }
   };
 

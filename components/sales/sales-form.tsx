@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Icons } from "@/components/icons";
 import { useCreateSale } from "@/hooks/use-sales-hooks";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 
 interface SalesFormData {
   customerName: string;
@@ -27,7 +27,7 @@ export function SalesForm() {
   });
 
   const createSaleMutation = useCreateSale();
-  const { toast } = useToast();
+  // toast from sonner
 
   const handleInputChange = (field: keyof SalesFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -37,11 +37,7 @@ export function SalesForm() {
     e.preventDefault();
     
     if (!formData.customerName || !formData.quantity || !formData.totalAmount) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        type: "error"
-      });
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -60,17 +56,9 @@ export function SalesForm() {
         paymentMethod: "CASH"
       });
 
-      toast({
-        title: "Success",
-        description: "Sale recorded successfully",
-        type: "success"
-      });
+      toast.success("Sale recorded successfully");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to record sale",
-        type: "error"
-      });
+      toast.error("Failed to record sale");
     }
   };
 
