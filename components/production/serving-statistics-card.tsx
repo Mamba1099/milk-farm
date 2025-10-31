@@ -8,7 +8,7 @@ interface ServingStatisticsCardProps {
 }
 
 export const ServingStatisticsCard: React.FC<ServingStatisticsCardProps> = ({ stats }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8 w-full">
+  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8 w-full">
     <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-sky-200 to-sky-400 w-full">
       <div className="flex items-center justify-between p-6">
         <div>

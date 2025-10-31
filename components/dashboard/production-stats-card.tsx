@@ -3,7 +3,7 @@
 import { motion, type Variants } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
-import { useDashboardStats } from "@/hooks";
+import { useProductionStats } from "@/hooks/use-production-hooks";
 import { ClockLoader } from "react-spinners";
 
 const fadeInUp: Variants = {
@@ -12,14 +12,14 @@ const fadeInUp: Variants = {
 };
 
 export const ProductionStatsCard: React.FC = () => {
-  const { production } = useDashboardStats();
+  const { data: stats, isLoading, isError } = useProductionStats();
 
-  if (production.isLoading) {
+  if (isLoading) {
     return (
       <motion.div variants={fadeInUp}>
         <Card className="bg-gradient-to-br from-purple-200 to-purple-400 hover:shadow-lg transition-all duration-300 h-full">
           <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-800 text-lg sm:text-xl">
+            <CardTitle className="flex items-center gap-2 text-blue-800 text-lg sm:text-xl">
               <Icons.milk className="h-4 w-4 sm:h-5 sm:w-5" />
               Production Statistics
             </CardTitle>
@@ -34,7 +34,7 @@ export const ProductionStatsCard: React.FC = () => {
     );
   }
 
-  if (production.isError) {
+  if (isError) {
     return (
       <motion.div variants={fadeInUp}>
         <Card className="bg-gradient-to-br from-purple-200 to-purple-400 hover:shadow-lg transition-all duration-300 h-full">
@@ -55,7 +55,7 @@ export const ProductionStatsCard: React.FC = () => {
     );
   }
 
-  if (!production.data || production.data.totalRecords === 0) {
+  if (!stats) {
     return (
       <motion.div variants={fadeInUp}>
         <Card className="bg-gradient-to-br from-purple-200 to-purple-400 hover:shadow-lg transition-all duration-300 h-full">
@@ -76,8 +76,6 @@ export const ProductionStatsCard: React.FC = () => {
     );
   }
 
-  const stats = production.data;
-
   return (
     <motion.div variants={fadeInUp}>
       <Card className="bg-gradient-to-br from-purple-200 to-purple-400 hover:shadow-lg transition-all duration-300 h-full">
@@ -91,41 +89,27 @@ export const ProductionStatsCard: React.FC = () => {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-white/60 rounded-lg">
-                <div className="text-2xl font-bold text-gray-900">{stats.todayQuantity}L</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.todayProduction}L</div>
                 <div className="text-sm text-blue-800">Today's Production</div>
               </div>
               <div className="text-center p-3 bg-white/60 rounded-lg">
-                <div className="text-2xl font-bold text-gray-900">{stats.weeklyAverage}L</div>
-                <div className="text-sm text-blue-800">Daily Average</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.weekProduction}L</div>
+                <div className="text-sm text-blue-800">This Week</div>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-800">Total Records:</span>
-                <span className="text-md font-bold text-gray-900">{stats.totalRecords}</span>
+                <span className="text-sm text-blue-800">Active Animals:</span>
+                <span className="text-md font-bold text-gray-900">{stats.activeAnimals}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-800">Weekly Total:</span>
-                <span className="text-md font-bold text-gray-900">{stats.weeklyTotal}L</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-purple-600">Last Record:</span>
-                <span className="text-sm font-medium text-purple-800">{stats.lastRecordDate ? new Date(stats.lastRecordDate).toLocaleDateString() : "No records"}</span>
+                <span className="text-sm text-blue-800">Monthly Total:</span>
+                <span className="text-md font-bold text-gray-900">{stats.monthProduction}L</span>
               </div>
             </div>
-            {stats.weeklyAverage > 0 && (
-              <div className="mt-4 p-3 bg-white/40 rounded-lg">
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-purple-700">
-                    {Math.round((stats.todayQuantity / stats.weeklyAverage) * 100 || 0)}%
-                  </div>
-                  <div className="text-xs text-purple-600">vs Daily Average</div>
-                </div>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
     </motion.div>
   );
-};
+}

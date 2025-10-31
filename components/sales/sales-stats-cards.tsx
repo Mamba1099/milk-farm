@@ -65,7 +65,7 @@ export function SalesStatsCards({ dateFilter, customDate }: SalesStatsCardsProps
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[...Array(4)].map((_, i) => (
           <Card key={i} className="animate-pulse">
             <CardContent className="p-6">
@@ -130,7 +130,7 @@ export function SalesStatsCards({ dateFilter, customDate }: SalesStatsCardsProps
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 min-w-0">
+    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 min-w-0">
       {statCards.map((stat, index) => (
         <motion.div
           key={stat.title}
@@ -140,19 +140,21 @@ export function SalesStatsCards({ dateFilter, customDate }: SalesStatsCardsProps
           transition={{ delay: index * 0.1 }}
           className="min-w-0"
         >
-          <Card className={`${stat.bgColor} ${stat.borderColor} hover:shadow-lg transition-all duration-300`}>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                <span className="text-gray-700">{stat.title}</span>
-              </CardTitle>
+          <Card className={`${stat.bgColor} ${stat.borderColor} hover:shadow-lg transition-all duration-300 flex flex-col h-full justify-between`}>
+            <CardHeader className="pb-2 flex flex-col items-center">
+              <div className="flex flex-col items-center w-full mt-0">
+                <stat.icon className={`h-6 w-8 ${stat.color}`} />
+                <CardTitle className="text-center text-base font-semibold leading-tight break-words w-full">
+                  <span className="text-gray-700">{stat.title}</span>
+                </CardTitle>
+              </div>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-1">
-                <p className={`text-2xl font-bold ${stat.color}`}>
+            <CardContent className=" flex flex-col items-center justify-center flex-1 w-full">
+              <div className="space-y-1 w-full flex flex-col items-center">
+                <p className={`text-2xl font-bold ${stat.color} text-center break-words w-full`}>
                   {stat.value}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 text-center break-words w-full">
                   {stat.description}
                 </p>
               </div>
