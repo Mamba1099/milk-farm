@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { RingLoader } from "react-spinners";
 import { Icons } from "@/components/icons";
 import { useUpdateUser } from "@/hooks/use-employee-hooks";
+import { useAuth } from "@/lib/auth-context";
 import { UpdateEmployeeInput } from "@/lib/types/employee";
 import { EmployeeEditFormProps } from "@/lib/types/employee-components";
 import { UpdateUserSchema } from "@/lib/validators/user";
@@ -35,6 +36,7 @@ export function EmployeeEditForm({
   onClose,
   onSuccess,
 }: EmployeeEditFormProps) {
+  const { user: currentUser, setUser } = useAuth();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const updateUserMutation = useUpdateUser();
@@ -97,7 +99,15 @@ export function EmployeeEditForm({
     if (imageFile) finalData.image = imageFile;
 
     updateUserMutation.mutate(
-      { id: user.id, data: finalData },
+      {
+        id: user.id,
+        data: finalData,
+        onCurrentUserUpdate: (updatedUser) => {
+          if (currentUser && updatedUser.id === currentUser.id) {
+            setUser(updatedUser);
+          }
+        },
+      },
       {
         onSuccess: () => {
           reset();
@@ -124,7 +134,7 @@ export function EmployeeEditForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-md w-full sm:max-w-md md:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-4 rounded-lg">
         <DialogHeader>
           <DialogTitle>Edit Employee</DialogTitle>
         </DialogHeader>
@@ -236,7 +246,7 @@ export function EmployeeEditForm({
                   Updating...
                 </div>
               ) : (
-                "Update Employee"
+                "Update"
               )}
             </Button>
             <Button 
