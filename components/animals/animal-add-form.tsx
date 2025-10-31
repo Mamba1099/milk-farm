@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { RingLoader } from "react-spinners";
 import { useCreateAnimal } from "@/hooks/use-animal-hooks";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { CreateAnimalSchema, CreateAnimalInput } from "@/lib/validators/animal";
 import { AnimalAddFormProps } from "@/lib/types/animal";
 
@@ -24,7 +24,6 @@ export function AnimalAddForm({ onSuccess, onCancel }: AnimalAddFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const createAnimalMutation = useCreateAnimal();
-  const { toast } = useToast();
 
   const {
     register,
@@ -53,20 +52,12 @@ export function AnimalAddForm({ onSuccess, onCancel }: AnimalAddFormProps) {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast({
-          type: "error",
-          title: "Error",
-          description: "Image must be less than 5MB",
-        });
+        toast.error("Image must be less than 5MB");
         return;
       }
 
       if (!file.type.startsWith("image/")) {
-        toast({
-          type: "error",
-          title: "Error",
-          description: "Please select a valid image file",
-        });
+        toast.error("Please select a valid image file");
         return;
       }
 
@@ -109,23 +100,11 @@ export function AnimalAddForm({ onSuccess, onCancel }: AnimalAddFormProps) {
       
       if (error.errors) {
         const firstError = error.errors[0];
-        toast({
-          type: "error",
-          title: "Validation Error",
-          description: firstError.message,
-        });
+        toast.error(firstError.message);
       } else if (error.message) {
-        toast({
-          type: "error",
-          title: "Error",
-          description: error.message,
-        });
+        toast.error(error.message);
       } else {
-        toast({
-          type: "error",
-          title: "Error", 
-          description: "Failed to add animal. Please check your input and try again.",
-        });
+        toast.error("Failed to add animal. Please check your input and try again.");
       }
     }
   };

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RingLoader } from "react-spinners";
 import { useUpdateAnimal, useAnimal } from "@/hooks";
-import { useToast } from "@/hooks";
+import { toast } from "@/components/ui/sonner";
 import { UpdateAnimalSchema, UpdateAnimalInput } from "@/lib/validators/animal";
 import { Animal, AnimalEditDialogProps, AnimalEditFormInput } from "@/lib/types/animal";
 
@@ -19,7 +19,6 @@ export function AnimalsEditDialog({
   isOpen,
   onClose,
 }: AnimalEditDialogProps) {
-  const { toast } = useToast();
   const updateAnimalMutation = useUpdateAnimal();
   const { data: freshAnimalData, isLoading: isFetchingAnimal } = useAnimal(animal.id);
   const currentAnimal = freshAnimalData || animal;
@@ -82,20 +81,12 @@ export function AnimalsEditDialog({
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast({
-          type: "error",
-          title: "Error",
-          description: "Image must be less than 5MB",
-        });
+        toast.error("Image must be less than 5MB");
         return;
       }
 
       if (!file.type.startsWith("image/")) {
-        toast({
-          type: "error",
-          title: "Error",
-          description: "Please select a valid image file",
-        });
+        toast.error("Please select a valid image file");
         return;
       }
 
@@ -137,23 +128,11 @@ export function AnimalsEditDialog({
       
       if (error.errors) {
         const firstError = error.errors[0];
-        toast({
-          type: "error",
-          title: "Validation Error",
-          description: firstError.message,
-        });
+        toast.error(firstError.message);
       } else if (error.message) {
-        toast({
-          type: "error",
-          title: "Error",
-          description: error.message,
-        });
+        toast.error(error.message);
       } else {
-        toast({
-          type: "error",
-          title: "Error", 
-          description: "Failed to update animal. Please check your input and try again.",
-        });
+        toast.error("Failed to update animal. Please check your input and try again.");
       }
     }
   };

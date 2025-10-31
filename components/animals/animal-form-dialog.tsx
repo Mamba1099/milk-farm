@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useCreateAnimal, useUpdateAnimal, useAvailableParents } from "@/hooks";
-import { useToast } from "@/hooks";
+import { toast } from "@/components/ui/sonner";
 import { AnimalFormDialogProps, Animal } from "@/lib/types/animal";
 import type { CreateAnimalInput, UpdateAnimalInput } from "@/lib/validators/animal";
 
@@ -13,7 +13,7 @@ export function AnimalFormDialog({
   animal,
   onSuccess,
 }: AnimalFormDialogProps) {
-  const { toast } = useToast();
+  // toast from sonner
   const [formData, setFormData] = useState<Partial<CreateAnimalInput & { motherId?: string; fatherId?: string }>>({
   });
 
@@ -31,26 +31,14 @@ export function AnimalFormDialog({
           ...formData,
           id: animal.id,
         } as UpdateAnimalInput);
-        toast({ 
-          title: "Success", 
-          description: "Animal updated successfully",
-          type: "success" 
-        });
+        toast.success("Animal updated successfully");
       } else {
         await createMutation.mutateAsync(formData as CreateAnimalInput);
-        toast({ 
-          title: "Success", 
-          description: "Animal created successfully",
-          type: "success" 
-        });
+        toast.success("Animal created successfully");
       }
       onSuccess();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save animal",
-        type: "error",
-      });
+      toast.error("Failed to save animal");
     }
   };
 
