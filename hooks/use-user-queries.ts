@@ -1,8 +1,10 @@
 "use client";
 
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { User, AuthError } from "@/lib/types";
+import { toast } from "@/components/ui/sonner";
 
 export const useCurrentUser = () => {
   return useQuery<User | null>({
@@ -81,16 +83,26 @@ export const useLogoutMutation = () => {
       const response = await apiClient.post("/api/auth/logout");
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.removeQueries({ queryKey: ["user"] });
       queryClient.clear();
-      
+      toast.success(data.message || "Logged out successfully");
     },
     onError: (error) => {
       console.error("Logout failed:", error);
-    
       queryClient.removeQueries({ queryKey: ["user"] });
       queryClient.clear();
+      let message = "We couldn't log you out due to a technical issue. Please refresh the page or try again later.";
+      if (typeof error === "string" && (error as string).trim().length > 0) {
+        message = error;
+      } else if (error && typeof error === "object") {
+        if ('error' in error && typeof error.error === 'string' && (error.error as string).trim().length > 0) {
+          message = error.error;
+        } else if ('message' in error && typeof (error as any).message === 'string' && ((error as any).message as string).trim().length > 0) {
+          message = (error as any).message;
+        }
+      }
+      toast.error(message);
     },
   });
 };
