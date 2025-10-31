@@ -102,6 +102,7 @@ export interface AuthProviderProps {
 
 export interface AuthContextType {
   user: AuthUser | null;
+  setUser: (user: AuthUser | null) => void;
   login: (data: LoginInput) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
