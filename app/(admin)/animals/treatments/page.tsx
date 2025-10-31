@@ -107,7 +107,7 @@ export default function TreatmentsPage() {
               Track treatments and health interventions for your animals
             </p>
           </div>
-          {canEdit && (
+          {(canEdit || user?.role === "EMPLOYEE") && (
             <Link href="/animals/treatments/add">
               <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 w-full sm:w-auto text-sm sm:text-base">
                 <Plus size={18} className="sm:w-5 sm:h-5" />

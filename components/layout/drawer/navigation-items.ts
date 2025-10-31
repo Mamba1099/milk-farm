@@ -22,7 +22,7 @@ export const navigationItems: NavigationItem[] = [
       {
         name: "Add Animal",
         href: "/animals/add",
-        roles: ["FARM_MANAGER"],
+        roles: ["FARM_MANAGER", "EMPLOYEE"],
       },
       {
         name: "Health Records",
@@ -50,7 +50,7 @@ export const navigationItems: NavigationItem[] = [
       {
         name: "Serving Records",
         href: "/production/serving",
-        roles: ["FARM_MANAGER"],
+        roles: ["FARM_MANAGER", "EMPLOYEE"],
       },
     ],
   },
@@ -58,7 +58,7 @@ export const navigationItems: NavigationItem[] = [
     name: "Account Management",
     href: "/accounts",
     icon: Icons.users,
-    roles: ["FARM_MANAGER"],
+    roles: ["FARM_MANAGER", "EMPLOYEE"],
   },
   {
     name: "Analytics",
@@ -70,12 +70,12 @@ export const navigationItems: NavigationItem[] = [
     name: "Sales",
     href: "/sales",
     icon: Icons.dollarSign,
-    roles: ["FARM_MANAGER"],
+    roles: ["FARM_MANAGER", "EMPLOYEE"],
   },
   {
     name: "Settings",
     href: "/settings",
     icon: Icons.settings,
-    roles: ["FARM_MANAGER"],
+    roles: ["FARM_MANAGER", "EMPLOYEE"],
   },
 ];
