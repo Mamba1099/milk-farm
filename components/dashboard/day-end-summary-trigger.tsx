@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { apiClient } from "@/lib/api-client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { 
   Clock, 
   PlayCircle, 
@@ -43,7 +43,7 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isEnabled, setIsEnabled] = useState(false);
 
-  const { toast } = useToast();
+  // toast from sonner
 
   // (moved above)
 
@@ -138,12 +138,7 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
       setLastTriggerResult(storedResult);
       
       if (storedResult.success) {
-        toast({
-          title: "✅ Day-End Summary Complete",
-          description: `${storedResult.message} (Previously completed today)`,
-          type: "success",
-          duration: 5000,
-        });
+        toast.success(`✅ Day-End Summary Complete: ${storedResult.message} (Previously completed today)`);
       }
     }
   }, [toast]);
@@ -152,27 +147,15 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
     if (!lastTriggerResult) return;
     
     if (lastTriggerResult.success) {
-      toast({
-        title: "✅ Day-End Summary Complete",
-        description: `${lastTriggerResult.message} (Notification reshown)`,
-        type: "success"
-      });
+      toast.success(`✅ Day-End Summary Complete: ${lastTriggerResult.message} (Notification reshown)`);
     } else {
-      toast({
-        title: "❌ Day-End Summary Failed", 
-        description: `${lastTriggerResult.message} (Notification reshown)`,
-        type: "error",
-      });
+      toast.error(`❌ Day-End Summary Failed: ${lastTriggerResult.message} (Notification reshown)`);
     }
   };
 
   const triggerDayEndSummary = async () => {
     if (!isAfter10PM()) {
-      toast({
-        title: "⏰ Too Early",
-        description: "Day-end summary can only be triggered after 10 PM",
-        type: "warning",
-      });
+      toast.warning("⏰ Too Early: Day-end summary can only be triggered after 10 PM");
       return;
     }
 
@@ -197,11 +180,7 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
         
         saveTriggerResult(result);
         
-        toast({
-          title: "✅ Day-End Summary Complete",
-          description: message,
-          type: "success"
-        });
+        toast.success(`✅ Day-End Summary Complete: ${message}`);
       }
     } catch (error: any) {
       const result = {
@@ -212,11 +191,7 @@ export function DayEndSummaryTrigger({ className }: DayEndSummaryTriggerProps) {
       
       saveTriggerResult(result);
       
-      toast({
-        title: "❌ Day-End Summary Failed",
-        description: result.message,
-        type: "error",
-      });
+      toast.error(`❌ Day-End Summary Failed: ${result.message}`);
       
       console.error("❌ Manual day-end summary failed:", error);
     } finally {

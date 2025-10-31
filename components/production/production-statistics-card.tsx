@@ -9,7 +9,7 @@ export interface ProductionStatisticsCardProps {
 
 export const ProductionStatisticsCard: React.FC<ProductionStatisticsCardProps> = ({ stats }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-4 w-full">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 w-full">
       <Card className="p-0 shadow-lg border-0 bg-gradient-to-br from-green-200 to-green-400">
         <div className="flex items-center justify-between p-6">
           <div>
