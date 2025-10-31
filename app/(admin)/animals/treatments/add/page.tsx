@@ -16,7 +16,7 @@ import {
   CreateTreatmentInput,
 } from "@/lib/validators/animal";
 import { TreatmentFormData } from "@/lib/types/animal";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 
 const fadeInUp = {
   initial: {
@@ -46,7 +46,7 @@ export default function AddTreatmentPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const createTreatmentMutation = useCreateTreatment();
-  const { toast } = useToast();
+  // toast from sonner
 
   const { data: animalsData } = useAnimals({
     page: 1,
@@ -97,11 +97,7 @@ export default function AddTreatmentPage() {
   const handleFormError = (errors: any) => {
     const errorMessages = Object.values(errors).map((error: any) => error?.message).filter(Boolean);
     if (errorMessages.length > 0) {
-      toast({
-        type: "error",
-        title: "Validation Error",
-        description: errorMessages[0] || "Please check your input and try again",
-      });
+      toast.error(errorMessages[0] || "Please check your input and try again");
     }
   };
 
